@@ -8,16 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var message = "Life Experiment 🌱"
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        VStack(spacing: 20) {
+            Text(message)
+                .font(.title)
+
+            Button("Log Today") {
+                message = "Logged ✔︎"
+            }
         }
         .padding()
     }
 }
+
 
 #Preview {
     ContentView()
