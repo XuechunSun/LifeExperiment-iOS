@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     enum LoggingStatus {
         case idle
+        case logging
         case logged
     }
 
@@ -20,48 +21,78 @@ struct ContentView: View {
         switch status {
         case .idle:
             return "Life Experiment 🌱"
+        case .logging:
+            return "Life Experiment 🌱"
         case .logged:
             return "Experiment Logged 🌿"
         }
     }
-
-    var body: some View {
-        VStack(spacing: 20) {
+    
+    var headerSection: some View {
+        VStack(spacing: 8) {
             Text("Day \(dayCount)")
                 .font(.headline)
                 .foregroundColor(.secondary)
-
+            
             Text(message)
                 .font(.title)
-
-            if status == .idle {
-                Button("Log Today") {
-                    status = .logged
-                }
+        }
+    }
+    
+    var idleSection: some View {
+        Button("Log Today") {
+            status = .logging
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                status = .logged
             }
-
-            if status == .logged {
-                VStack(spacing: 12) {
-                    Text("Logged ✓")
-                        .foregroundColor(.green)
-
-                    HStack(spacing: 12) {
-                        Button("Next Day") {
-                            dayCount += 1
-                            status = .idle
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button("Log out") {
-                            status = .idle
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.red)
-                    }
+        }
+    }
+    
+    var loggingSection: some View {
+        Text("Saving...")
+            .foregroundColor(.secondary)
+            .italic()
+    }
+    
+    var loggedSection: some View {
+        VStack(spacing: 12) {
+            Text("Logged ✓")
+                .foregroundColor(.green)
+            
+            HStack(spacing: 12) {
+                Button("Next Day") {
+                    dayCount += 1
+                    status = .idle
                 }
-                .padding()
-                .background(.thinMaterial)
-                .cornerRadius(12)
+                .buttonStyle(.bordered)
+                
+                Button("Log out") {
+                    status = .idle
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+            }
+        }
+        .padding()
+        .background(.thinMaterial)
+        .cornerRadius(12)
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            headerSection
+            
+            if status == .idle {
+                idleSection
+            }
+            
+            if status == .logging {
+                loggingSection
+            }
+            
+            if status == .logged {
+                loggedSection
             }
         }
         .padding()
