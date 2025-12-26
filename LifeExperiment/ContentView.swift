@@ -16,6 +16,7 @@ struct ContentView: View {
 
     @State private var status: LoggingStatus = .idle
     @State private var dayCount: Int = 9
+    @State private var history: [Int] = []
 
     var message: String {
         switch status {
@@ -28,6 +29,15 @@ struct ContentView: View {
         }
     }
     
+    func moveToNextDay() {
+        // Only record day if not already in history (prevents duplicates)
+        if !history.contains(dayCount) {
+            history.append(dayCount)
+        }
+        dayCount += 1
+        status = .idle
+    }
+    
     var headerSection: some View {
         VStack(spacing: 8) {
             Text("Day \(dayCount)")
@@ -36,6 +46,17 @@ struct ContentView: View {
             
             Text(message)
                 .font(.title)
+        }
+    }
+    
+    var historySection: some View {
+        Group {
+            if !history.isEmpty {
+                Text("Completed days: \(history.map(String.init).joined(separator: ", "))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+            }
         }
     }
     
@@ -62,8 +83,7 @@ struct ContentView: View {
             
             HStack(spacing: 12) {
                 Button("Next Day") {
-                    dayCount += 1
-                    status = .idle
+                    moveToNextDay()
                 }
                 .buttonStyle(.bordered)
                 
@@ -82,6 +102,8 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 20) {
             headerSection
+            
+            historySection
             
             if status == .idle {
                 idleSection
