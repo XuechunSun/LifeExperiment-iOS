@@ -18,6 +18,9 @@ struct ContentView: View {
     @AppStorage("dayCount") private var dayCount: Int = 1
     @AppStorage("statusRaw") private var statusRaw: String = LoggingStatus.idle.rawValue
     @AppStorage("historyData") private var historyData: Data = .init()
+    
+    // Navigation state
+    @State private var selectedDay: Int?
 
     // MARK: - Persistence helpers
 
@@ -83,9 +86,11 @@ struct ContentView: View {
 
                     VStack(spacing: 4) {
                         ForEach(h, id: \.self) { day in
-                            Text("Day \(day)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Button("Day \(day)") {
+                                selectedDay = day
+                            }
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         }
                     }
                 }
@@ -134,24 +139,47 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            headerSection
+        NavigationStack {
+            VStack(spacing: 20) {
+                headerSection
 
-            historySection
+                historySection
 
-            if getStatus() == .idle {
-                idleSection
+                if getStatus() == .idle {
+                    idleSection
+                }
+
+                if getStatus() == .logging {
+                    loggingSection
+                }
+
+                if getStatus() == .logged {
+                    loggedSection
+                }
             }
-
-            if getStatus() == .logging {
-                loggingSection
-            }
-
-            if getStatus() == .logged {
-                loggedSection
+            .padding()
+            .navigationDestination(item: $selectedDay) { day in
+                dayDetailView(for: day)
             }
         }
-        .padding()
+    }
+    
+    func dayDetailView(for day: Int) -> some View {
+        VStack(spacing: 20) {
+            Text("Day \(day)")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            Text("Details for Day \(day)")
+                .foregroundColor(.secondary)
+            
+            Text("You completed your experiment on this day! 🎉")
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .padding()
+        }
+        .navigationTitle("Day \(day)")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
