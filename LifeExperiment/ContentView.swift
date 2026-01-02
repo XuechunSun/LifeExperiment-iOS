@@ -7,6 +7,65 @@
 
 import SwiftUI
 
+enum Mood: String, CaseIterable, Identifiable, Codable, Hashable {
+    case veryBad, bad, neutral, good, veryGood
+    
+    var id: String { rawValue }
+    
+    var emoji: String {
+        switch self {
+        case .veryBad: return "😞"
+        case .bad: return "🙁"
+        case .neutral: return "😐"
+        case .good: return "🙂"
+        case .veryGood: return "😄"
+        }
+    }
+    
+    var labelCN: String {
+        switch self {
+        case .veryBad: return "很差"
+        case .bad: return "不太好"
+        case .neutral: return "一般"
+        case .good: return "不错"
+        case .veryGood: return "很好"
+        }
+    }
+}
+
+struct DayRecord: Identifiable, Codable, Hashable {
+    let id: Int
+    let day: Int
+    var note: String
+    var mood: Mood?
+    
+    init(day: Int, note: String = "", mood: Mood? = nil) {
+        self.id = day
+        self.day = day
+        self.note = note
+        self.mood = mood
+    }
+}
+
+enum ExperimentStatus: String, Codable {
+    case active
+    case completed
+}
+
+struct Experiment: Identifiable, Codable, Hashable {
+    let id: UUID
+    var title: String
+    var status: ExperimentStatus
+    var createdAt: Date
+    
+    init(id: UUID = UUID(), title: String, status: ExperimentStatus, createdAt: Date) {
+        self.id = id
+        self.title = title
+        self.status = status
+        self.createdAt = createdAt
+    }
+}
+
 struct ContentView: View {
     enum LoggingStatus: String {
         case idle
@@ -18,9 +77,11 @@ struct ContentView: View {
     @AppStorage("dayCount") private var dayCount: Int = 1
     @AppStorage("statusRaw") private var statusRaw: String = LoggingStatus.idle.rawValue
     @AppStorage("historyData") private var historyData: Data = .init()
+    @AppStorage("experimentsData") private var experimentsData: Data = .init()
     
     // Navigation state
-    @State private var selectedDay: Int?
+    @State private var selectedDay: DayRecord?
+    @State private var selectedExperiment: Experiment?
 
     // MARK: - Persistence helpers
 
@@ -32,13 +93,44 @@ struct ContentView: View {
         statusRaw = newStatus.rawValue
     }
 
-    private func getHistory() -> [Int] {
-        (try? JSONDecoder().decode([Int].self, from: historyData)) ?? []
+    private func getHistory() -> [DayRecord] {
+        (try? JSONDecoder().decode([DayRecord].self, from: historyData)) ?? []
     }
 
-    private func setHistory(_ newHistory: [Int]) {
+    private func setHistory(_ newHistory: [DayRecord]) {
         if let encoded = try? JSONEncoder().encode(newHistory) {
             historyData = encoded
+        }
+    }
+    
+    private func getExperiments() -> [Experiment] {
+        (try? JSONDecoder().decode([Experiment].self, from: experimentsData)) ?? []
+    }
+    
+    private func setExperiments(_ experiments: [Experiment]) {
+        if let encoded = try? JSONEncoder().encode(experiments) {
+            experimentsData = encoded
+        }
+    }
+    
+    private func seedExperimentsIfNeeded() {
+        if getExperiments().isEmpty {
+            let defaultExperiment = Experiment(
+                title: "My First Experiment",
+                status: .active,
+                createdAt: Date()
+            )
+            setExperiments([defaultExperiment])
+        }
+    }
+    
+    private func sortedExperiments() -> [Experiment] {
+        let experiments = getExperiments()
+        return experiments.sorted { exp1, exp2 in
+            if exp1.status != exp2.status {
+                return exp1.status == .active
+            }
+            return exp1.createdAt > exp2.createdAt
         }
     }
 
@@ -56,12 +148,31 @@ struct ContentView: View {
     func moveToNextDay() {
         // Only record day if not already in history (prevents duplicates)
         var h = getHistory()
-        if !h.contains(dayCount) {
-            h.append(dayCount)
+        if !h.contains(where: { $0.day == dayCount }) {
+            h.append(DayRecord(day: dayCount))
             setHistory(h)
         }
         dayCount += 1
         setStatus(.idle)
+    }
+    
+    func updateRecord(_ updated: DayRecord) {
+        var h = getHistory()
+        if let index = h.firstIndex(where: { $0.id == updated.id }) {
+            h[index] = updated
+            setHistory(h)
+        }
+    }
+    
+    func historyLabel(for record: DayRecord) -> String {
+        var label = "Day \(record.day)"
+        if let mood = record.mood {
+            label += " \(mood.emoji)"
+        }
+        if !record.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            label += " 📝"
+        }
+        return label
     }
 
     var headerSection: some View {
@@ -80,14 +191,14 @@ struct ContentView: View {
         return Group {
             if !h.isEmpty {
                 VStack(spacing: 8) {
-                    Text("Completed:")
+                    Text("Completed Days:")
                         .font(.caption)
                         .foregroundColor(.secondary)
 
                     VStack(spacing: 4) {
-                        ForEach(h, id: \.self) { day in
-                            Button("Day \(day)") {
-                                selectedDay = day
+                        ForEach(h) { record in
+                            Button(historyLabel(for: record)) {
+                                selectedDay = record
                             }
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -140,45 +251,204 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                headerSection
-
-                historySection
-
-                if getStatus() == .idle {
-                    idleSection
-                }
-
-                if getStatus() == .logging {
-                    loggingSection
-                }
-
-                if getStatus() == .logged {
-                    loggedSection
+            List {
+                let experiments = sortedExperiments()
+                if experiments.isEmpty {
+                    Text("No active experiments yet. Create one to get started.")
+                        .foregroundColor(.secondary)
+                        .italic()
+                } else {
+                    ForEach(experiments) { experiment in
+                        Button(action: {
+                            selectedExperiment = experiment
+                        }) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(experiment.title)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                
+                                HStack {
+                                    Text(experiment.status.rawValue.capitalized)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    
+                                    Text("•")
+                                        .foregroundColor(.secondary)
+                                    
+                                    Text(experiment.createdAt, style: .date)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
                 }
             }
-            .padding()
-            .navigationDestination(item: $selectedDay) { day in
-                dayDetailView(for: day)
+            .navigationTitle("Experiments")
+            .navigationDestination(item: $selectedExperiment) { experiment in
+                ExperimentDetailView(experiment: experiment)
+            }
+            .onAppear {
+                seedExperimentsIfNeeded()
             }
         }
     }
     
-    func dayDetailView(for day: Int) -> some View {
+    func dayDetailView(for record: DayRecord) -> some View {
+        DayDetailContent(record: record, updateRecord: updateRecord)
+    }
+}
+
+struct MoodSelectorView: View {
+    @Binding var selectedMood: Mood?
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            ForEach(Mood.allCases) { mood in
+                Button(action: {
+                    if selectedMood == mood {
+                        selectedMood = nil
+                    } else {
+                        selectedMood = mood
+                    }
+                }) {
+                    Text(mood.emoji)
+                        .font(.title)
+                        .frame(width: 50, height: 50)
+                        .background(
+                            Circle()
+                                .fill(selectedMood == mood ? Color.blue.opacity(0.2) : Color.clear)
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(selectedMood == mood ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+                        )
+                }
+            }
+        }
+    }
+}
+
+struct DayDetailContent: View {
+    let record: DayRecord
+    let updateRecord: (DayRecord) -> Void
+    
+    @State private var draftNote: String
+    @State private var draftMood: Mood?
+    @State private var showSavedToast = false
+    @FocusState private var noteFocused: Bool
+    @Environment(\.dismiss) private var dismiss
+    
+    init(record: DayRecord, updateRecord: @escaping (DayRecord) -> Void) {
+        self.record = record
+        self.updateRecord = updateRecord
+        _draftNote = State(initialValue: record.note)
+        _draftMood = State(initialValue: record.mood)
+    }
+    
+    var body: some View {
         VStack(spacing: 20) {
-            Text("Day \(day)")
+            Text("Day \(record.day)")
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
-            Text("Details for Day \(day)")
-                .foregroundColor(.secondary)
-            
             Text("You completed your experiment on this day! 🎉")
                 .font(.body)
+                .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-                .padding()
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("How did you feel today? (Optional)")
+                    .font(.headline)
+                
+                MoodSelectorView(selectedMood: $draftMood)
+            }
+            .padding(.horizontal)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Notes:")
+                    .font(.headline)
+                
+                TextEditor(text: $draftNote)
+                    .frame(minHeight: 150)
+                    .padding(8)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                    .focused($noteFocused)
+            }
+            .padding(.horizontal)
+            
+            Button("Save") {
+                var updated = record
+                updated.note = draftNote
+                updated.mood = draftMood
+                updateRecord(updated)
+                
+                // Dismiss keyboard
+                noteFocused = false
+                
+                // Show toast
+                showSavedToast = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    showSavedToast = false
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            
+            if showSavedToast {
+                Text("Saved ✓")
+                    .font(.caption)
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(8)
+            }
+            
+            Spacer()
         }
-        .navigationTitle("Day \(day)")
+        .padding()
+        .navigationTitle("Day \(record.day)")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct ExperimentDetailView: View {
+    let experiment: Experiment
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(experiment.title)
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Status:")
+                        .fontWeight(.semibold)
+                    Text(experiment.status.rawValue.capitalized)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text("Created:")
+                        .fontWeight(.semibold)
+                    Text(experiment.createdAt, style: .date)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .font(.body)
+            
+            Text("Experiment details coming soon")
+                .foregroundColor(.secondary)
+                .italic()
+                .padding(.top, 20)
+            
+            Spacer()
+        }
+        .padding()
+        .navigationTitle(experiment.title)
         .navigationBarTitleDisplayMode(.inline)
     }
 }
