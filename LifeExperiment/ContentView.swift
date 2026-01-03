@@ -52,17 +52,33 @@ enum ExperimentStatus: String, Codable {
     case completed
 }
 
+struct DailyLog: Identifiable, Codable, Hashable {
+    let id: UUID
+    var date: Date
+    var note: String
+    var mood: Mood?
+    
+    init(id: UUID = UUID(), date: Date = Date(), note: String = "", mood: Mood? = nil) {
+        self.id = id
+        self.date = date
+        self.note = note
+        self.mood = mood
+    }
+}
+
 struct Experiment: Identifiable, Codable, Hashable {
     let id: UUID
     var title: String
     var status: ExperimentStatus
     var createdAt: Date
+    var logs: [DailyLog] = []
     
-    init(id: UUID = UUID(), title: String, status: ExperimentStatus, createdAt: Date) {
+    init(id: UUID = UUID(), title: String, status: ExperimentStatus, createdAt: Date, logs: [DailyLog] = []) {
         self.id = id
         self.title = title
         self.status = status
         self.createdAt = createdAt
+        self.logs = logs
     }
 }
 
@@ -131,6 +147,14 @@ struct ContentView: View {
                 return exp1.status == .active
             }
             return exp1.createdAt > exp2.createdAt
+        }
+    }
+    
+    func updateExperiment(_ updated: Experiment) {
+        var experiments = getExperiments()
+        if let index = experiments.firstIndex(where: { $0.id == updated.id }) {
+            experiments[index] = updated
+            setExperiments(experiments)
         }
     }
 
@@ -287,7 +311,7 @@ struct ContentView: View {
             }
             .navigationTitle("Experiments")
             .navigationDestination(item: $selectedExperiment) { experiment in
-                ExperimentDetailView(experiment: experiment)
+                ExperimentDetailView(experiment: experiment, onUpdate: updateExperiment)
             }
             .onAppear {
                 seedExperimentsIfNeeded()
@@ -416,40 +440,150 @@ struct DayDetailContent: View {
 
 struct ExperimentDetailView: View {
     let experiment: Experiment
+    let onUpdate: (Experiment) -> Void
+    
+    @State private var draftNote: String = ""
+    @State private var draftMood: Mood?
+    @State private var showSavedToast = false
+    @FocusState private var noteFocused: Bool
+    
+    init(experiment: Experiment, onUpdate: @escaping (Experiment) -> Void) {
+        self.experiment = experiment
+        self.onUpdate = onUpdate
+        
+        let today = Calendar.current.startOfDay(for: Date())
+        if let todayLog = experiment.logs.first(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
+            _draftNote = State(initialValue: todayLog.note)
+            _draftMood = State(initialValue: todayLog.mood)
+        }
+    }
+    
+    var isCompleted: Bool {
+        experiment.status == .completed
+    }
+    
+    var sortedLogs: [DailyLog] {
+        experiment.logs.sorted { $0.date > $1.date }
+    }
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text(experiment.title)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Status:")
-                        .fontWeight(.semibold)
-                    Text(experiment.status.rawValue.capitalized)
-                        .foregroundColor(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Today Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Today")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    if isCompleted {
+                        Text("This experiment is completed. Logging is disabled.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .italic()
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("How did you feel today?")
+                            .font(.headline)
+                        
+                        MoodSelectorView(selectedMood: $draftMood)
+                            .disabled(isCompleted)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Notes:")
+                            .font(.headline)
+                        
+                        TextEditor(text: $draftNote)
+                            .frame(minHeight: 120)
+                            .padding(8)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                            .focused($noteFocused)
+                            .disabled(isCompleted)
+                    }
+                    
+                    Button("Save") {
+                        saveTodayLog()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isCompleted)
+                    
+                    if showSavedToast {
+                        Text("Saved ✓")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.green.opacity(0.1))
+                            .cornerRadius(8)
+                    }
                 }
                 
-                HStack {
-                    Text("Created:")
-                        .fontWeight(.semibold)
-                    Text(experiment.createdAt, style: .date)
-                        .foregroundColor(.secondary)
+                Divider()
+                
+                // History Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("History")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    if sortedLogs.isEmpty {
+                        Text("No logs yet. Start logging today!")
+                            .foregroundColor(.secondary)
+                            .italic()
+                    } else {
+                        ForEach(sortedLogs) { log in
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(log.date, style: .date)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    
+                                    if let mood = log.mood {
+                                        Text(mood.emoji)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                
+                                if !log.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    Text(log.note)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(2)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
                 }
             }
-            .font(.body)
-            
-            Text("Experiment details coming soon")
-                .foregroundColor(.secondary)
-                .italic()
-                .padding(.top, 20)
-            
-            Spacer()
+            .padding()
         }
-        .padding()
         .navigationTitle(experiment.title)
         .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    func saveTodayLog() {
+        var updatedExperiment = experiment
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        if let index = updatedExperiment.logs.firstIndex(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
+            updatedExperiment.logs[index].note = draftNote
+            updatedExperiment.logs[index].mood = draftMood
+        } else {
+            let newLog = DailyLog(date: today, note: draftNote, mood: draftMood)
+            updatedExperiment.logs.append(newLog)
+        }
+        
+        onUpdate(updatedExperiment)
+        
+        noteFocused = false
+        showSavedToast = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            showSavedToast = false
+        }
     }
 }
 
