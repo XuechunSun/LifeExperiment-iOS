@@ -98,6 +98,7 @@ struct ContentView: View {
     // Navigation state
     @State private var selectedDay: DayRecord?
     @State private var selectedExperiment: Experiment?
+    @State private var showCreateExperimentSheet: Bool = false
 
     // MARK: - Persistence helpers
 
@@ -156,6 +157,12 @@ struct ContentView: View {
             experiments[index] = updated
             setExperiments(experiments)
         }
+    }
+    
+    func addExperiment(_ experiment: Experiment) {
+        var experiments = getExperiments()
+        experiments.append(experiment)
+        setExperiments(experiments)
     }
 
     var message: String {
@@ -313,6 +320,21 @@ struct ContentView: View {
             .navigationDestination(item: $selectedExperiment) { experiment in
                 ExperimentDetailView(experiment: experiment, onUpdate: updateExperiment)
             }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        showCreateExperimentSheet = true
+                    }) {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showCreateExperimentSheet) {
+                CreateExperimentView(onCreate: { experiment in
+                    addExperiment(experiment)
+                    showCreateExperimentSheet = false
+                })
+            }
             .onAppear {
                 seedExperimentsIfNeeded()
             }
@@ -321,6 +343,47 @@ struct ContentView: View {
     
     func dayDetailView(for record: DayRecord) -> some View {
         DayDetailContent(record: record, updateRecord: updateRecord)
+    }
+}
+
+struct CreateExperimentView: View {
+    let onCreate: (Experiment) -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var title: String = ""
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Experiment Title", text: $title)
+                } header: {
+                    Text("Title")
+                }
+            }
+            .navigationTitle("New Experiment")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") {
+                        let newExperiment = Experiment(
+                            title: title,
+                            status: .active,
+                            createdAt: Date()
+                        )
+                        onCreate(newExperiment)
+                        dismiss()
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
     }
 }
 
