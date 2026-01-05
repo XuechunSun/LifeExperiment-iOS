@@ -502,17 +502,20 @@ struct DayDetailContent: View {
 }
 
 struct ExperimentDetailView: View {
-    let experiment: Experiment
     let onUpdate: (Experiment) -> Void
     
+    @State private var localExperiment: Experiment
     @State private var draftNote: String = ""
     @State private var draftMood: Mood?
     @State private var showSavedToast = false
+    @State private var showCompleteConfirm = false
+    @State private var showReopenConfirm = false
+    @State private var showEmptyNoteAlert = false
     @FocusState private var noteFocused: Bool
     
     init(experiment: Experiment, onUpdate: @escaping (Experiment) -> Void) {
-        self.experiment = experiment
         self.onUpdate = onUpdate
+        _localExperiment = State(initialValue: experiment)
         
         let today = Calendar.current.startOfDay(for: Date())
         if let todayLog = experiment.logs.first(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
@@ -522,68 +525,84 @@ struct ExperimentDetailView: View {
     }
     
     var isCompleted: Bool {
-        experiment.status == .completed
+        localExperiment.status == .completed
     }
     
     var sortedLogs: [DailyLog] {
-        experiment.logs.sorted { $0.date > $1.date }
+        localExperiment.logs.sorted { $0.date > $1.date }
     }
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Today Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Today")
+                // Date Header
+                VStack(spacing: 8) {
+                    Text(Date(), style: .date)
                         .font(.title2)
                         .fontWeight(.bold)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     
                     if isCompleted {
-                        Text("This experiment is completed. Logging is disabled.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .italic()
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("How did you feel today?")
-                            .font(.headline)
-                        
-                        MoodSelectorView(selectedMood: $draftMood)
-                            .disabled(isCompleted)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Notes:")
-                            .font(.headline)
-                        
-                        TextEditor(text: $draftNote)
-                            .frame(minHeight: 120)
-                            .padding(8)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                            .focused($noteFocused)
-                            .disabled(isCompleted)
-                    }
-                    
-                    Button("Save") {
-                        saveTodayLog()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isCompleted)
-                    
-                    if showSavedToast {
-                        Text("Saved ✓")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.green.opacity(0.1))
-                            .cornerRadius(8)
+                        VStack(spacing: 4) {
+                            Text("This experiment is completed. Logging is disabled.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .italic()
+                            
+                            Text("Completed ✓")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
+                .padding(.bottom, 8)
                 
-                Divider()
+                
+                
+                // Today Section (only when active)
+                if !isCompleted {
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("How did you feel today?")
+                                .font(.headline)
+                            
+                            MoodSelectorView(selectedMood: $draftMood)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Notes:")
+                                .font(.headline)
+                            
+                            TextEditor(text: $draftNote)
+                                .frame(minHeight: 120)
+                                .padding(8)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                                .focused($noteFocused)
+                        }
+                        
+                        Button("Save") {
+                            if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                showEmptyNoteAlert = true
+                            } else {
+                                saveTodayLog()
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    
+                    Button("Complete Experiment") {
+                        showCompleteConfirm = true
+                    }
+                    .buttonStyle(.bordered)
+
+                    Divider()
+                }
+                
+                
                 
                 // History Section
                 VStack(alignment: .leading, spacing: 12) {
@@ -624,23 +643,76 @@ struct ExperimentDetailView: View {
             }
             .padding()
         }
-        .navigationTitle(experiment.title)
+        .overlay(alignment: .top) {
+            if showSavedToast {
+                Text("Saved ✓")
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.green)
+                    .cornerRadius(20)
+                    .shadow(radius: 4)
+                    .padding(.top, 8)
+            }
+        }
+        .navigationTitle(localExperiment.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if isCompleted {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Reopen") {
+                        showReopenConfirm = true
+                    }
+                }
+            }
+        }
+        .alert("Add a quick note?", isPresented: $showEmptyNoteAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("A short note helps you remember what happened today.")
+        }
+        .alert("Complete this experiment?", isPresented: $showCompleteConfirm) {
+            Button("Cancel", role: .cancel) { }
+            Button("Complete", role: .destructive) {
+                completeExperiment()
+            }
+        } message: {
+            Text("You won't be able to add new logs after completion.")
+        }
+        .alert("Reopen this experiment?", isPresented: $showReopenConfirm) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reopen") {
+                reopenExperiment()
+            }
+        } message: {
+            Text("You'll be able to add new logs again.")
+        }
+    }
+    
+    func completeExperiment() {
+        localExperiment.status = .completed
+        onUpdate(localExperiment)
+        noteFocused = false
+    }
+    
+    func reopenExperiment() {
+        localExperiment.status = .active
+        onUpdate(localExperiment)
     }
     
     func saveTodayLog() {
-        var updatedExperiment = experiment
         let today = Calendar.current.startOfDay(for: Date())
         
-        if let index = updatedExperiment.logs.firstIndex(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
-            updatedExperiment.logs[index].note = draftNote
-            updatedExperiment.logs[index].mood = draftMood
+        if let index = localExperiment.logs.firstIndex(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
+            localExperiment.logs[index].note = draftNote
+            localExperiment.logs[index].mood = draftMood
         } else {
             let newLog = DailyLog(date: today, note: draftNote, mood: draftMood)
-            updatedExperiment.logs.append(newLog)
+            localExperiment.logs.append(newLog)
         }
         
-        onUpdate(updatedExperiment)
+        onUpdate(localExperiment)
         
         noteFocused = false
         showSavedToast = true
