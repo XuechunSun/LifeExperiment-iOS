@@ -108,6 +108,7 @@ struct ContentView: View {
     @State private var selectedDay: DayRecord?
     @State private var selectedExperiment: Experiment?
     @State private var showCreateExperimentSheet: Bool = false
+    @State private var showSummary: Bool = false
 
     // MARK: - Persistence helpers
 
@@ -329,7 +330,18 @@ struct ContentView: View {
             .navigationDestination(item: $selectedExperiment) { experiment in
                 ExperimentDetailView(experiment: experiment, onUpdate: updateExperiment)
             }
+            .navigationDestination(isPresented: $showSummary) {
+                SummaryView(loadExperiments: getExperiments, onUpdate: updateExperiment)
+            }
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        showSummary = true
+                    }) {
+                        Image(systemName: "chart.bar")
+                    }
+                }
+                
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         showCreateExperimentSheet = true
@@ -520,6 +532,8 @@ struct ExperimentDetailView: View {
     @State private var showCompleteConfirm = false
     @State private var showReopenConfirm = false
     @State private var showEmptyNoteAlert = false
+    @State private var showMoodRequiredAlert = false
+    @State private var showBlankReviewToast = false
     @FocusState private var noteFocused: Bool
     
     // Review draft fields
@@ -608,6 +622,8 @@ struct ExperimentDetailView: View {
                         Button("Save") {
                             if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 showEmptyNoteAlert = true
+                            } else if draftMood == nil {
+                                showMoodRequiredAlert = true
                             } else {
                                 saveTodayLog()
                             }
@@ -658,7 +674,7 @@ struct ExperimentDetailView: View {
                             // Editable review
                             VStack(alignment: .leading, spacing: 12) {
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("What did I try?")
+                                    Text("What did I try? (Optional)")
                                         .font(.headline)
                                     TextEditor(text: $draftWhatDidITry)
                                         .frame(minHeight: 80)
@@ -668,7 +684,7 @@ struct ExperimentDetailView: View {
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("What happened?")
+                                    Text("What happened? (Optional)")
                                         .font(.headline)
                                     TextEditor(text: $draftWhatHappened)
                                         .frame(minHeight: 80)
@@ -678,7 +694,7 @@ struct ExperimentDetailView: View {
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("What will I do differently next time?")
+                                    Text("What will I do differently next time? (Optional)")
                                         .font(.headline)
                                     TextEditor(text: $draftWhatWillIDoDifferently)
                                         .frame(minHeight: 80)
@@ -748,6 +764,16 @@ struct ExperimentDetailView: View {
                     .cornerRadius(20)
                     .shadow(radius: 4)
                     .padding(.top, 8)
+            } else if showBlankReviewToast {
+                Text("Saved. Review left blank.")
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.orange)
+                    .cornerRadius(20)
+                    .shadow(radius: 4)
+                    .padding(.top, 8)
             }
         }
         .navigationTitle(localExperiment.title)
@@ -765,6 +791,11 @@ struct ExperimentDetailView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text("A short note helps you remember what happened today.")
+        }
+        .alert("Pick a mood?", isPresented: $showMoodRequiredAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("It takes one tap and helps you see patterns over time.")
         }
         .alert("Complete this experiment?", isPresented: $showCompleteConfirm) {
             Button("Cancel", role: .cancel) { }
@@ -813,6 +844,18 @@ struct ExperimentDetailView: View {
         )
         localExperiment.review = review
         onUpdate(localExperiment)
+        
+        // Check if all fields are blank
+        let allBlank = draftWhatDidITry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                       draftWhatHappened.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                       draftWhatWillIDoDifferently.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        
+        if allBlank {
+            showBlankReviewToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                showBlankReviewToast = false
+            }
+        }
     }
     
     func saveTodayLog() {
@@ -832,6 +875,163 @@ struct ExperimentDetailView: View {
         showSavedToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             showSavedToast = false
+        }
+    }
+}
+
+struct SummaryView: View {
+    let loadExperiments: () -> [Experiment]
+    let onUpdate: (Experiment) -> Void
+    
+    @State private var selectedExperiment: Experiment?
+    
+    var experiments: [Experiment] {
+        loadExperiments()
+    }
+    
+    var activeExperiments: [Experiment] {
+        experiments.filter { $0.status == .active }
+    }
+    
+    var completedExperiments: [Experiment] {
+        experiments.filter { $0.status == .completed }.sorted { $0.createdAt > $1.createdAt }
+    }
+    
+    var recentCompleted: [Experiment] {
+        Array(completedExperiments.prefix(3))
+    }
+    
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Stats Card
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Overview")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(completedExperiments.count)")
+                                .font(.title)
+                                .fontWeight(.bold)
+                            Text("Completed")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(activeExperiments.count)")
+                                .font(.title)
+                                .fontWeight(.bold)
+                            Text("Active")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                    }
+                }
+                
+                // Recent Completed
+                if !recentCompleted.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Recent Completed")
+                            .font(.headline)
+                        
+                        ForEach(recentCompleted) { experiment in
+                            Button(action: {
+                                selectedExperiment = experiment
+                            }) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(experiment.title)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.primary)
+                                        
+                                        Text(experiment.createdAt, style: .date)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
+                        }
+                    }
+                }
+                
+                // All Completed
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("All Completed")
+                        .font(.headline)
+                    
+                    if completedExperiments.isEmpty {
+                        Text("No completed experiments yet.")
+                            .foregroundColor(.secondary)
+                            .italic()
+                            .padding()
+                    } else {
+                        ForEach(completedExperiments) { experiment in
+                            Button(action: {
+                                selectedExperiment = experiment
+                            }) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(experiment.title)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.primary)
+                                        
+                                        HStack {
+                                            Text(experiment.createdAt, style: .date)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                            
+                                            if let review = experiment.review, review.locked {
+                                                Text("•")
+                                                    .foregroundColor(.secondary)
+                                                Text("Reviewed")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("Summary")
+        .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(item: $selectedExperiment) { experiment in
+            ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)
         }
     }
 }
