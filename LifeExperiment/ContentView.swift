@@ -66,19 +66,28 @@ struct DailyLog: Identifiable, Codable, Hashable {
     }
 }
 
+struct ExperimentReview: Codable, Hashable {
+    var whatDidITry: String
+    var whatHappened: String
+    var whatWillIDoDifferently: String
+    var locked: Bool
+}
+
 struct Experiment: Identifiable, Codable, Hashable {
     let id: UUID
     var title: String
     var status: ExperimentStatus
     var createdAt: Date
     var logs: [DailyLog] = []
+    var review: ExperimentReview?
     
-    init(id: UUID = UUID(), title: String, status: ExperimentStatus, createdAt: Date, logs: [DailyLog] = []) {
+    init(id: UUID = UUID(), title: String, status: ExperimentStatus, createdAt: Date, logs: [DailyLog] = [], review: ExperimentReview? = nil) {
         self.id = id
         self.title = title
         self.status = status
         self.createdAt = createdAt
         self.logs = logs
+        self.review = review
     }
 }
 
@@ -513,6 +522,11 @@ struct ExperimentDetailView: View {
     @State private var showEmptyNoteAlert = false
     @FocusState private var noteFocused: Bool
     
+    // Review draft fields
+    @State private var draftWhatDidITry: String = ""
+    @State private var draftWhatHappened: String = ""
+    @State private var draftWhatWillIDoDifferently: String = ""
+    
     init(experiment: Experiment, onUpdate: @escaping (Experiment) -> Void) {
         self.onUpdate = onUpdate
         _localExperiment = State(initialValue: experiment)
@@ -521,6 +535,13 @@ struct ExperimentDetailView: View {
         if let todayLog = experiment.logs.first(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
             _draftNote = State(initialValue: todayLog.note)
             _draftMood = State(initialValue: todayLog.mood)
+        }
+        
+        // Initialize review draft fields if review exists
+        if let review = experiment.review {
+            _draftWhatDidITry = State(initialValue: review.whatDidITry)
+            _draftWhatHappened = State(initialValue: review.whatHappened)
+            _draftWhatWillIDoDifferently = State(initialValue: review.whatWillIDoDifferently)
         }
     }
     
@@ -602,7 +623,80 @@ struct ExperimentDetailView: View {
                     Divider()
                 }
                 
-                
+                // Review Section (only for completed experiments)
+                if isCompleted {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Review")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        if let review = localExperiment.review, review.locked {
+                            // Read-only review
+                            VStack(alignment: .leading, spacing: 16) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("What did I try?")
+                                        .font(.headline)
+                                    Text(review.whatDidITry)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("What happened?")
+                                        .font(.headline)
+                                    Text(review.whatHappened)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("What will I do differently next time?")
+                                        .font(.headline)
+                                    Text(review.whatWillIDoDifferently)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        } else {
+                            // Editable review
+                            VStack(alignment: .leading, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("What did I try?")
+                                        .font(.headline)
+                                    TextEditor(text: $draftWhatDidITry)
+                                        .frame(minHeight: 80)
+                                        .padding(8)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("What happened?")
+                                        .font(.headline)
+                                    TextEditor(text: $draftWhatHappened)
+                                        .frame(minHeight: 80)
+                                        .padding(8)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("What will I do differently next time?")
+                                        .font(.headline)
+                                    TextEditor(text: $draftWhatWillIDoDifferently)
+                                        .frame(minHeight: 80)
+                                        .padding(8)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                }
+                                
+                                Button("Save Review") {
+                                    saveReview()
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
+                        }
+                    }
+                    
+                    Divider()
+                }
                 
                 // History Section
                 VStack(alignment: .leading, spacing: 12) {
@@ -698,6 +792,26 @@ struct ExperimentDetailView: View {
     
     func reopenExperiment() {
         localExperiment.status = .active
+        
+        // Unlock review if it exists and prefill draft fields
+        if let review = localExperiment.review {
+            localExperiment.review?.locked = false
+            draftWhatDidITry = review.whatDidITry
+            draftWhatHappened = review.whatHappened
+            draftWhatWillIDoDifferently = review.whatWillIDoDifferently
+        }
+        
+        onUpdate(localExperiment)
+    }
+    
+    func saveReview() {
+        let review = ExperimentReview(
+            whatDidITry: draftWhatDidITry,
+            whatHappened: draftWhatHappened,
+            whatWillIDoDifferently: draftWhatWillIDoDifferently,
+            locked: true
+        )
+        localExperiment.review = review
         onUpdate(localExperiment)
     }
     
