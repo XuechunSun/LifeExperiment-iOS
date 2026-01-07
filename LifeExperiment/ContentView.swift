@@ -78,16 +78,32 @@ struct Experiment: Identifiable, Codable, Hashable {
     var title: String
     var status: ExperimentStatus
     var createdAt: Date
+    var updatedAt: Date
     var logs: [DailyLog] = []
     var review: ExperimentReview?
+    var completedAt: Date?
     
-    init(id: UUID = UUID(), title: String, status: ExperimentStatus, createdAt: Date, logs: [DailyLog] = [], review: ExperimentReview? = nil) {
+    init(id: UUID = UUID(), title: String, status: ExperimentStatus, createdAt: Date, updatedAt: Date? = nil, logs: [DailyLog] = [], review: ExperimentReview? = nil, completedAt: Date? = nil) {
         self.id = id
         self.title = title
         self.status = status
         self.createdAt = createdAt
+        self.updatedAt = updatedAt ?? createdAt
         self.logs = logs
         self.review = review
+        self.completedAt = completedAt
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        status = try container.decode(ExperimentStatus.self, forKey: .status)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = (try? container.decode(Date.self, forKey: .updatedAt)) ?? createdAt
+        logs = (try? container.decode([DailyLog].self, forKey: .logs)) ?? []
+        review = try? container.decode(ExperimentReview.self, forKey: .review)
+        completedAt = try? container.decode(Date.self, forKey: .completedAt)
     }
 }
 
@@ -96,6 +112,20 @@ struct ContentView: View {
         case idle
         case logging
         case logged
+    }
+    
+    enum ActiveSheet: Identifiable {
+        case rename(Experiment)
+        case duplicate(Experiment)
+        
+        var id: String {
+            switch self {
+            case .rename(let exp):
+                return "rename-\(exp.id.uuidString)"
+            case .duplicate(let exp):
+                return "duplicate-\(exp.id.uuidString)"
+            }
+        }
     }
 
     // Persistent storage
@@ -109,6 +139,8 @@ struct ContentView: View {
     @State private var selectedExperiment: Experiment?
     @State private var showCreateExperimentSheet: Bool = false
     @State private var showSummary: Bool = false
+    @State private var experimentToDelete: Experiment?
+    @State private var activeSheet: ActiveSheet?
 
     // MARK: - Persistence helpers
 
@@ -142,10 +174,12 @@ struct ContentView: View {
     
     private func seedExperimentsIfNeeded() {
         if getExperiments().isEmpty {
+            let now = Date()
             let defaultExperiment = Experiment(
                 title: "My First Experiment",
                 status: .active,
-                createdAt: Date()
+                createdAt: now,
+                updatedAt: now
             )
             setExperiments([defaultExperiment])
         }
@@ -153,12 +187,7 @@ struct ContentView: View {
     
     private func sortedExperiments() -> [Experiment] {
         let experiments = getExperiments()
-        return experiments.sorted { exp1, exp2 in
-            if exp1.status != exp2.status {
-                return exp1.status == .active
-            }
-            return exp1.createdAt > exp2.createdAt
-        }
+        return experiments.filter { $0.status == .active }.sorted { $0.updatedAt > $1.updatedAt }
     }
     
     func updateExperiment(_ updated: Experiment) {
@@ -173,6 +202,36 @@ struct ContentView: View {
         var experiments = getExperiments()
         experiments.append(experiment)
         setExperiments(experiments)
+    }
+    
+    func deleteExperiment(id: UUID) {
+        var experiments = getExperiments()
+        experiments.removeAll { $0.id == id }
+        setExperiments(experiments)
+    }
+    
+    func renameExperiment(id: UUID, newTitle: String) {
+        var experiments = getExperiments()
+        if let index = experiments.firstIndex(where: { $0.id == id }) {
+            experiments[index].title = newTitle
+            experiments[index].updatedAt = Date()
+            setExperiments(experiments)
+        }
+    }
+    
+    func duplicateExperiment(_ experiment: Experiment) {
+        let now = Date()
+        let duplicate = Experiment(
+            id: UUID(),
+            title: "\(experiment.title) (Copy)",
+            status: .active,
+            createdAt: now,
+            updatedAt: now,
+            logs: experiment.logs,
+            review: nil,
+            completedAt: nil
+        )
+        activeSheet = .duplicate(duplicate)
     }
 
     var message: String {
@@ -252,7 +311,7 @@ struct ContentView: View {
     }
 
     var idleSection: some View {
-        Button("Log Today") {
+            Button("Log Today") {
             setStatus(.logging)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
@@ -308,25 +367,37 @@ struct ContentView: View {
                                     .font(.headline)
                                     .foregroundColor(.primary)
                                 
-                                HStack {
-                                    Text(experiment.status.rawValue.capitalized)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    
-                                    Text("•")
-                                        .foregroundColor(.secondary)
-                                    
-                                    Text(experiment.createdAt, style: .date)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
+                                Text("Updated \(experiment.updatedAt, style: .date)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
                             .padding(.vertical, 4)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                experimentToDelete = experiment
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            
+                            Button {
+                                activeSheet = .rename(experiment)
+                            } label: {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            .tint(.orange)
+                            
+                            Button {
+                                duplicateExperiment(experiment)
+                            } label: {
+                                Label("Duplicate", systemImage: "doc.on.doc")
+                            }
+                            .tint(.blue)
                         }
                     }
                 }
             }
-            .navigationTitle("Experiments")
+            .navigationTitle("Active Experiments")
             .navigationDestination(item: $selectedExperiment) { experiment in
                 ExperimentDetailView(experiment: experiment, onUpdate: updateExperiment)
             }
@@ -356,8 +427,35 @@ struct ContentView: View {
                     showCreateExperimentSheet = false
                 })
             }
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .rename(let experiment):
+                    RenameExperimentView(currentTitle: experiment.title, onRename: { newTitle in
+                        renameExperiment(id: experiment.id, newTitle: newTitle)
+                        activeSheet = nil
+                    })
+                case .duplicate(let duplicate):
+                    RenameExperimentView(currentTitle: duplicate.title, onRename: { newTitle in
+                        var finalDuplicate = duplicate
+                        finalDuplicate.title = newTitle
+                        addExperiment(finalDuplicate)
+                        activeSheet = nil
+                    })
+                }
+            }
             .onAppear {
                 seedExperimentsIfNeeded()
+            }
+            .alert("Delete this experiment?", isPresented: .constant(experimentToDelete != nil), presenting: experimentToDelete) { experiment in
+                Button("Cancel", role: .cancel) {
+                    experimentToDelete = nil
+                }
+                Button("Delete", role: .destructive) {
+                    deleteExperiment(id: experiment.id)
+                    experimentToDelete = nil
+                }
+            } message: { experiment in
+                Text("All logs and data for \"\(experiment.title)\" will be deleted. This cannot be undone.")
             }
         }
     }
@@ -393,12 +491,57 @@ struct CreateExperimentView: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
+                        let now = Date()
                         let newExperiment = Experiment(
                             title: title,
                             status: .active,
-                            createdAt: Date()
+                            createdAt: now,
+                            updatedAt: now
                         )
                         onCreate(newExperiment)
+                        dismiss()
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+}
+
+struct RenameExperimentView: View {
+    let currentTitle: String
+    let onRename: (String) -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var title: String
+    
+    init(currentTitle: String, onRename: @escaping (String) -> Void) {
+        self.currentTitle = currentTitle
+        self.onRename = onRename
+        _title = State(initialValue: currentTitle)
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Experiment Title", text: $title)
+                } header: {
+                    Text("Title")
+                }
+            }
+            .navigationTitle("Rename Experiment")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onRename(title)
                         dismiss()
                     }
                     .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -584,6 +727,12 @@ struct ExperimentDetailView: View {
                                 .foregroundColor(.secondary)
                                 .italic()
                             
+                            if let completedAt = localExperiment.completedAt {
+                                Text("Completed on \(completedAt, style: .date)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
                             Text("Completed ✓")
                                 .font(.caption)
                                 .foregroundColor(.green)
@@ -593,7 +742,23 @@ struct ExperimentDetailView: View {
                 }
                 .padding(.bottom, 8)
                 
-                
+                // Experiment Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Created: \(localExperiment.createdAt, style: .date)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if let completedAt = localExperiment.completedAt {
+                        Text("Completed: \(completedAt, style: .date)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Text("Updated: \(localExperiment.updatedAt, style: .date)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
                 
                 // Today Section (only when active)
                 if !isCompleted {
@@ -816,13 +981,18 @@ struct ExperimentDetailView: View {
     }
     
     func completeExperiment() {
+        let now = Date()
         localExperiment.status = .completed
+        localExperiment.completedAt = now
+        localExperiment.updatedAt = now
         onUpdate(localExperiment)
         noteFocused = false
     }
     
     func reopenExperiment() {
         localExperiment.status = .active
+        localExperiment.completedAt = nil
+        localExperiment.updatedAt = Date()
         
         // Unlock review if it exists and prefill draft fields
         if let review = localExperiment.review {
@@ -843,6 +1013,7 @@ struct ExperimentDetailView: View {
             locked: true
         )
         localExperiment.review = review
+        localExperiment.updatedAt = Date()
         onUpdate(localExperiment)
         
         // Check if all fields are blank
@@ -869,6 +1040,7 @@ struct ExperimentDetailView: View {
             localExperiment.logs.append(newLog)
         }
         
+        localExperiment.updatedAt = Date()
         onUpdate(localExperiment)
         
         noteFocused = false
@@ -889,12 +1061,12 @@ struct SummaryView: View {
         loadExperiments()
     }
     
-    var activeExperiments: [Experiment] {
-        experiments.filter { $0.status == .active }
-    }
-    
     var completedExperiments: [Experiment] {
-        experiments.filter { $0.status == .completed }.sorted { $0.createdAt > $1.createdAt }
+        experiments.filter { $0.status == .completed }.sorted { exp1, exp2 in
+            let date1 = exp1.completedAt ?? exp1.updatedAt
+            let date2 = exp2.completedAt ?? exp2.updatedAt
+            return date1 > date2
+        }
     }
     
     var recentCompleted: [Experiment] {
@@ -925,7 +1097,7 @@ struct SummaryView: View {
                         .cornerRadius(12)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(activeExperiments.count)")
+                            Text("\(experiments.filter { $0.status == .active }.count)")
                                 .font(.title)
                                 .fontWeight(.bold)
                             Text("Active")
@@ -956,9 +1128,15 @@ struct SummaryView: View {
                                             .fontWeight(.medium)
                                             .foregroundColor(.primary)
                                         
-                                        Text(experiment.createdAt, style: .date)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                        if let completedAt = experiment.completedAt {
+                                            Text("Completed \(completedAt, style: .date)")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        } else {
+                                            Text("Completed")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
                                     }
                                     
                                     Spacer()
@@ -998,9 +1176,15 @@ struct SummaryView: View {
                                             .foregroundColor(.primary)
                                         
                                         HStack {
-                                            Text(experiment.createdAt, style: .date)
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
+                                            if let completedAt = experiment.completedAt {
+                                                Text("Completed \(completedAt, style: .date)")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            } else {
+                                                Text("Completed")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
                                             
                                             if let review = experiment.review, review.locked {
                                                 Text("•")
