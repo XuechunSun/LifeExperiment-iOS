@@ -1,0 +1,176 @@
+
+{
+  "version": "v1",
+  "categories": [
+    {
+      "id": "life_reset",
+      "title": "Life Reset",
+      "subtitle": "For transitions, uncertainty, and fresh starts",
+      "subcategories": [
+        {
+          "id": "self_reflection",
+          "title": "Self Reflection",
+          "prompts": [
+            "Write down 3 things you no longer want to keep doing.",
+            "Track moments that give you energy for 7 days.",
+            "Answer: If money didn't matter, what would you try?"
+          ]
+        },
+        {
+          "id": "career_reorientation",
+          "title": "Career Reorientation",
+          "prompts": [
+            "List 3 projects that made you feel proud.",
+            "Talk to 3 people with different career paths.",
+            "Draft an 'ideal resume' (not for applying)."
+          ]
+        },
+        {
+          "id": "daily_structure",
+          "title": "Daily Structure",
+          "prompts": [
+            "Design your ideal low-stress day schedule.",
+            "Try a consistent wake-up time for 7 days.",
+            "Track how your time is spent for 3 days."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_list",
+      "title": "Life List",
+      "subtitle": "For exploration and meaningful experiences",
+      "subcategories": [
+        {
+          "id": "new_experiences",
+          "title": "New Experiences",
+          "prompts": [
+            "Try one activity you've never done before.",
+            "Visit a new place alone.",
+            "Plan one 'no-plan day'."
+          ]
+        },
+        {
+          "id": "creative_expression",
+          "title": "Creative Expression",
+          "prompts": [
+            "Write one idea every day for 7 days.",
+            "Create something small without perfection.",
+            "Express your current mood in any form."
+          ]
+        },
+        {
+          "id": "personal_milestones",
+          "title": "Personal Milestones",
+          "prompts": [
+            "Do one important thing you've been avoiding.",
+            "Write a letter to your future self.",
+            "Organize photos or notes from a life chapter."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "challenge_30",
+      "title": "30-Day Challenge",
+      "subtitle": "Small daily actions with a clear time box",
+      "subcategories": [
+        {
+          "id": "daily_discipline",
+          "title": "Daily Discipline",
+          "prompts": [
+            "Do one focused 10-minute session every day.",
+            "Write down one done-thing each day.",
+            "Walk 15 minutes without your phone."
+          ]
+        },
+        {
+          "id": "skill_sprint",
+          "title": "Skill Sprint",
+          "prompts": [
+            "Learn one small concept every day for 30 days.",
+            "Build a tiny project in 30 days.",
+            "Publish something small daily (text/photo/code)."
+          ]
+        },
+        {
+          "id": "habit_reset",
+          "title": "Habit Reset",
+          "prompts": [
+            "Sleep earlier for 30 days.",
+            "Reduce late-night scrolling for 30 days.",
+            "Remove one small bad habit for a month."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "well_being",
+      "title": "Well-being Habits",
+      "subtitle": "Energy, body, and recovery",
+      "subcategories": [
+        {
+          "id": "movement",
+          "title": "Movement",
+          "prompts": [
+            "Walk 20 minutes a day.",
+            "Try 3 different workouts this week.",
+            "Note how your body feels after movement."
+          ]
+        },
+        {
+          "id": "sleep_rest",
+          "title": "Sleep & Rest",
+          "prompts": [
+            "No screens 60 minutes before bed.",
+            "Create a 10-minute bedtime routine.",
+            "Track sleep quality for 7 days."
+          ]
+        },
+        {
+          "id": "nutrition_awareness",
+          "title": "Nutrition Awareness",
+          "prompts": [
+            "Drink enough water daily.",
+            "Note how food affects your mood for 7 days.",
+            "Reduce one sugary snack for a week."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emotional_care",
+      "title": "Emotional Care",
+      "subtitle": "Gentle support for your inner world",
+      "subcategories": [
+        {
+          "id": "emotional_awareness",
+          "title": "Emotional Awareness",
+          "prompts": [
+            "Describe your mood in one sentence daily.",
+            "Notice what triggers mood changes for 7 days.",
+            "Identify the best and hardest moment today."
+          ]
+        },
+        {
+          "id": "self_compassion",
+          "title": "Self Compassion",
+          "prompts": [
+            "Write one thing you did well today.",
+            "Say one non-judgmental sentence to yourself.",
+            "Plan one real rest moment today."
+          ]
+        },
+        {
+          "id": "mental_reset",
+          "title": "Mental Reset",
+          "prompts": [
+            "Do a 10-minute breathing practice.",
+            "Write down what's making you anxious.",
+            "Allow one day with zero achievement goals."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -6,6 +6,48 @@
 //
 
 import SwiftUI
+import UIKit
+
+// MARK: - Seed Catalog Models
+
+struct SeedCatalog: Codable {
+    let version: String
+    let categories: [SeedCategory]
+}
+
+struct SeedCategory: Identifiable, Codable {
+    let id: String
+    let title: String
+    let subtitle: String?
+    let subcategories: [SeedSubcategory]
+}
+
+struct SeedSubcategory: Identifiable, Codable {
+    let id: String
+    let title: String
+    let prompts: [String]
+}
+
+struct SeedCatalogLoader {
+    static func load() -> SeedCatalog? {
+        guard let url = Bundle.main.url(forResource: "experiment_seed", withExtension: "json") else {
+            print("⚠️ SeedCatalogLoader: experiment_seed.json not found in bundle")
+            return nil
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            let catalog = try JSONDecoder().decode(SeedCatalog.self, from: data)
+            print("✅ SeedCatalogLoader: Loaded catalog v\(catalog.version) with \(catalog.categories.count) categories")
+            return catalog
+        } catch {
+            print("⚠️ SeedCatalogLoader: Failed to decode experiment_seed.json - \(error)")
+            return nil
+        }
+    }
+}
+
+// MARK: - App Models
 
 enum Mood: String, CaseIterable, Identifiable, Codable, Hashable {
     case veryBad, bad, neutral, good, veryGood
@@ -76,6 +118,8 @@ struct ExperimentReview: Codable, Hashable {
 struct Experiment: Identifiable, Codable, Hashable {
     let id: UUID
     var title: String
+    var category: String?
+    var subcategory: String?
     var status: ExperimentStatus
     var createdAt: Date
     var updatedAt: Date
@@ -83,9 +127,11 @@ struct Experiment: Identifiable, Codable, Hashable {
     var review: ExperimentReview?
     var completedAt: Date?
     
-    init(id: UUID = UUID(), title: String, status: ExperimentStatus, createdAt: Date, updatedAt: Date? = nil, logs: [DailyLog] = [], review: ExperimentReview? = nil, completedAt: Date? = nil) {
+    init(id: UUID = UUID(), title: String, category: String? = nil, subcategory: String? = nil, status: ExperimentStatus, createdAt: Date, updatedAt: Date? = nil, logs: [DailyLog] = [], review: ExperimentReview? = nil, completedAt: Date? = nil) {
         self.id = id
         self.title = title
+        self.category = category
+        self.subcategory = subcategory
         self.status = status
         self.createdAt = createdAt
         self.updatedAt = updatedAt ?? createdAt
@@ -98,6 +144,8 @@ struct Experiment: Identifiable, Codable, Hashable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
+        category = try? container.decode(String.self, forKey: .category)
+        subcategory = try? container.decode(String.self, forKey: .subcategory)
         status = try container.decode(ExperimentStatus.self, forKey: .status)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = (try? container.decode(Date.self, forKey: .updatedAt)) ?? createdAt
@@ -141,6 +189,9 @@ struct ContentView: View {
     @State private var showSummary: Bool = false
     @State private var experimentToDelete: Experiment?
     @State private var activeSheet: ActiveSheet?
+    
+    // Seed catalog
+    @State private var seedCatalog: SeedCatalog?
 
     // MARK: - Persistence helpers
 
@@ -208,30 +259,6 @@ struct ContentView: View {
         var experiments = getExperiments()
         experiments.removeAll { $0.id == id }
         setExperiments(experiments)
-    }
-    
-    func renameExperiment(id: UUID, newTitle: String) {
-        var experiments = getExperiments()
-        if let index = experiments.firstIndex(where: { $0.id == id }) {
-            experiments[index].title = newTitle
-            experiments[index].updatedAt = Date()
-            setExperiments(experiments)
-        }
-    }
-    
-    func duplicateExperiment(_ experiment: Experiment) {
-        let now = Date()
-        let duplicate = Experiment(
-            id: UUID(),
-            title: "\(experiment.title) (Copy)",
-            status: .active,
-            createdAt: now,
-            updatedAt: now,
-            logs: experiment.logs,
-            review: nil,
-            completedAt: nil
-        )
-        activeSheet = .duplicate(duplicate)
     }
 
     var message: String {
@@ -388,12 +415,25 @@ struct ContentView: View {
                             .tint(.orange)
                             
                             Button {
-                                duplicateExperiment(experiment)
+                                activeSheet = .duplicate(experiment)
                             } label: {
                                 Label("Duplicate", systemImage: "doc.on.doc")
                             }
                             .tint(.blue)
                         }
+                    }
+                }
+                
+                // Debug: Seed catalog status
+                Section {
+                    if let catalog = seedCatalog {
+                        Text("Seed loaded: \(catalog.categories.count) categories")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Seed not loaded")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
@@ -422,29 +462,30 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showCreateExperimentSheet) {
-                CreateExperimentView(onCreate: { experiment in
+                ExperimentEditorView(seedCatalog: seedCatalog, mode: .create) { experiment in
                     addExperiment(experiment)
                     showCreateExperimentSheet = false
-                })
+                }
             }
             .sheet(item: $activeSheet) { sheet in
                 switch sheet {
                 case .rename(let experiment):
-                    RenameExperimentView(currentTitle: experiment.title, onRename: { newTitle in
-                        renameExperiment(id: experiment.id, newTitle: newTitle)
+                    ExperimentEditorView(seedCatalog: seedCatalog, mode: .rename(existing: experiment)) { updated in
+                        updateExperiment(updated)
                         activeSheet = nil
-                    })
-                case .duplicate(let duplicate):
-                    RenameExperimentView(currentTitle: duplicate.title, onRename: { newTitle in
-                        var finalDuplicate = duplicate
-                        finalDuplicate.title = newTitle
-                        addExperiment(finalDuplicate)
+                    }
+                case .duplicate(let experiment):
+                    ExperimentEditorView(seedCatalog: seedCatalog, mode: .duplicate(from: experiment)) { created in
+                        addExperiment(created)
                         activeSheet = nil
-                    })
+                    }
                 }
             }
             .onAppear {
                 seedExperimentsIfNeeded()
+                if seedCatalog == nil {
+                    seedCatalog = SeedCatalogLoader.load()
+                }
             }
             .alert("Delete this experiment?", isPresented: .constant(experimentToDelete != nil), presenting: experimentToDelete) { experiment in
                 Button("Cancel", role: .cancel) {
@@ -465,91 +506,578 @@ struct ContentView: View {
     }
 }
 
-struct CreateExperimentView: View {
-    let onCreate: (Experiment) -> Void
-    
-    @Environment(\.dismiss) private var dismiss
-    @State private var title: String = ""
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("Experiment Title", text: $title)
-                } header: {
-                    Text("Title")
-                }
-            }
-            .navigationTitle("New Experiment")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
-                        let now = Date()
-                        let newExperiment = Experiment(
-                            title: title,
-                            status: .active,
-                            createdAt: now,
-                            updatedAt: now
-                        )
-                        onCreate(newExperiment)
-                        dismiss()
-                    }
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
+// MARK: - Experiment Editor (Unified for Rename / Duplicate / Create)
+
+enum ExperimentEditorMode {
+    case create
+    case rename(existing: Experiment)
+    case duplicate(from: Experiment)
+
+    var navTitle: String {
+        switch self {
+        case .create: return "New Experiment"
+        case .rename: return "Edit Experiment"
+        case .duplicate: return "Duplicate Experiment"
+        }
+    }
+
+    var primaryButtonTitle: String {
+        switch self {
+        case .create: return "Create"
+        case .rename: return "Save"
+        case .duplicate: return "Create"
         }
     }
 }
 
-struct RenameExperimentView: View {
-    let currentTitle: String
-    let onRename: (String) -> Void
-    
+struct ExperimentEditorView: View {
+    let seedCatalog: SeedCatalog?
+    let mode: ExperimentEditorMode
+
+    /// called when user taps primary button
+    let onCommit: (Experiment) -> Void
+
     @Environment(\.dismiss) private var dismiss
-    @State private var title: String
-    
-    init(currentTitle: String, onRename: @escaping (String) -> Void) {
-        self.currentTitle = currentTitle
-        self.onRename = onRename
-        _title = State(initialValue: currentTitle)
+
+    // Draft state
+    @State private var title: String = ""
+
+    @State private var selectedSeedCategoryId: String?
+    @State private var selectedSeedSubcategoryId: String?
+
+    @State private var useCustomCategory: Bool = false
+    @State private var useCustomSubcategory: Bool = false
+
+    @State private var customCategoryText: String = ""
+    @State private var customSubcategoryText: String = ""
+
+    // Prompt revert state
+    @State private var baselineTitleForRevert: String = ""
+    @State private var hasBaselineTitle: Bool = false
+    @State private var showRevertTitle: Bool = false
+    @State private var isProgrammaticTitleChange: Bool = false
+
+    // For rename "no changes -> disable"
+    private let originalExperiment: Experiment?
+
+    init(seedCatalog: SeedCatalog?, mode: ExperimentEditorMode, onCommit: @escaping (Experiment) -> Void) {
+        self.seedCatalog = seedCatalog
+        self.mode = mode
+        self.onCommit = onCommit
+
+        switch mode {
+        case .rename(let existing):
+            self.originalExperiment = existing
+        case .duplicate(let from):
+            self.originalExperiment = from
+        case .create:
+            self.originalExperiment = nil
+        }
+    }
+
+    private func trimmed(_ s: String) -> String {
+        s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func trimmedOrNil(_ s: String) -> String? {
+        let t = trimmed(s)
+        return t.isEmpty ? nil : t
+    }
+
+    private var selectedSeedCategory: SeedCategory? {
+        guard let catalog = seedCatalog, let id = selectedSeedCategoryId else { return nil }
+        return catalog.categories.first { $0.id == id }
+    }
+
+    private var draftCategory: String? {
+        if useCustomCategory {
+            return trimmedOrNil(customCategoryText)
+        } else if let c = selectedSeedCategory {
+            return c.title
+        }
+        return nil
+    }
+
+    private var draftSubcategory: String? {
+        // If category is custom, we only allow custom subcategory
+        if useCustomCategory {
+            return trimmedOrNil(customSubcategoryText)
+        }
+
+        if useCustomSubcategory {
+            return trimmedOrNil(customSubcategoryText)
+        }
+
+        if let category = selectedSeedCategory,
+           let subId = selectedSeedSubcategoryId,
+           let sub = category.subcategories.first(where: { $0.id == subId }) {
+            return sub.title
+        }
+
+        return nil
+    }
+
+    private var categoryDisplayText: String {
+        if useCustomCategory {
+            return "Custom"
+        }
+        if let c = selectedSeedCategory { return c.title }
+        return "Optional"
+    }
+
+    private var subcategoryDisplayText: String {
+        if useCustomSubcategory || useCustomCategory {
+            return "Custom"
+        }
+
+        if let category = selectedSeedCategory,
+           let subId = selectedSeedSubcategoryId,
+           let sub = category.subcategories.first(where: { $0.id == subId }) {
+            return sub.title
+        }
+        return "Optional"
+    }
+
+    private var canPickSubcategoryFromSeed: Bool {
+        // only when a seed category is selected and we are not in custom category
+        return !useCustomCategory && selectedSeedCategoryId != nil
     }
     
+    private var hasCategorySelected: Bool {
+        return useCustomCategory || selectedSeedCategoryId != nil
+    }
+
+    private var availablePrompts: [String] {
+        // Only show prompts in create or duplicate mode
+        switch mode {
+        case .rename:
+            return []
+        case .create, .duplicate:
+            break
+        }
+        
+        // Only show prompts for seed subcategories (not custom)
+        guard !useCustomCategory,
+              !useCustomSubcategory,
+              let category = selectedSeedCategory,
+              let subId = selectedSeedSubcategoryId,
+              let subcategory = category.subcategories.first(where: { $0.id == subId }),
+              !subcategory.prompts.isEmpty else {
+            return []
+        }
+        
+        // Return at most 3 prompts
+        return Array(subcategory.prompts.prefix(3))
+    }
+
+    private var isPrimaryDisabled: Bool {
+        let t = trimmed(title)
+        if t.isEmpty { return true }
+
+        // rename mode: disable if no changes
+        if case .rename = mode, let original = originalExperiment {
+            let sameTitle = trimmed(original.title) == t
+            let sameCategory = (original.category ?? "") == (draftCategory ?? "")
+            let sameSub = (original.subcategory ?? "") == (draftSubcategory ?? "")
+            return sameTitle && sameCategory && sameSub
+        }
+
+        return false
+    }
+
+    // MARK: - UI building blocks (Card style)
+
+    private func cardField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+
+            content()
+        }
+    }
+
+    private func cardBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+    }
+
+    private func customInputBlock(hint: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            Text(hint)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            TextField(placeholder, text: text)
+                .textFieldStyle(.plain)
+        }
+        .padding(.top, 8)
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Experiment Title", text: $title)
-                } header: {
-                    Text("Title")
+            VStack(alignment: .leading, spacing: 16) {
+
+                // Title
+                cardField(label: "Title") {
+                    cardBackground {
+                        TextField("Experiment Title", text: $title)
+                            .textFieldStyle(.plain)
+                    }
+                }
+
+                // Suggested Prompts
+                if !availablePrompts.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Suggested prompts for title")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .textCase(.uppercase)
+                            
+                            Spacer()
+                            
+                            if showRevertTitle {
+                                Button(action: {
+                                    isProgrammaticTitleChange = true
+                                    title = baselineTitleForRevert
+                                    showRevertTitle = false
+                                    hasBaselineTitle = false
+                                    baselineTitleForRevert = ""
+                                    DispatchQueue.main.async {
+                                        isProgrammaticTitleChange = false
+                                    }
+                                }) {
+                                    Label("Revert", systemImage: "arrow.uturn.backward")
+                                        .font(.caption)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Color(.systemGray5))
+                                        .clipShape(Capsule())
+                                }
+                            }
+                        }
+                        
+                        cardBackground {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
+                                ForEach(availablePrompts, id: \.self) { prompt in
+                                    Button(action: {
+                                        // Light haptic feedback
+                                        let generator = UIImpactFeedbackGenerator(style: .light)
+                                        generator.impactOccurred()
+                                        
+                                        // Capture baseline only on first prompt tap
+                                        if !hasBaselineTitle {
+                                            baselineTitleForRevert = title
+                                            hasBaselineTitle = true
+                                        }
+                                        
+                                        isProgrammaticTitleChange = true
+                                        title = prompt
+                                        showRevertTitle = true
+                                        DispatchQueue.main.async {
+                                            isProgrammaticTitleChange = false
+                                        }
+                                    }) {
+                                        Text(prompt)
+                                            .font(.subheadline)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(Color.blue.opacity(0.1))
+                                            .foregroundColor(.blue)
+                                            .clipShape(Capsule())
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Category
+                cardField(label: "Category (Optional)") {
+                    cardBackground {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Menu {
+                                Button("None") {
+                                    useCustomCategory = false
+                                    selectedSeedCategoryId = nil
+
+                                    // reset subcategory too
+                                    selectedSeedSubcategoryId = nil
+                                    useCustomSubcategory = false
+                                    customSubcategoryText = ""
+                                    customCategoryText = ""
+                                }
+
+                                if let catalog = seedCatalog {
+                                    ForEach(catalog.categories) { c in
+                                        Button(c.title) {
+                                            useCustomCategory = false
+                                            selectedSeedCategoryId = c.id
+                                            customCategoryText = ""
+
+                                            // switching category clears subcategory
+                                            selectedSeedSubcategoryId = nil
+                                            useCustomSubcategory = false
+                                            customSubcategoryText = ""
+                                        }
+                                    }
+                                }
+
+                                Button("Custom...") {
+                                    useCustomCategory = true
+                                    selectedSeedCategoryId = nil
+
+                                    // custom category implies custom subcategory (optional)
+                                    selectedSeedSubcategoryId = nil
+                                    useCustomSubcategory = true
+                                    customSubcategoryText = ""
+                                }
+                            } label: {
+                                HStack {
+                                    Text(categoryDisplayText)
+                                        .foregroundColor(categoryDisplayText == "Optional" ? .secondary : .primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+
+                            if useCustomCategory {
+                                customInputBlock(
+                                    hint: "Please enter a custom category below",
+                                    placeholder: "Custom Category",
+                                    text: $customCategoryText
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Subcategory
+                cardField(label: "Subcategory (Optional)") {
+                    cardBackground {
+                        if canPickSubcategoryFromSeed, let category = selectedSeedCategory {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Menu {
+                                    Button("None") {
+                                        useCustomSubcategory = false
+                                        selectedSeedSubcategoryId = nil
+                                        customSubcategoryText = ""
+                                    }
+
+                                    ForEach(category.subcategories) { s in
+                                        Button(s.title) {
+                                            useCustomSubcategory = false
+                                            selectedSeedSubcategoryId = s.id
+                                            customSubcategoryText = ""
+                                        }
+                                    }
+
+                                    Button("Custom...") {
+                                        useCustomSubcategory = true
+                                        selectedSeedSubcategoryId = nil
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(subcategoryDisplayText)
+                                            .foregroundColor(subcategoryDisplayText == "Optional" ? .secondary : .primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+
+                                if useCustomSubcategory {
+                                    customInputBlock(
+                                        hint: "Please enter a custom subcategory below",
+                                        placeholder: "Custom Subcategory",
+                                        text: $customSubcategoryText
+                                    )
+                                }
+                            }
+                        } else {
+                            // No seed category selected OR category is custom
+                            if hasCategorySelected {
+                                // Custom category is selected - show menu-like row with hint + TextField
+                                VStack(alignment: .leading, spacing: 0) {
+                                    HStack {
+                                        Text("Custom")
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    customInputBlock(
+                                        hint: "Please enter a custom subcategory below",
+                                        placeholder: "Custom Subcategory",
+                                        text: $customSubcategoryText
+                                    )
+                                }
+                            } else {
+                                // No category selected at all - show disabled row with chevron
+                                HStack {
+                                    Text("Select a category first")
+                                        .foregroundColor(.secondary)
+                                        .italic()
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .font(.caption)
+                                        .opacity(0.0)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer()
+            }
+            .padding()
+            .onChange(of: title) { _ in
+                if !isProgrammaticTitleChange {
+                    showRevertTitle = false
+                    hasBaselineTitle = false
+                    baselineTitleForRevert = ""
                 }
             }
-            .navigationTitle("Rename Experiment")
+            .navigationTitle(mode.navTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        onRename(title)
+                    Button(mode.primaryButtonTitle) {
+                        let now = Date()
+                        let finalTitle = trimmed(title)
+
+                        switch mode {
+                        case .create:
+                            let exp = Experiment(
+                                title: finalTitle,
+                                category: draftCategory,
+                                subcategory: draftSubcategory,
+                                status: .active,
+                                createdAt: now,
+                                updatedAt: now
+                            )
+                            onCommit(exp)
+
+                        case .rename(let existing):
+                            var updated = existing
+                            updated.title = finalTitle
+                            updated.category = draftCategory
+                            updated.subcategory = draftSubcategory
+                            updated.updatedAt = now
+                            onCommit(updated)
+
+                        case .duplicate(let from):
+                            // Create a NEW experiment with a new id + createdAt
+                            let exp = Experiment(
+                                id: UUID(),
+                                title: finalTitle,
+                                category: draftCategory,
+                                subcategory: draftSubcategory,
+                                status: .active,
+                                createdAt: now,
+                                updatedAt: now,
+                                logs: from.logs,
+                                review: nil,
+                                completedAt: nil
+                            )
+                            onCommit(exp)
+                        }
+
                         dismiss()
                     }
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(isPrimaryDisabled)
+                }
+            }
+            .onAppear {
+                // Prefill from mode
+                switch mode {
+                case .create:
+                    // leave empty
+                    break
+
+                case .rename(let existing):
+                    prefill(from: existing)
+
+                case .duplicate(let from):
+                    // Suggest a default title, but allow user to edit
+                    // Prevent duplicate "(Copy)" suffix
+                    if from.title.hasSuffix("(Copy)") {
+                        title = from.title
+                    } else {
+                        title = "\(from.title) (Copy)"
+                    }
+                    prefillCategorySubcategory(from: from)
                 }
             }
         }
     }
+
+    // MARK: - Prefill helpers
+
+    private func prefill(from exp: Experiment) {
+        title = exp.title
+        prefillCategorySubcategory(from: exp)
+    }
+
+    private func prefillCategorySubcategory(from exp: Experiment) {
+        // Try match seed by title; if not found, fall back to custom
+        let cat = exp.category
+        let sub = exp.subcategory
+
+        guard let catalog = seedCatalog, let cat, !cat.isEmpty else {
+            // no category
+            useCustomCategory = false
+            selectedSeedCategoryId = nil
+            useCustomSubcategory = false
+            selectedSeedSubcategoryId = nil
+            customCategoryText = ""
+            customSubcategoryText = sub ?? ""
+            return
+        }
+
+        if let seedCat = catalog.categories.first(where: { $0.title == cat }) {
+            useCustomCategory = false
+            selectedSeedCategoryId = seedCat.id
+            customCategoryText = ""
+
+            if let sub, !sub.isEmpty,
+               let seedSub = seedCat.subcategories.first(where: { $0.title == sub }) {
+                useCustomSubcategory = false
+                selectedSeedSubcategoryId = seedSub.id
+                customSubcategoryText = ""
+            } else {
+                // subcategory exists but not match -> treat as custom
+                useCustomSubcategory = true
+                selectedSeedSubcategoryId = nil
+                customSubcategoryText = sub ?? ""
+            }
+        } else {
+            // category not in seed -> custom category
+            useCustomCategory = true
+            selectedSeedCategoryId = nil
+            customCategoryText = cat
+
+            // when custom category, subcategory is custom (optional)
+            useCustomSubcategory = true
+            selectedSeedSubcategoryId = nil
+            customSubcategoryText = sub ?? ""
+        }
+    }
 }
+
 
 struct MoodSelectorView: View {
     @Binding var selectedMood: Mood?
@@ -713,13 +1241,14 @@ struct ExperimentDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Date Header
-                VStack(spacing: 8) {
-                    Text(Date(), style: .date)
+                // Header
+                VStack(alignment: .center, spacing: 12) {
+                    // Title
+                    Text(localExperiment.title)
                         .font(.title2)
                         .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .center)
                     
+                    // Completed banner
                     if isCompleted {
                         VStack(spacing: 4) {
                             Text("This experiment is completed. Logging is disabled.")
@@ -737,28 +1266,42 @@ struct ExperimentDetailView: View {
                                 .font(.caption)
                                 .foregroundColor(.green)
                         }
-                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
-                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity)
                 
-                // Experiment Info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Created: \(localExperiment.createdAt, style: .date)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    if let completedAt = localExperiment.completedAt {
-                        Text("Completed: \(completedAt, style: .date)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 8) {
+                    // Category tags
+                    if localExperiment.category != nil || localExperiment.subcategory != nil {
+                        HStack(spacing: 8) {
+                            if let category = localExperiment.category {
+                                Text(category)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(Color(.systemGray6))
+                                    .clipShape(Capsule())
+                            }
+                            
+                            if let subcategory = localExperiment.subcategory {
+                                Text(subcategory)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(Color(.systemGray6))
+                                    .clipShape(Capsule())
+                            }
+                        }
                     }
                     
-                    Text("Updated: \(localExperiment.updatedAt, style: .date)")
+                    // Created date
+                    Text("Created \(localExperiment.createdAt, style: .date)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
                 // Today Section (only when active)
                 if !isCompleted {
@@ -941,7 +1484,6 @@ struct ExperimentDetailView: View {
                     .padding(.top, 8)
             }
         }
-        .navigationTitle(localExperiment.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isCompleted {
