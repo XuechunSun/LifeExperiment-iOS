@@ -442,7 +442,7 @@ struct ContentView: View {
                 ExperimentDetailView(experiment: experiment, onUpdate: updateExperiment)
             }
             .navigationDestination(isPresented: $showSummary) {
-                SummaryView(loadExperiments: getExperiments, onUpdate: updateExperiment)
+                SummaryView(loadExperiments: getExperiments, onUpdate: updateExperiment, seedCatalog: seedCatalog)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -1593,160 +1593,449 @@ struct ExperimentDetailView: View {
     }
 }
 
+// MARK: - Summary View (Week 4 Structure)
+
 struct SummaryView: View {
     let loadExperiments: () -> [Experiment]
     let onUpdate: (Experiment) -> Void
+    let seedCatalog: SeedCatalog?
     
-    @State private var selectedExperiment: Experiment?
+    @State private var showFullCalendar: Bool = false
+    @State private var selectedDay: Date?
+    @State private var showCreateStorageBox: Bool = false
     
     var experiments: [Experiment] {
         loadExperiments()
     }
     
-    var completedExperiments: [Experiment] {
-        experiments.filter { $0.status == .completed }.sorted { exp1, exp2 in
-            let date1 = exp1.completedAt ?? exp1.updatedAt
-            let date2 = exp2.completedAt ?? exp2.updatedAt
-            return date1 > date2
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Module 1: Calendar Footprint
+                CalendarFootprintView(experiments: experiments, selectedDay: $selectedDay)
+                
+                Divider()
+                
+                // Module 2: Storage Boxes by Category
+                StorageBoxesView(experiments: experiments, seedCatalog: seedCatalog, onUpdate: onUpdate, showCreateStorageBox: $showCreateStorageBox)
+            }
+            .padding()
+        }
+        .navigationTitle("Summary")
+        .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(isPresented: $showFullCalendar) {
+            FullCalendarView()
+        }
+        .navigationDestination(item: $selectedDay) { day in
+            DayDetailView(day: day, experiments: experiments, onUpdate: onUpdate)
+        }
+        .navigationDestination(isPresented: $showCreateStorageBox) {
+            CreateStorageBoxView()
+        }
+    }
+}
+
+// MARK: - Calendar Footprint Module
+
+struct CalendarFootprintView: View {
+    let experiments: [Experiment]
+    @Binding var selectedDay: Date?
+    @State private var showFullCalendar: Bool = false
+    @State private var weekOffset: Int = 0
+    
+    // Find the earliest and latest activity dates across all experiments
+    private var activityDateRange: (earliest: Date, latest: Date) {
+        var minDate: Date?
+        var maxDate: Date?
+        
+        for experiment in experiments {
+            // Check createdAt
+            if minDate == nil || experiment.createdAt < minDate! {
+                minDate = experiment.createdAt
+            }
+            if maxDate == nil || experiment.createdAt > maxDate! {
+                maxDate = experiment.createdAt
+            }
+            
+            // Check log dates
+            for log in experiment.logs {
+                if minDate == nil || log.date < minDate! {
+                    minDate = log.date
+                }
+                if maxDate == nil || log.date > maxDate! {
+                    maxDate = log.date
+                }
+            }
+            
+            // Check completedAt
+            if let completedAt = experiment.completedAt {
+                if minDate == nil || completedAt < minDate! {
+                    minDate = completedAt
+                }
+                if maxDate == nil || completedAt > maxDate! {
+                    maxDate = completedAt
+                }
+            }
+            
+            // Check updatedAt
+            if minDate == nil || experiment.updatedAt < minDate! {
+                minDate = experiment.updatedAt
+            }
+            if maxDate == nil || experiment.updatedAt > maxDate! {
+                maxDate = experiment.updatedAt
+            }
+        }
+        
+        let today = Date()
+        return (earliest: minDate ?? today, latest: maxDate ?? today)
+    }
+    
+    // Find the most recent activity date across all experiments (for reference)
+    private var referenceDate: Date {
+        activityDateRange.latest
+    }
+    
+    // Calculate the Monday of the week for a given date
+    private func monday(for date: Date) -> Date {
+        let calendar = Calendar.current
+        let dateStart = calendar.startOfDay(for: date)
+        let weekday = calendar.component(.weekday, from: dateStart)  // 1=Sun, 2=Mon, ..., 7=Sat
+        let offsetToMonday = (weekday + 5) % 7  // Mon->0, Tue->1, ..., Sun->6
+        return calendar.date(byAdding: .day, value: -offsetToMonday, to: dateStart)!
+    }
+    
+    // Calculate weeks between two Mondays
+    private func weeksBetween(from: Date, to: Date) -> Int {
+        let calendar = Calendar.current
+        return calendar.dateComponents([.weekOfYear], from: from, to: to).weekOfYear ?? 0
+    }
+    
+    // Week bounds
+    private var weekBounds: (min: Int, max: Int) {
+        let calendar = Calendar.current
+        let referenceMonday = monday(for: referenceDate)
+        let earliestMonday = monday(for: activityDateRange.earliest)
+        let today = Date()
+        let latestActivityMonday = monday(for: activityDateRange.latest)
+        let todayMonday = monday(for: today)
+        
+        // Do not allow beyond today's week
+        let latestMonday = latestActivityMonday < todayMonday ? latestActivityMonday : todayMonday
+        
+        let minWeekOffset = weeksBetween(from: referenceMonday, to: earliestMonday)
+        let maxWeekOffset = weeksBetween(from: referenceMonday, to: latestMonday)
+        
+        return (min: minWeekOffset, max: maxWeekOffset)
+    }
+    
+    // Get the displayed week based on reference date and offset
+    private var displayedWeekStart: Date {
+        let calendar = Calendar.current
+        let baseMonday = monday(for: referenceDate)
+        return calendar.date(byAdding: .weekOfYear, value: weekOffset, to: baseMonday)!
+    }
+    
+    private var currentWeekDays: [Date] {
+        let calendar = Calendar.current
+        return (0..<7).map { offset in
+            calendar.date(byAdding: .day, value: offset, to: displayedWeekStart)!
         }
     }
     
-    var recentCompleted: [Experiment] {
-        Array(completedExperiments.prefix(3))
+    private var weekHeaderText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return "Week of \(formatter.string(from: displayedWeekStart))"
+    }
+    
+    private func jumpToToday() {
+        let calendar = Calendar.current
+        let todayMonday = monday(for: Date())
+        let referenceMonday = monday(for: referenceDate)
+        
+        // Calculate weeks difference
+        if let weeks = calendar.dateComponents([.weekOfYear], from: referenceMonday, to: todayMonday).weekOfYear {
+            let bounds = weekBounds
+            weekOffset = min(max(weeks, bounds.min), bounds.max)
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Calendar Footprint")
+                .font(.headline)
+            
+            // Week navigation header
+            HStack {
+                // Previous week button
+                Button(action: {
+                    let bounds = weekBounds
+                    weekOffset = max(weekOffset - 1, bounds.min)
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.subheadline)
+                        .foregroundColor(weekOffset <= weekBounds.min ? .gray : .blue)
+                        .frame(width: 30, height: 30)
+                }
+                .disabled(weekOffset <= weekBounds.min)
+                
+                Spacer()
+                
+                // Week label
+                Text(weekHeaderText)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                // Today button
+                Button("Today") {
+                    jumpToToday()
+                }
+                .font(.caption)
+                .foregroundColor(.blue)
+                
+                // Next week button
+                Button(action: {
+                    let bounds = weekBounds
+                    weekOffset = min(weekOffset + 1, bounds.max)
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline)
+                        .foregroundColor(weekOffset >= weekBounds.max ? .gray : .blue)
+                        .frame(width: 30, height: 30)
+                }
+                .disabled(weekOffset >= weekBounds.max)
+            }
+            
+            // Weekly row (Mon-Sun)
+            HStack(spacing: 4) {
+                ForEach(currentWeekDays, id: \.self) { day in
+                    CalendarDayCell(day: day, experiments: experiments)
+                        .onTapGesture {
+                            selectedDay = day
+                        }
+                }
+            }
+            
+            // See full calendar link
+            NavigationLink(destination: FullCalendarView()) {
+                HStack {
+                    Text("See full calendar")
+                        .font(.subheadline)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                }
+                .foregroundColor(.blue)
+            }
+        }
+    }
+}
+
+struct CalendarDayCell: View {
+    let day: Date
+    let experiments: [Experiment]
+    
+    private var weekdayLabel: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return formatter.string(from: day)
+    }
+    
+    private var dateNumber: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: day)
+    }
+    
+    private var activeUpdateExperiments: [Experiment] {
+        let calendar = Calendar.current
+        return experiments.filter { exp in
+            guard exp.status == .active else { return false }
+            
+            // Check if has log on this day
+            let hasLog = exp.logs.contains { log in
+                calendar.isDate(log.date, inSameDayAs: day)
+            }
+            
+            // Check if created on this day
+            let createdOnDay = calendar.isDate(exp.createdAt, inSameDayAs: day)
+            
+            return hasLog || createdOnDay
+        }
+    }
+    
+    private var activeCount: Int {
+        activeUpdateExperiments.count
+    }
+    
+    private var completedExperiments: [Experiment] {
+        let calendar = Calendar.current
+        return experiments.filter { exp in
+            if let completedAt = exp.completedAt {
+                return calendar.isDate(completedAt, inSameDayAs: day)
+            }
+            return false
+        }
+    }
+    
+    private var completedCount: Int {
+        completedExperiments.count
+    }
+    
+    private var totalIntensity: Int {
+        // Count distinct experiments that are either active updates OR completed on this day
+        let activeIDs = Set(activeUpdateExperiments.map(\.id))
+        let completedIDs = Set(completedExperiments.map(\.id))
+        return activeIDs.union(completedIDs).count
+    }
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            // Weekday
+            Text(weekdayLabel)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            
+            // Date number
+            Text(dateNumber)
+                .font(.caption)
+                .fontWeight(.medium)
+            
+            // Status icons row
+            HStack(spacing: 2) {
+                if activeCount > 0 {
+                    Image(systemName: "pencil.circle")
+                        .font(.caption2)
+                        .foregroundColor(.blue)
+                }
+                if completedCount > 0 {
+                    Image(systemName: "checkmark.seal")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                }
+            }
+            .frame(height: 12)
+            
+            // Intensity dots row
+            HStack(spacing: 1) {
+                if totalIntensity > 0 {
+                    let displayCount = min(totalIntensity, 5)
+                    ForEach(0..<displayCount, id: \.self) { _ in
+                        Circle()
+                            .fill(Color.orange)
+                            .frame(width: 4, height: 4)
+                    }
+                    if totalIntensity > 5 {
+                        Image(systemName: "plus")
+                            .font(.system(size: 6))
+                            .foregroundColor(.orange)
+                    }
+                }
+            }
+            .frame(height: 8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color(.systemGray6))
+        .cornerRadius(8)
+    }
+}
+
+// MARK: - Day Detail View
+
+struct DayDetailView: View {
+    let day: Date
+    let experiments: [Experiment]
+    let onUpdate: (Experiment) -> Void
+    
+    private var dayLabel: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMM d"
+        return formatter.string(from: day)
+    }
+    
+    private var completedExperiments: [Experiment] {
+        let calendar = Calendar.current
+        return experiments.filter { exp in
+            if let completedAt = exp.completedAt {
+                return calendar.isDate(completedAt, inSameDayAs: day)
+            }
+            return false
+        }
+    }
+    
+    private var activeUpdateExperiments: [Experiment] {
+        let calendar = Calendar.current
+        
+        // Get IDs of experiments completed on this day
+        let completedIDs = Set(completedExperiments.map(\.id))
+        
+        return experiments.filter { exp in
+            // Must be active status
+            guard exp.status == .active else { return false }
+            
+            // Exclude experiments completed on this day (they go to Completed section only)
+            guard !completedIDs.contains(exp.id) else { return false }
+            
+            // Check if has log on this day
+            let hasLog = exp.logs.contains { log in
+                calendar.isDate(log.date, inSameDayAs: day)
+            }
+            
+            // Check if created on this day
+            let createdOnDay = calendar.isDate(exp.createdAt, inSameDayAs: day)
+            
+            return hasLog || createdOnDay
+        }
     }
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Stats Card
+                // Active Updates Section
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Overview")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(completedExperiments.count)")
-                                .font(.title)
-                                .fontWeight(.bold)
-                            Text("Completed")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(experiments.filter { $0.status == .active }.count)")
-                                .font(.title)
-                                .fontWeight(.bold)
-                            Text("Active")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                    }
-                }
-                
-                // Recent Completed
-                if !recentCompleted.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Recent Completed")
+                    HStack {
+                        Image(systemName: "pencil.circle")
+                            .foregroundColor(.blue)
+                        Text("Active Updates")
                             .font(.headline)
-                        
-                        ForEach(recentCompleted) { experiment in
-                            Button(action: {
-                                selectedExperiment = experiment
-                            }) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(experiment.title)
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(.primary)
-                                        
-                                        if let completedAt = experiment.completedAt {
-                                            Text("Completed \(completedAt, style: .date)")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        } else {
-                                            Text("Completed")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding()
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
+                    }
+                    
+                    if activeUpdateExperiments.isEmpty {
+                        Text("No active updates on this day")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .italic()
+                    } else {
+                        ForEach(activeUpdateExperiments) { experiment in
+                            NavigationLink(destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)) {
+                                ExperimentCardRow(experiment: experiment)
                             }
                         }
                     }
                 }
                 
-                // All Completed
+                Divider()
+                
+                // Completed Section
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("All Completed")
-                        .font(.headline)
+                    HStack {
+                        Image(systemName: "checkmark.seal")
+                            .foregroundColor(.green)
+                        Text("Completed")
+                            .font(.headline)
+                    }
                     
                     if completedExperiments.isEmpty {
-                        Text("No completed experiments yet.")
+                        Text("No experiments completed on this day")
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
                             .italic()
-                            .padding()
                     } else {
                         ForEach(completedExperiments) { experiment in
-                            Button(action: {
-                                selectedExperiment = experiment
-                            }) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(experiment.title)
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(.primary)
-                                        
-                                        HStack {
-                                            if let completedAt = experiment.completedAt {
-                                                Text("Completed \(completedAt, style: .date)")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            } else {
-                                                Text("Completed")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            
-                                            if let review = experiment.review, review.locked {
-                                                Text("•")
-                                                    .foregroundColor(.secondary)
-                                                Text("Reviewed")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding()
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
+                            NavigationLink(destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)) {
+                                ExperimentCardRow(experiment: experiment)
                             }
                         }
                     }
@@ -1754,11 +2043,333 @@ struct SummaryView: View {
             }
             .padding()
         }
-        .navigationTitle("Summary")
+        .navigationTitle(dayLabel)
         .navigationBarTitleDisplayMode(.large)
-        .navigationDestination(item: $selectedExperiment) { experiment in
-            ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)
+    }
+}
+
+// MARK: - Storage Boxes Module
+
+struct StorageBoxesView: View {
+    let experiments: [Experiment]
+    let seedCatalog: SeedCatalog?
+    let onUpdate: (Experiment) -> Void
+    @Binding var showCreateStorageBox: Bool
+    
+    private var seedCategorySet: Set<String> {
+        Set(seedCatalog?.categories.map { $0.title } ?? [])
+    }
+    
+    private var uncategorizedExperiments: [Experiment] {
+        experiments.filter { exp in
+            let category = exp.category?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return category == nil || category?.isEmpty == true
         }
+    }
+    
+    private var customExperiments: [Experiment] {
+        experiments.filter { exp in
+            guard let category = exp.category?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !category.isEmpty else {
+                return false
+            }
+            return !seedCategorySet.contains(category)
+        }
+    }
+    
+    private var customCategoryNames: [String] {
+        let names = customExperiments.compactMap { exp in
+            exp.category?.trimmingCharacters(in: .whitespacesAndNewlines)
+        }.filter { !$0.isEmpty }
+        return Array(Set(names)).sorted()
+    }
+    
+    private var allCategories: [String] {
+        var categories: [String] = []
+        
+        // Add seed categories first
+        if let catalog = seedCatalog {
+            categories.append(contentsOf: catalog.categories.map { $0.title })
+        }
+        
+        // Add "Custom"
+        categories.append("Custom")
+        
+        // Add "Uncategorized"
+        categories.append("Uncategorized")
+        
+        return categories
+    }
+    
+    private var categoryBoxes: [CategoryBox] {
+        var boxes: [CategoryBox] = []
+        
+        for category in allCategories {
+            let exps: [Experiment]
+            let customNames: [String]
+            
+            if category == "Custom" {
+                exps = customExperiments
+                customNames = customCategoryNames
+            } else if category == "Uncategorized" {
+                exps = uncategorizedExperiments
+                customNames = []
+            } else {
+                // Seed category
+                exps = experiments.filter { exp in
+                    exp.category?.trimmingCharacters(in: .whitespacesAndNewlines) == category
+                }
+                customNames = []
+            }
+            
+            let updatedAt = exps.isEmpty ? Date.distantPast : (exps.map { $0.updatedAt }.max() ?? Date.distantPast)
+            boxes.append(CategoryBox(category: category, experiments: exps, updatedAt: updatedAt, customCategoryNames: customNames))
+        }
+        
+        // Sort: non-empty boxes first (by updatedAt desc), then empty boxes (alphabetically)
+        return boxes.sorted { box1, box2 in
+            if box1.isEmpty && box2.isEmpty {
+                return box1.category < box2.category
+            } else if box1.isEmpty {
+                return false
+            } else if box2.isEmpty {
+                return true
+            } else {
+                return box1.updatedAt > box2.updatedAt
+            }
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Storage Boxes by Category")
+                .font(.headline)
+            
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
+                ForEach(categoryBoxes) { box in
+                    StorageBoxTile(box: box, onUpdate: onUpdate)
+                }
+                
+                // Create new storage box tile
+                Button(action: {
+                    showCreateStorageBox = true
+                }) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                        
+                        Text("New Category")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 120)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.blue.opacity(0.5), style: StrokeStyle(lineWidth: 2, dash: [5]))
+                    )
+                }
+            }
+        }
+    }
+}
+
+struct CategoryBox: Identifiable {
+    let id = UUID()
+    let category: String
+    let experiments: [Experiment]
+    let updatedAt: Date
+    let customCategoryNames: [String]
+    
+    var isEmpty: Bool {
+        experiments.isEmpty
+    }
+    
+    var subcategories: [String] {
+        let subs = experiments.compactMap { $0.subcategory?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return Array(Set(subs)).sorted()
+    }
+    
+    init(category: String, experiments: [Experiment], updatedAt: Date, customCategoryNames: [String] = []) {
+        self.category = category
+        self.experiments = experiments
+        self.updatedAt = updatedAt
+        self.customCategoryNames = customCategoryNames
+    }
+}
+
+struct StorageBoxTile: View {
+    let box: CategoryBox
+    let onUpdate: (Experiment) -> Void
+    @State private var showExperimentsList: Bool = false
+    
+    private var subtitleText: String? {
+        if box.isEmpty {
+            return "Empty"
+        } else if box.category == "Custom" && !box.customCategoryNames.isEmpty {
+            // Show up to 2 custom category names
+            return box.customCategoryNames.prefix(2).joined(separator: ", ")
+        } else if !box.subcategories.isEmpty {
+            return box.subcategories.prefix(2).joined(separator: ", ")
+        }
+        return nil
+    }
+    
+    var body: some View {
+        Button(action: {
+            showExperimentsList = true
+        }) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Box icon
+                Image(systemName: box.isEmpty ? "shippingbox" : "shippingbox.fill")
+                    .font(.title)
+                    .foregroundColor(box.isEmpty ? Color.gray.opacity(0.3) : .blue)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                
+                // Category name
+                Text(box.category)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(box.isEmpty ? .secondary : .primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                
+                // Subtitle: custom categories, subcategories, or Empty label
+                if let subtitle = subtitleText {
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .italic(box.isEmpty)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+            .padding()
+            .frame(height: 120)
+            .background(box.isEmpty ? Color(.systemGray6).opacity(0.5) : Color(.systemGray6))
+            .cornerRadius(12)
+        }
+        .sheet(isPresented: $showExperimentsList) {
+            NavigationStack {
+                if box.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "shippingbox")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray.opacity(0.3))
+                        
+                        Text("Empty Category")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Text("No experiments in \"\(box.category)\" yet.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    .navigationTitle(box.category)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") {
+                                showExperimentsList = false
+                            }
+                        }
+                    }
+                } else {
+                    List {
+                        ForEach(box.experiments.sorted { $0.updatedAt > $1.updatedAt }) { experiment in
+                            NavigationLink(destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)) {
+                                ExperimentCardRow(experiment: experiment)
+                            }
+                        }
+                    }
+                    .navigationTitle(box.category)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") {
+                                showExperimentsList = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ExperimentCardRow: View {
+    let experiment: Experiment
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(experiment.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                HStack {
+                    if experiment.status == .active {
+                        Label("Active", systemImage: "circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    } else {
+                        Label("Completed", systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                    
+                    Text("Updated \(experiment.updatedAt, style: .date)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(8)
+    }
+}
+
+// MARK: - Stub Views
+
+struct FullCalendarView: View {
+    var body: some View {
+        VStack {
+            Text("Full Calendar View")
+                .font(.title)
+            Text("Coming soon...")
+                .foregroundColor(.secondary)
+        }
+        .navigationTitle("Full Calendar")
+        .navigationBarTitleDisplayMode(.large)
+    }
+}
+
+struct CreateStorageBoxView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack {
+            Text("Create Storage Box")
+                .font(.title)
+            Text("Coming soon...")
+                .foregroundColor(.secondary)
+        }
+        .navigationTitle("New Category")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
