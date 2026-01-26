@@ -1,0 +1,43 @@
+{
+  "version": "v1",
+  "language": "en",
+  "rules": {
+    "home_show_count": 1,
+    "max_chars_per_item": 120,
+    "no_authors": true,
+    "no_time_words": true
+  },
+  "items": [
+    "Noticing this moment is already a kind of experiment.",
+    "You don’t have to change anything—just notice.",
+    "A small note can reveal a big pattern.",
+    "Pause for one breath. What’s here?",
+    "Name what you feel, without fixing it.",
+    "The goal is clarity, not perfection.",
+    "Attention is a form of care.",
+    "One honest sentence is enough.",
+    "What you notice becomes your compass.",
+    "Let this be a gentle check-in.",
+    "This space doesn’t need to be productive.",
+    "Start where you are. Keep it simple.",
+    "You can write messy thoughts here.",
+    "A tiny step still counts.",
+    "No pressure—just a record of reality.",
+    "You’re allowed to begin imperfectly.",
+    "You can stop anytime. You can return anytime.",
+    "A note can be brief and still meaningful.",
+    "There’s no ‘right’ way to do this.",
+    "Let it be easy today.",
+    "Begin anywhere.",
+    "Curiosity is enough.",
+    "Small experiments, real change.",
+    "Make room for what’s true.",
+    "Notice the ordinary. It’s data.",
+    "Your life is allowed to be a draft.",
+    "Keep what works. Let go of the rest.",
+    "Patterns appear when you look kindly.",
+    "This is a practice, not a test.",
+    "One moment at a time."
+  ]
+}
+

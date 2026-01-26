@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UIKit
+import Foundation
 
 // MARK: - Seed Catalog Models
 
@@ -46,6 +47,38 @@ struct SeedCatalogLoader {
         }
     }
 }
+
+
+
+struct CTAQuoteStore: Decodable {
+    let version: String
+    let language: String
+    let items: [String]
+}
+
+enum CTALoader {
+    static func loadQuotes() -> [String] {
+        guard let url = Bundle.main.url(forResource: "cta_quotes", withExtension: "json") else {
+            return []
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            let decoded = try JSONDecoder().decode(CTAQuoteStore.self, from: data)
+            return decoded.items
+        } catch {
+            return []
+        }
+    }
+
+    /// Deterministic daily pick so it doesn't change on every render.
+    static func pickDailyQuote(from quotes: [String], date: Date = Date()) -> String? {
+        guard !quotes.isEmpty else { return nil }
+        let dayIndex = Calendar.current.ordinality(of: .day, in: .year, for: date) ?? 1
+        let idx = (dayIndex - 1) % quotes.count
+        return quotes[idx]
+    }
+}
+
 
 // MARK: - App Models
 
@@ -274,135 +307,11 @@ struct HomeView: View {
         !completedExperiments.isEmpty
     }
     
-    // MARK: - Recent Events Logic (Milestone-based)
-    
-    struct RecentEvent: Identifiable {
-        let id = UUID()
-        let icon: String
-        let title: String
-        let subtitle: String?
-    }
+    // MARK: - Recent Events Logic (using RecentEventBuilder)
+    // MARK: - Recent Events (Milestone-based, system-generated)
     
     private var recentEvents: [RecentEvent] {
-        var events: [RecentEvent] = []
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        // Event A — Streak (highest priority if >=2)
-        let streak = calculateStreak()
-        if streak >= 2 {
-            events.append(RecentEvent(
-                icon: "flame.fill",
-                title: "\(streak) days in a row",
-                subtitle: "You've shown up consistently"
-            ))
-        } else if streak == 1 && currentState == .updatedToday && events.isEmpty {
-            events.append(RecentEvent(
-                icon: "pencil.tip",
-                title: "You made progress today",
-                subtitle: nil
-            ))
-        }
-        
-        // Event B — Completed yesterday
-        if events.count < 2 {
-            let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
-            let completedYesterday = experiments.filter { exp in
-                if let completedAt = exp.completedAt {
-                    return calendar.isDate(completedAt, inSameDayAs: yesterday)
-                }
-                return false
-            }
-            
-            if !completedYesterday.isEmpty {
-                let count = completedYesterday.count
-                events.append(RecentEvent(
-                    icon: "checkmark.seal.fill",
-                    title: "Completed yesterday",
-                    subtitle: count > 1 ? "\(count) experiments finished" : "A real milestone"
-                ))
-            }
-        }
-        
-        // Event C — First time category milestone
-        if events.count < 2 && currentState == .updatedToday {
-            if let category = buildFirstCategory(today: today) {
-                events.append(RecentEvent(
-                    icon: "sparkles",
-                    title: "First time: \(category)",
-                    subtitle: "Love this direction"
-                ))
-            }
-        }
-        
-        // Event D — Empty state encouragement
-        if currentState == .noActiveExperiments && events.isEmpty {
-            events.append(RecentEvent(
-                icon: "heart.fill",
-                title: "You're here",
-                subtitle: "That's the first step"
-            ))
-        }
-        
-        return Array(events.prefix(2))
-    }
-    
-    // Calculate consecutive days streak ending today
-    private func calculateStreak() -> Int {
-        let calendar = Calendar.current
-        var streak = 0
-        var checkDate = calendar.startOfDay(for: Date())
-        
-        // Check backwards from today
-        for _ in 0..<365 { // Max reasonable streak to check
-            let hasUpdate = experiments.contains { experiment in
-                isUpdated(on: checkDate, experiment: experiment)
-            }
-            
-            if hasUpdate {
-                streak += 1
-                // Move to previous day
-                guard let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) else {
-                    break
-                }
-                checkDate = previousDay
-            } else {
-                // Streak broken
-                break
-            }
-        }
-        
-        return streak
-    }
-    
-    // Build first category milestone event
-    private func buildFirstCategory(today: Date) -> String? {
-        // Find experiments updated today
-        let updatedToday = experiments.filter { isUpdated(on: today, experiment: $0) }
-        
-        // Find one with a non-empty category
-        guard let todayExp = updatedToday.first(where: { exp in
-            if let category = exp.category?.trimmingCharacters(in: .whitespacesAndNewlines), !category.isEmpty {
-                return true
-            }
-            return false
-        }) else {
-            return nil
-        }
-        
-        let category = todayExp.category!.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Check if this is the first experiment in this category
-        let otherExperimentsInCategory = experiments.filter { exp in
-            exp.id != todayExp.id &&
-            exp.category?.trimmingCharacters(in: .whitespacesAndNewlines) == category
-        }
-        
-        if otherExperimentsInCategory.isEmpty {
-            return category
-        }
-        
-        return nil
+        RecentEventBuilder.build(experiments: experiments, today: Date())
     }
     
     // MARK: - UI
@@ -429,7 +338,37 @@ struct HomeView: View {
                     }
                 }
                 
-                // 3. Continue Recording - State A (primary) & State B (weakened/optional)
+                // 3. Recent Events - Card style
+                if !recentEvents.isEmpty {
+                    Divider()
+                    
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Recent Events")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        let eventsToShow = Array(recentEvents.prefix(2))
+                        
+                        if eventsToShow.count == 2 {
+                            // Two-column grid
+                            LazyVGrid(columns: [
+                                GridItem(.flexible(), spacing: 12),
+                                GridItem(.flexible(), spacing: 12)
+                            ], spacing: 12) {
+                                ForEach(eventsToShow) { event in
+                                    RecentEventCard(event: event)
+                                }
+                            }
+                        } else {
+                            // Single card
+                            ForEach(eventsToShow) { event in
+                                RecentEventCard(event: event)
+                            }
+                        }
+                    }
+                }
+
+                // 4. Continue Recording - State A (primary) & State B (weakened/optional)
                 if shouldShowContinueRecording {
                     Divider()
                     
@@ -485,7 +424,7 @@ struct HomeView: View {
                     }
                 }
                 
-                // 4. Start New Experiment - Always visible
+                // 5. Start New Experiment - Always visible
                 Divider()
                 
                 VStack(alignment: .leading, spacing: 12) {
@@ -509,7 +448,7 @@ struct HomeView: View {
                     }
                 }
                 
-                // 5. Completed - Lightweight section
+                // 6. Completed - Lightweight section
                 if shouldShowCompleted {
                     Divider()
                     
@@ -563,36 +502,6 @@ struct HomeView: View {
                         }
                     }
                 }
-                
-                // 6. Recent Events - Card style
-                if !recentEvents.isEmpty {
-                    Divider()
-                    
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Recent Events")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        let eventsToShow = Array(recentEvents.prefix(2))
-                        
-                        if eventsToShow.count == 2 {
-                            // Two-column grid
-                            LazyVGrid(columns: [
-                                GridItem(.flexible(), spacing: 12),
-                                GridItem(.flexible(), spacing: 12)
-                            ], spacing: 12) {
-                                ForEach(eventsToShow) { event in
-                                    RecentEventCard(event: event)
-                                }
-                            }
-                        } else {
-                            // Single card
-                            ForEach(eventsToShow) { event in
-                                RecentEventCard(event: event)
-                            }
-                        }
-                    }
-                }
             }
             .padding()
         }
@@ -605,7 +514,7 @@ struct HomeView: View {
         
         var body: some View {
             HStack(spacing: 10) {
-                Image(systemName: event.icon)
+                Image(systemName: event.iconSystemName)
                     .font(.headline)
                     .foregroundColor(.blue)
                 
@@ -632,42 +541,15 @@ struct HomeView: View {
     
     // MARK: - CTA Text Logic (Quote-based)
     
-    private struct InspirationQuote {
-        let text: String
-        let author: String?
-    }
-    
-    private var inspirationQuotes: [InspirationQuote] {
-        [
-            InspirationQuote(text: "Small steps every day lead to big changes.", author: nil),
-            InspirationQuote(text: "Progress is made one moment at a time.", author: nil),
-            InspirationQuote(text: "Every experiment teaches you something new.", author: nil),
-            InspirationQuote(text: "Change begins with curiosity.", author: nil),
-            InspirationQuote(text: "You don't have to be perfect to start.", author: nil),
-            InspirationQuote(text: "Even tiny shifts create momentum.", author: nil),
-            InspirationQuote(text: "What you practice grows stronger.", author: nil),
-            InspirationQuote(text: "Notice what changes when you pay attention.", author: nil),
-            InspirationQuote(text: "Each day is a new opportunity to learn.", author: nil),
-            InspirationQuote(text: "Your experiments are uniquely yours.", author: nil),
-            InspirationQuote(text: "Small changes can lead to meaningful insights.", author: nil),
-            InspirationQuote(text: "Be patient with your process.", author: nil)
-        ]
-    }
-    
-    private var todayQuote: InspirationQuote {
-        let calendar = Calendar.current
-        let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        let index = dayOfYear % inspirationQuotes.count
-        return inspirationQuotes[index]
-    }
-    
     private var ctaText: String {
-        todayQuote.text
+        let quotes = CTALoader.loadQuotes()
+        return CTALoader.pickDailyQuote(from: quotes) ?? "Begin anywhere."  
     }
-    
+
     private var ctaSubtext: String? {
-        todayQuote.author
+        return nil
     }
+
 }
 
 // MARK: - Reusable Card Component
@@ -1216,8 +1098,20 @@ struct ContentView: View {
                     AllActiveListView(
                         activeExperiments: activeExperiments,
                         isUpdatedToday: { experiment in
-                            let today = Calendar.current.startOfDay(for: Date())
-                            return isUpdated(on: today, experiment: experiment)
+                            let calendar = Calendar.current
+                            let today = calendar.startOfDay(for: Date())
+                            
+                            // Check if created, logged, or completed today
+                            if calendar.isDate(experiment.createdAt, inSameDayAs: today) {
+                                return true
+                            }
+                            if experiment.logs.contains(where: { calendar.isDate($0.date, inSameDayAs: today) }) {
+                                return true
+                            }
+                            if let completedAt = experiment.completedAt, calendar.isDate(completedAt, inSameDayAs: today) {
+                                return true
+                            }
+                            return false
                         },
                         onSelectExperiment: { experiment in
                             path.append(.experiment(experiment.id))
@@ -1299,25 +1193,6 @@ struct ContentView: View {
                 Text("All logs and data for \"\(experiment.title)\" will be deleted. This cannot be undone.")
             }
         }
-    }
-    
-    // Helper for route navigation
-    private func isUpdated(on day: Date, experiment: Experiment) -> Bool {
-        let calendar = Calendar.current
-        
-        if calendar.isDate(experiment.createdAt, inSameDayAs: day) {
-            return true
-        }
-        
-        if experiment.logs.contains(where: { calendar.isDate($0.date, inSameDayAs: day) }) {
-            return true
-        }
-        
-        if let completedAt = experiment.completedAt, calendar.isDate(completedAt, inSameDayAs: day) {
-            return true
-        }
-        
-        return false
     }
     
     func dayDetailView(for record: DayRecord) -> some View {
