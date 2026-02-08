@@ -834,6 +834,16 @@ enum Route: Hashable {
     case day(Date)
 }
 
+// MARK: - Tab enum
+
+enum Tab: Int {
+    case home = 0
+    case active = 1
+    case create = 2
+    case summary = 3
+    case profile = 4
+}
+
 // MARK: - Content View
 
 struct ContentView: View {
@@ -863,8 +873,15 @@ struct ContentView: View {
     @AppStorage("historyData") private var historyData: Data = .init()
     @AppStorage("experimentsData") private var experimentsData: Data = .init()
     
-    // Navigation state
-    @State private var path: [Route] = []
+    // Tab state
+    @State private var selectedTab: Tab = .home
+    
+    // Navigation state (separate paths for each tab)
+    @State private var homePath: [Route] = []
+    @State private var activePath: [Route] = []
+    @State private var summaryPath: [Route] = []
+    @State private var profilePath: [Route] = []
+    
     @State private var selectedDay: DayRecord?
     @State private var showCreateExperimentSheet: Bool = false
     @State private var experimentToDelete: Experiment?
@@ -1057,141 +1074,283 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            HomeView(
-                loadExperiments: getExperiments,
-                seedCatalog: seedCatalog,
-                onCreateExperiment: {
-                    showCreateExperimentSheet = true
+        TabView(selection: $selectedTab) {
+            // Tab 1: Home
+            NavigationStack(path: $homePath) {
+                HomeView(
+                    loadExperiments: getExperiments,
+                    seedCatalog: seedCatalog,
+                    onCreateExperiment: {
+                        showCreateExperimentSheet = true
+                    },
+                    onSelectExperiment: { experiment in
+                        homePath.append(.experiment(experiment.id))
+                    },
+                    onUpdate: updateExperiment,
+                    onShowActiveMore: {
+                        homePath.append(.activeMore)
+                    },
+                    onShowCompletedMore: {
+                        homePath.append(.completedMore)
+                    },
+                    onShowSummary: {
+                        // Navigate to Summary tab instead
+                        selectedTab = .summary
+                    },
+                    onSelectDay: { day in
+                        homePath.append(.day(day))
+                    }
+                )
+                .navigationTitle("Life Experiment")
+                .navigationDestination(for: Route.self) { route in
+                    routeDestination(route: route, path: $homePath)
+                }
+            }
+            .tabItem {
+                Label("Home", systemImage: "house.fill")
+            }
+            .tag(Tab.home)
+            
+            // Tab 2: Active Experiments
+            NavigationStack(path: $activePath) {
+                activeExperimentsView
+                    .navigationTitle("Active Experiments")
+                    .navigationBarTitleDisplayMode(.large)
+                    .navigationDestination(for: Route.self) { route in
+                        routeDestination(route: route, path: $activePath)
+                    }
+            }
+            .tabItem {
+                Label("Active", systemImage: "list.bullet")
+            }
+            .tag(Tab.active)
+            
+            // Tab 3: Create (placeholder - sheet is presented via onChange)
+            Color.clear
+                .tabItem {
+                    Label("Create", systemImage: "plus.circle.fill")
+                }
+                .tag(Tab.create)
+            
+            // Tab 4: Summary
+            NavigationStack(path: $summaryPath) {
+                SummaryView(loadExperiments: getExperiments, onUpdate: updateExperiment, seedCatalog: seedCatalog)
+                    .navigationDestination(for: Route.self) { route in
+                        routeDestination(route: route, path: $summaryPath)
+                    }
+            }
+            .tabItem {
+                Label("Summary", systemImage: "chart.bar.fill")
+            }
+            .tag(Tab.summary)
+            
+            // Tab 5: Profile
+            NavigationStack(path: $profilePath) {
+                ProfileView()
+                    .navigationDestination(for: Route.self) { route in
+                        routeDestination(route: route, path: $profilePath)
+                    }
+            }
+            .tabItem {
+                Label("Profile", systemImage: "person.fill")
+            }
+            .tag(Tab.profile)
+        }
+        .onChange(of: selectedTab) { oldValue, newValue in
+            // When user switches to Create tab, present the create sheet
+            if newValue == .create {
+                showCreateExperimentSheet = true
+            }
+        }
+        .sheet(isPresented: $showCreateExperimentSheet, onDismiss: {
+            // When create sheet is dismissed, return to Home if still on Create tab
+            if selectedTab == .create {
+                selectedTab = .home
+            }
+        }) {
+            ExperimentEditorView(seedCatalog: seedCatalog, mode: .create) { experiment in
+                addExperiment(experiment)
+                showCreateExperimentSheet = false
+                // Switch to Active tab after creation
+                selectedTab = .active
+                // Optionally push to the new experiment detail
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    activePath.append(.experiment(experiment.id))
+                }
+            }
+        }
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .rename(let experiment):
+                ExperimentEditorView(seedCatalog: seedCatalog, mode: .rename(existing: experiment)) { updated in
+                    updateExperiment(updated)
+                    activeSheet = nil
+                }
+            case .duplicate(let experiment):
+                ExperimentEditorView(seedCatalog: seedCatalog, mode: .duplicate(from: experiment)) { created in
+                    addExperiment(created)
+                    activeSheet = nil
+                }
+            }
+        }
+        .onAppear {
+            seedExperimentsIfNeeded()
+            if seedCatalog == nil {
+                seedCatalog = SeedCatalogLoader.load()
+            }
+        }
+        .alert("Delete Experiment?", isPresented: Binding(
+            get: { experimentToDelete != nil },
+            set: { if !$0 { experimentToDelete = nil } }
+        ), presenting: experimentToDelete) { experiment in
+            Button("Cancel", role: .cancel) {
+                experimentToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                deleteExperiment(id: experiment.id)
+                experimentToDelete = nil
+            }
+        } message: { experiment in
+            Text("All logs and data for \"\(experiment.title)\" will be deleted. This cannot be undone.")
+        }
+    }
+    
+    // MARK: - Active Experiments View
+    
+    private var activeExperimentsView: some View {
+        let activeExperiments = getExperiments().filter { $0.status == .active }
+            .sorted { $0.updatedAt > $1.updatedAt }
+        
+        return Group {
+            if activeExperiments.isEmpty {
+                // Empty state
+                VStack(spacing: 20) {
+                    Spacer()
+                    
+                    Image(systemName: "tray")
+                        .font(.system(size: 60))
+                        .foregroundColor(.secondary)
+                    
+                    Text("No Active Experiments")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("Start your first experiment to begin tracking")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                    
+                    Button(action: {
+                        selectedTab = .create
+                    }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Create Experiment")
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .cornerRadius(10)
+                    }
+                    .padding(.top, 8)
+                    
+                    Spacer()
+                }
+            } else {
+                AllActiveListView(
+                    activeExperiments: activeExperiments,
+                    isUpdatedToday: { experiment in
+                        let calendar = Calendar.current
+                        let today = calendar.startOfDay(for: Date())
+                        
+                        // Check if created, logged, or completed today
+                        if calendar.isDate(experiment.createdAt, inSameDayAs: today) {
+                            return true
+                        }
+                        if experiment.logs.contains(where: { calendar.isDate($0.date, inSameDayAs: today) }) {
+                            return true
+                        }
+                        if let completedAt = experiment.completedAt, calendar.isDate(completedAt, inSameDayAs: today) {
+                            return true
+                        }
+                        return false
+                    },
+                    onSelectExperiment: { experiment in
+                        activePath.append(.experiment(experiment.id))
+                    },
+                    onCreateExperiment: {
+                        showCreateExperimentSheet = true
+                    }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Route Destination (Reusable navigation handler)
+    
+    @ViewBuilder
+    private func routeDestination(route: Route, path: Binding<[Route]>) -> some View {
+        switch route {
+        case .experiment(let id):
+            if let experiment = getExperiments().first(where: { $0.id == id }) {
+                ExperimentDetailView(experiment: experiment, onUpdate: updateExperiment)
+            } else {
+                Text("Experiment not found")
+                    .foregroundColor(.secondary)
+            }
+            
+        case .activeMore:
+            let activeExperiments = getExperiments().filter { $0.status == .active }
+                .sorted { $0.updatedAt > $1.updatedAt }
+            AllActiveListView(
+                activeExperiments: activeExperiments,
+                isUpdatedToday: { experiment in
+                    let calendar = Calendar.current
+                    let today = calendar.startOfDay(for: Date())
+                    
+                    // Check if created, logged, or completed today
+                    if calendar.isDate(experiment.createdAt, inSameDayAs: today) {
+                        return true
+                    }
+                    if experiment.logs.contains(where: { calendar.isDate($0.date, inSameDayAs: today) }) {
+                        return true
+                    }
+                    if let completedAt = experiment.completedAt, calendar.isDate(completedAt, inSameDayAs: today) {
+                        return true
+                    }
+                    return false
                 },
                 onSelectExperiment: { experiment in
-                    path.append(.experiment(experiment.id))
+                    path.wrappedValue.append(.experiment(experiment.id))
                 },
-                onUpdate: updateExperiment,
-                onShowActiveMore: {
-                    path.append(.activeMore)
-                },
-                onShowCompletedMore: {
-                    path.append(.completedMore)
-                },
-                onShowSummary: {
-                    path.append(.summary)
-                },
-                onSelectDay: { day in
-                    path.append(.day(day))
+                onCreateExperiment: {
+                    showCreateExperimentSheet = true
                 }
             )
-            .navigationTitle("Life Experiment")
-            .navigationDestination(for: Route.self) { route in
-                switch route {
-                case .experiment(let id):
-                    if let experiment = getExperiments().first(where: { $0.id == id }) {
-                        ExperimentDetailView(experiment: experiment, onUpdate: updateExperiment)
-                    } else {
-                        Text("Experiment not found")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                case .activeMore:
-                    let activeExperiments = getExperiments().filter { $0.status == .active }
-                        .sorted { $0.updatedAt > $1.updatedAt }
-                    AllActiveListView(
-                        activeExperiments: activeExperiments,
-                        isUpdatedToday: { experiment in
-                            let calendar = Calendar.current
-                            let today = calendar.startOfDay(for: Date())
-                            
-                            // Check if created, logged, or completed today
-                            if calendar.isDate(experiment.createdAt, inSameDayAs: today) {
-                                return true
-                            }
-                            if experiment.logs.contains(where: { calendar.isDate($0.date, inSameDayAs: today) }) {
-                                return true
-                            }
-                            if let completedAt = experiment.completedAt, calendar.isDate(completedAt, inSameDayAs: today) {
-                                return true
-                            }
-                            return false
-                        },
-                        onSelectExperiment: { experiment in
-                            path.append(.experiment(experiment.id))
-                        },
-                        onCreateExperiment: {
-                            showCreateExperimentSheet = true
-                        }
-                    )
-                    
-                case .completedMore:
-                    let completedExperiments = getExperiments()
-                        .filter { $0.status == .completed }
-                        .sorted { exp1, exp2 in
-                            let date1 = exp1.completedAt ?? exp1.updatedAt
-                            let date2 = exp2.completedAt ?? exp2.updatedAt
-                            return date1 > date2
-                        }
-                    CompletedListView(
-                        completedExperiments: completedExperiments,
-                        onSelectExperiment: { experiment in
-                            path.append(.experiment(experiment.id))
-                        }
-                    )
-                    
-                case .summary:
-                    SummaryView(loadExperiments: getExperiments, onUpdate: updateExperiment, seedCatalog: seedCatalog)
-                    
-                case .day(let date):
-                    DayDetailView(day: date, experiments: getExperiments(), onUpdate: updateExperiment)
+            
+        case .completedMore:
+            let completedExperiments = getExperiments()
+                .filter { $0.status == .completed }
+                .sorted { exp1, exp2 in
+                    let date1 = exp1.completedAt ?? exp1.updatedAt
+                    let date2 = exp2.completedAt ?? exp2.updatedAt
+                    return date1 > date2
                 }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        path.append(.summary)
-                    }) {
-                        Image(systemName: "chart.bar")
-                    }
+            CompletedListView(
+                completedExperiments: completedExperiments,
+                onSelectExperiment: { experiment in
+                    path.wrappedValue.append(.experiment(experiment.id))
                 }
-            }
-            .sheet(isPresented: $showCreateExperimentSheet) {
-                ExperimentEditorView(seedCatalog: seedCatalog, mode: .create) { experiment in
-                    addExperiment(experiment)
-                    showCreateExperimentSheet = false
-                }
-            }
-            .sheet(item: $activeSheet) { sheet in
-                switch sheet {
-                case .rename(let experiment):
-                    ExperimentEditorView(seedCatalog: seedCatalog, mode: .rename(existing: experiment)) { updated in
-                        updateExperiment(updated)
-                        activeSheet = nil
-                    }
-                case .duplicate(let experiment):
-                    ExperimentEditorView(seedCatalog: seedCatalog, mode: .duplicate(from: experiment)) { created in
-                        addExperiment(created)
-                        activeSheet = nil
-                    }
-                }
-            }
-            .onAppear {
-                seedExperimentsIfNeeded()
-                if seedCatalog == nil {
-                    seedCatalog = SeedCatalogLoader.load()
-                }
-            }
-            .alert("Delete Experiment?", isPresented: Binding(
-                get: { experimentToDelete != nil },
-                set: { if !$0 { experimentToDelete = nil } }
-            ), presenting: experimentToDelete) { experiment in
-                Button("Cancel", role: .cancel) {
-                    experimentToDelete = nil
-                }
-                Button("Delete", role: .destructive) {
-                    deleteExperiment(id: experiment.id)
-                    experimentToDelete = nil
-                }
-            } message: { experiment in
-                Text("All logs and data for \"\(experiment.title)\" will be deleted. This cannot be undone.")
-            }
+            )
+            
+        case .summary:
+            SummaryView(loadExperiments: getExperiments, onUpdate: updateExperiment, seedCatalog: seedCatalog)
+            
+        case .day(let date):
+            DayDetailView(day: date, experiments: getExperiments(), onUpdate: updateExperiment)
         }
     }
     
@@ -1250,6 +1409,9 @@ struct ExperimentEditorView: View {
     @State private var hasBaselineTitle: Bool = false
     @State private var showRevertTitle: Bool = false
     @State private var isProgrammaticTitleChange: Bool = false
+    @FocusState private var focusedField: Field?
+
+
 
     // For rename "no changes -> disable"
     private let originalExperiment: Experiment?
@@ -1267,6 +1429,12 @@ struct ExperimentEditorView: View {
         case .create:
             self.originalExperiment = nil
         }
+    }
+
+    private enum Field: Hashable {
+        case title
+        case customCategory
+        case customSubcategory
     }
 
     private func trimmed(_ s: String) -> String {
@@ -1419,6 +1587,7 @@ struct ExperimentEditorView: View {
                 cardField(label: "Title") {
                     cardBackground {
                         TextField("Experiment Title", text: $title)
+                            .focused($focusedField, equals: .title)
                             .textFieldStyle(.plain)
                     }
                 }
@@ -1460,8 +1629,7 @@ struct ExperimentEditorView: View {
                                 ForEach(availablePrompts, id: \.self) { prompt in
                                     Button(action: {
                                         // Light haptic feedback
-                                        let generator = UIImpactFeedbackGenerator(style: .light)
-                                        generator.impactOccurred()
+                                        Haptics.lightImpact()
                                         
                                         // Capture baseline only on first prompt tap
                                         if !hasBaselineTitle {
@@ -1539,6 +1707,10 @@ struct ExperimentEditorView: View {
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
+                                .contentShape(Rectangle())
+                                .simultaneousGesture(TapGesture().onEnded {
+                                    focusedField = nil
+                                })
                             }
 
                             if useCustomCategory {
@@ -1585,6 +1757,10 @@ struct ExperimentEditorView: View {
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
+                                    .contentShape(Rectangle())
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        focusedField = nil
+                                    })
                                 }
 
                                 if useCustomSubcategory {
@@ -1608,6 +1784,8 @@ struct ExperimentEditorView: View {
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { focusedField = nil }
                                     
                                     customInputBlock(
                                         hint: "Please enter a custom subcategory below",
@@ -1780,6 +1958,9 @@ struct MoodSelectorView: View {
         HStack(spacing: 12) {
             ForEach(Mood.allCases) { mood in
                 Button(action: {
+                    // Haptic feedback on mood selection
+                    Haptics.selection()
+                    
                     if selectedMood == mood {
                         selectedMood = nil
                     } else {
@@ -2222,6 +2403,10 @@ struct ExperimentDetailView: View {
         localExperiment.completedAt = now
         localExperiment.updatedAt = now
         onUpdate(localExperiment)
+        
+        // Success haptic feedback for completion
+        Haptics.success()
+        
         noteFocused = false
     }
     
@@ -2252,6 +2437,9 @@ struct ExperimentDetailView: View {
         localExperiment.updatedAt = Date()
         onUpdate(localExperiment)
         
+        // Success haptic feedback
+        Haptics.success()
+        
         // Check if all fields are blank
         let allBlank = draftWhatDidITry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                        draftWhatHappened.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -2278,6 +2466,9 @@ struct ExperimentDetailView: View {
         
         localExperiment.updatedAt = Date()
         onUpdate(localExperiment)
+        
+        // Success haptic feedback
+        Haptics.success()
         
         noteFocused = false
         showSavedToast = true
