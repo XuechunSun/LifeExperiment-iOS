@@ -10,6 +10,7 @@
         {
           "id": "self_reflection",
           "title": "Self Reflection",
+          "default_dimensions": ["self_understanding", "emotion_awareness", "focus_flow"],
           "prompts": [
             "Write down 3 things you no longer want to keep doing.",
             "Track moments that give you energy for 7 days.",
@@ -19,6 +20,7 @@
         {
           "id": "career_reorientation",
           "title": "Career Reorientation",
+          "default_dimensions": ["self_understanding", "execution", "focus_flow"],
           "prompts": [
             "List 3 projects that made you feel proud.",
             "Talk to 3 people with different career paths.",
@@ -28,6 +30,7 @@
         {
           "id": "daily_structure",
           "title": "Daily Structure",
+          "default_dimensions": ["execution", "focus_flow", "self_understanding"],
           "prompts": [
             "Design your ideal low-stress day schedule.",
             "Try a consistent wake-up time for 7 days.",
@@ -44,6 +47,7 @@
         {
           "id": "new_experiences",
           "title": "New Experiences",
+          "default_dimensions": ["self_understanding", "connection", "emotion_awareness"],
           "prompts": [
             "Try one activity you've never done before.",
             "Visit a new place alone.",
@@ -53,6 +57,7 @@
         {
           "id": "creative_expression",
           "title": "Creative Expression",
+          "default_dimensions": ["expression_creativity", "focus_flow", "emotion_awareness"],
           "prompts": [
             "Write one idea every day for 7 days.",
             "Create something small without perfection.",
@@ -62,6 +67,7 @@
         {
           "id": "personal_milestones",
           "title": "Personal Milestones",
+          "default_dimensions": ["self_understanding", "execution", "emotion_awareness"],
           "prompts": [
             "Do one important thing you've been avoiding.",
             "Write a letter to your future self.",
@@ -78,6 +84,7 @@
         {
           "id": "daily_discipline",
           "title": "Daily Discipline",
+          "default_dimensions": ["execution", "focus_flow", "self_understanding"],
           "prompts": [
             "Do one focused 10-minute session every day.",
             "Write down one done-thing each day.",
@@ -87,6 +94,7 @@
         {
           "id": "skill_sprint",
           "title": "Skill Sprint",
+          "default_dimensions": ["focus_flow", "execution", "self_understanding"],
           "prompts": [
             "Learn one small concept every day for 30 days.",
             "Build a tiny project in 30 days.",
@@ -96,6 +104,7 @@
         {
           "id": "habit_reset",
           "title": "Habit Reset",
+          "default_dimensions": ["execution", "body_energy", "emotion_awareness"],
           "prompts": [
             "Sleep earlier for 30 days.",
             "Reduce late-night scrolling for 30 days.",
@@ -112,6 +121,7 @@
         {
           "id": "movement",
           "title": "Movement",
+          "default_dimensions": ["body_energy", "execution", "emotion_awareness"],
           "prompts": [
             "Walk 20 minutes a day.",
             "Try 3 different workouts this week.",
@@ -121,6 +131,7 @@
         {
           "id": "sleep_rest",
           "title": "Sleep & Rest",
+          "default_dimensions": ["body_energy", "execution", "emotion_awareness"],
           "prompts": [
             "No screens 60 minutes before bed.",
             "Create a 10-minute bedtime routine.",
@@ -130,6 +141,7 @@
         {
           "id": "nutrition_awareness",
           "title": "Nutrition Awareness",
+          "default_dimensions": ["body_energy", "self_understanding", "emotion_awareness"],
           "prompts": [
             "Drink enough water daily.",
             "Note how food affects your mood for 7 days.",
@@ -146,6 +158,7 @@
         {
           "id": "emotional_awareness",
           "title": "Emotional Awareness",
+          "default_dimensions": ["emotion_awareness", "self_understanding", "focus_flow"],
           "prompts": [
             "Describe your mood in one sentence daily.",
             "Notice what triggers mood changes for 7 days.",
@@ -155,6 +168,7 @@
         {
           "id": "self_compassion",
           "title": "Self Compassion",
+          "default_dimensions": ["emotion_awareness", "self_understanding", "connection"],
           "prompts": [
             "Write one thing you did well today.",
             "Say one non-judgmental sentence to yourself.",
@@ -164,6 +178,7 @@
         {
           "id": "mental_reset",
           "title": "Mental Reset",
+          "default_dimensions": ["emotion_awareness", "body_energy", "focus_flow"],
           "prompts": [
             "Do a 10-minute breathing practice.",
             "Write down what's making you anxious.",

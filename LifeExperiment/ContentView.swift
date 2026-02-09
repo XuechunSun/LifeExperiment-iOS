@@ -9,6 +9,105 @@ import SwiftUI
 import UIKit
 import Foundation
 
+// MARK: - Dimension & Impact Models
+
+enum Dimension: String, Codable, CaseIterable, Identifiable {
+    case emotion_awareness
+    case body_energy
+    case execution
+    case focus_flow
+    case expression_creativity
+    case connection
+    case self_understanding
+    
+    var id: String { rawValue }
+    
+    // MARK: - English (V1 Display)
+    
+    var title: String {
+        switch self {
+        case .emotion_awareness:
+            return "Emotional Awareness"
+        case .body_energy:
+            return "Body & Energy"
+        case .execution:
+            return "Execution"
+        case .focus_flow:
+            return "Focus & Flow"
+        case .expression_creativity:
+            return "Expression & Creativity"
+        case .connection:
+            return "Connection"
+        case .self_understanding:
+            return "Self-Understanding"
+        }
+    }
+    
+    var subtitle: String? {
+        switch self {
+        case .emotion_awareness:
+            return "Notice and understand emotions"
+        case .body_energy:
+            return "Stabilize physical energy"
+        case .execution:
+            return "Start and complete actions"
+        case .focus_flow:
+            return "Stay focused and enter flow"
+        case .expression_creativity:
+            return "Create and express yourself"
+        case .connection:
+            return "Strengthen relationships"
+        case .self_understanding:
+            return "Learn what suits you"
+        }
+    }
+    
+    // MARK: - Chinese (Future Localization)
+    
+    var titleCN: String {
+        switch self {
+        case .emotion_awareness:
+            return "情绪觉察"
+        case .body_energy:
+            return "身体能量"
+        case .execution:
+            return "执行力"
+        case .focus_flow:
+            return "专注与心流"
+        case .expression_creativity:
+            return "表达与创造"
+        case .connection:
+            return "连接"
+        case .self_understanding:
+            return "自我理解"
+        }
+    }
+    
+    var subtitleCN: String? {
+        switch self {
+        case .emotion_awareness:
+            return "觉察并理解情绪"
+        case .body_energy:
+            return "身体状态与能量管理"
+        case .execution:
+            return "行动与完成"
+        case .focus_flow:
+            return "专注力与沉浸体验"
+        case .expression_creativity:
+            return "创作与表达能力"
+        case .connection:
+            return "人际连接与关系"
+        case .self_understanding:
+            return "自我认知与成长"
+        }
+    }
+}
+
+struct ExperimentImpact: Codable, Hashable {
+    var primary: Dimension
+    var secondary: [Dimension] // max 2
+}
+
 // MARK: - Seed Catalog Models
 
 struct SeedCatalog: Codable {
@@ -26,6 +125,7 @@ struct SeedCategory: Identifiable, Codable {
 struct SeedSubcategory: Identifiable, Codable {
     let id: String
     let title: String
+    let default_dimensions: [Dimension]?
     let prompts: [String]
 }
 
@@ -46,6 +146,22 @@ struct SeedCatalogLoader {
             return nil
         }
     }
+}
+
+// MARK: - Impact Helper
+
+/// Convert default_dimensions array to ExperimentImpact
+/// - Parameter arr: Array of dimensions from seed data
+/// - Returns: ExperimentImpact with primary and secondary dimensions, or nil if empty
+/// Order matters: first = primary (1.0), second = secondary (0.5), third = tertiary (0.2)
+
+func impactFromDefaultDimensions(_ arr: [Dimension]?) -> ExperimentImpact? {
+    guard let arr = arr, !arr.isEmpty else { return nil }
+    
+    let primary = arr[0]
+    let secondary = Array(arr.dropFirst().prefix(2))
+    
+    return ExperimentImpact(primary: primary, secondary: secondary)
 }
 
 
@@ -95,6 +211,10 @@ enum Mood: String, CaseIterable, Identifiable, Codable, Hashable {
         case .good: return "🙂"
         case .veryGood: return "😄"
         }
+    }
+    
+    var label: String {
+        S.moodLabel(self)
     }
     
     var labelCN: String {
@@ -153,6 +273,7 @@ struct Experiment: Identifiable, Codable, Hashable {
     var title: String
     var category: String?
     var subcategory: String?
+    var impact: ExperimentImpact?
     var status: ExperimentStatus
     var createdAt: Date
     var updatedAt: Date
@@ -160,11 +281,12 @@ struct Experiment: Identifiable, Codable, Hashable {
     var review: ExperimentReview?
     var completedAt: Date?
     
-    init(id: UUID = UUID(), title: String, category: String? = nil, subcategory: String? = nil, status: ExperimentStatus, createdAt: Date, updatedAt: Date? = nil, logs: [DailyLog] = [], review: ExperimentReview? = nil, completedAt: Date? = nil) {
+    init(id: UUID = UUID(), title: String, category: String? = nil, subcategory: String? = nil, impact: ExperimentImpact? = nil, status: ExperimentStatus, createdAt: Date, updatedAt: Date? = nil, logs: [DailyLog] = [], review: ExperimentReview? = nil, completedAt: Date? = nil) {
         self.id = id
         self.title = title
         self.category = category
         self.subcategory = subcategory
+        self.impact = impact
         self.status = status
         self.createdAt = createdAt
         self.updatedAt = updatedAt ?? createdAt
@@ -179,6 +301,7 @@ struct Experiment: Identifiable, Codable, Hashable {
         title = try container.decode(String.self, forKey: .title)
         category = try? container.decode(String.self, forKey: .category)
         subcategory = try? container.decode(String.self, forKey: .subcategory)
+        impact = try? container.decode(ExperimentImpact.self, forKey: .impact)
         status = try container.decode(ExperimentStatus.self, forKey: .status)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = (try? container.decode(Date.self, forKey: .updatedAt)) ?? createdAt
@@ -200,6 +323,9 @@ struct HomeView: View {
     let onShowCompletedMore: () -> Void
     let onShowSummary: () -> Void
     let onSelectDay: (Date) -> Void
+    let onRenameExperiment: (Experiment) -> Void
+    let onDuplicateExperiment: (Experiment) -> Void
+    let onDeleteExperiment: (Experiment) -> Void
     
     // MARK: - State Determination
     
@@ -343,7 +469,7 @@ struct HomeView: View {
                     Divider()
                     
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Recent Events")
+                        Text(S.sectionRecentEvents)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
@@ -386,7 +512,7 @@ struct HomeView: View {
                                 Button(action: {
                                     onShowActiveMore()
                                 }) {
-                                    Text("More")
+                                    Text(S.actionMore)
                                         .font(.subheadline)
                                         .foregroundColor(.blue)
                                 }
@@ -411,10 +537,12 @@ struct HomeView: View {
                                     
                                     Spacer()
                                     
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .opacity(isWeakened ? 0.5 : 1.0)
+                                    ExperimentRowMenu(
+                                        kind: .active,
+                                        onRename: { onRenameExperiment(experiment) },
+                                        onDuplicate: { onDuplicateExperiment(experiment) },
+                                        onDelete: { onDeleteExperiment(experiment) }
+                                    )
                                 }
                                 .padding()
                                 .background(Color(.systemGray6).opacity(isWeakened ? 0.5 : 1.0))
@@ -454,7 +582,7 @@ struct HomeView: View {
                     
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("Completed")
+                            Text(S.sectionCompleted)
                                 .font(.headline)
                                 .foregroundColor(.primary)
                             
@@ -464,7 +592,7 @@ struct HomeView: View {
                                 Button(action: {
                                     onShowCompletedMore()
                                 }) {
-                                    Text("More")
+                                    Text(S.actionMore)
                                         .font(.subheadline)
                                         .foregroundColor(.blue)
                                 }
@@ -491,9 +619,11 @@ struct HomeView: View {
                                     
                                     Spacer()
                                     
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                    ExperimentRowMenu(
+                                        kind: .completed,
+                                        onDuplicate: { onDuplicateExperiment(experiment) },
+                                        onDelete: { onDeleteExperiment(experiment) }
+                                    )
                                 }
                                 .padding()
                                 .background(Color(.systemGray6).opacity(0.7))
@@ -611,6 +741,50 @@ struct ExperimentCardRow: View {
     }
 }
 
+// MARK: - Experiment Row Menu (Stable trailing menu)
+
+struct ExperimentRowMenu: View {
+    enum Kind {
+        case active
+        case completed
+    }
+    
+    let kind: Kind
+    let onRename: (() -> Void)?
+    let onDuplicate: () -> Void
+    let onDelete: () -> Void
+    
+    init(kind: Kind, onRename: (() -> Void)? = nil, onDuplicate: @escaping () -> Void, onDelete: @escaping () -> Void) {
+        self.kind = kind
+        self.onRename = onRename
+        self.onDuplicate = onDuplicate
+        self.onDelete = onDelete
+    }
+    
+    var body: some View {
+        Menu {
+            if kind == .active, let onRename {
+                Button(action: onRename) {
+                    Label("Rename", systemImage: "pencil")
+                }
+            }
+            
+            Button(action: onDuplicate) {
+                Label("Duplicate", systemImage: "doc.on.doc")
+            }
+            
+            Divider()
+            
+            Button("Delete", role: .destructive, action: onDelete)
+        } label: {
+            Image(systemName: "ellipsis")
+                .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
+                .padding(.leading, 8)
+        }
+    }
+}
+
 // MARK: - All Active List View (Grouped by Update Status)
 
 struct AllActiveListView: View {
@@ -618,6 +792,9 @@ struct AllActiveListView: View {
     let isUpdatedToday: (Experiment) -> Bool
     let onSelectExperiment: (Experiment) -> Void
     let onCreateExperiment: () -> Void
+    let onRename: (Experiment) -> Void
+    let onDuplicate: (Experiment) -> Void
+    let onDelete: (Experiment) -> Void
     
     private var updatedToday: [Experiment] {
         activeExperiments.filter { isUpdatedToday($0) }
@@ -630,87 +807,130 @@ struct AllActiveListView: View {
     }
     
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                // Updated Today section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Updated Today")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 16)
-                    
-                    if updatedToday.isEmpty {
-                        Text("No updates yet today")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 16)
-                    } else {
-                        ForEach(updatedToday) { experiment in
-                            Button(action: {
-                                onSelectExperiment(experiment)
-                            }) {
-                                ExperimentCardRow(
-                                    title: experiment.title,
-                                    subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))"
+        List {
+            // Updated Today section
+            Section {
+                if updatedToday.isEmpty {
+                    Text(S.emptyNoUpdatesToday)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(updatedToday) { experiment in
+                        Button(action: {
+                            onSelectExperiment(experiment)
+                        }) {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(experiment.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                ExperimentRowMenu(
+                                    kind: .active,
+                                    onRename: { onRename(experiment) },
+                                    onDuplicate: { onDuplicate(experiment) },
+                                    onDelete: { onDelete(experiment) }
                                 )
                             }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 16)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive, action: { onDelete(experiment) }) {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            Button(action: { onDuplicate(experiment) }) {
+                                Label("Duplicate", systemImage: "doc.on.doc")
+                            }
+                            .tint(.orange)
+                            Button(action: { onRename(experiment) }) {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            .tint(.blue)
                         }
                     }
                 }
-                
-                // Not Updated Today section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Not Updated Today")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                    
-                    if notUpdatedToday.isEmpty {
-                        Text("All active experiments have been updated")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 16)
-                    } else {
-                        ForEach(notUpdatedToday) { experiment in
-                            Button(action: {
-                                onSelectExperiment(experiment)
-                            }) {
-                                ExperimentCardRow(
-                                    title: experiment.title,
-                                    subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))"
+            } header: {
+                Text(S.sectionUpdatedToday)
+            }
+            
+            // Not Updated Today section
+            Section {
+                if notUpdatedToday.isEmpty {
+                    Text(S.emptyAllUpdated)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(notUpdatedToday) { experiment in
+                        Button(action: {
+                            onSelectExperiment(experiment)
+                        }) {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(experiment.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                ExperimentRowMenu(
+                                    kind: .active,
+                                    onRename: { onRename(experiment) },
+                                    onDuplicate: { onDuplicate(experiment) },
+                                    onDelete: { onDelete(experiment) }
                                 )
                             }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 16)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive, action: { onDelete(experiment) }) {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            Button(action: { onDuplicate(experiment) }) {
+                                Label("Duplicate", systemImage: "doc.on.doc")
+                            }
+                            .tint(.orange)
+                            Button(action: { onRename(experiment) }) {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            .tint(.blue)
                         }
                     }
                 }
-                
-                // Start New Experiment button
+            } header: {
+                Text(S.sectionNotUpdatedToday)
+            }
+            
+            // Start New Experiment button
+            Section {
                 Button(action: {
                     onCreateExperiment()
                 }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
-                        Text("Start New Experiment")
+                        Text(S.sectionStartNewExperiment)
                             .fontWeight(.medium)
                     }
                     .foregroundColor(.blue)
-                    .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(12)
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+                .listRowBackground(Color.blue.opacity(0.1))
             }
-            .padding(.vertical, 16)
         }
-        .navigationTitle("Active Experiments")
+        .navigationTitle(S.sectionActiveExperiments)
         .navigationBarTitleDisplayMode(.large)
     }
 }
@@ -720,6 +940,8 @@ struct AllActiveListView: View {
 struct CompletedListView: View {
     let completedExperiments: [Experiment]
     let onSelectExperiment: (Experiment) -> Void
+    let onDuplicate: (Experiment) -> Void
+    let onDelete: (Experiment) -> Void
     
     private var thisWeek: [Experiment] {
         let calendar = Calendar.current
@@ -738,18 +960,18 @@ struct CompletedListView: View {
     }
     
     var body: some View {
-        ScrollView {
+        Group {
             if completedExperiments.isEmpty {
                 // Empty state
                 VStack(spacing: 16) {
                     Spacer()
                         .frame(height: 60)
                     
-                    Text("No completed experiments yet")
+                    Text(S.emptyNoCompletedExperiments)
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("When you finish an experiment, it will show up here as a small milestone.")
+                    Text(S.emptyNoCompletedSubtitle)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -764,59 +986,108 @@ struct CompletedListView: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
-                .padding()
             } else {
-                LazyVStack(alignment: .leading, spacing: 16) {
+                List {
                     // This week section
                     if !thisWeek.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("This week")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                                .padding(.horizontal, 16)
-                            
+                        Section {
                             ForEach(thisWeek) { experiment in
                                 Button(action: {
                                     onSelectExperiment(experiment)
                                 }) {
-                                    ExperimentCardRow(
-                                        title: experiment.title,
-                                        subtitle: experiment.completedAt != nil ? "Completed \(experiment.completedAt!.formatted(date: .abbreviated, time: .omitted))" : "Completed",
-                                        leadingIcon: "checkmark.seal.fill"
-                                    )
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "checkmark.seal.fill")
+                                            .font(.title3)
+                                            .foregroundColor(.green)
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(experiment.title)
+                                                .font(.subheadline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.primary)
+                                            
+                                            if let completedAt = experiment.completedAt {
+                                                Text("Completed \(completedAt.formatted(date: .abbreviated, time: .omitted))")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        ExperimentRowMenu(
+                                            kind: .completed,
+                                            onDuplicate: { onDuplicate(experiment) },
+                                            onDelete: { onDelete(experiment) }
+                                        )
+                                    }
                                 }
                                 .buttonStyle(.plain)
-                                .padding(.horizontal, 16)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive, action: { onDelete(experiment) }) {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                    Button(action: { onDuplicate(experiment) }) {
+                                        Label("Duplicate", systemImage: "doc.on.doc")
+                                    }
+                                    .tint(.orange)
+                                }
                             }
+                        } header: {
+                            Text(S.sectionThisWeek)
                         }
                     }
                     
                     // Earlier section
                     if !earlier.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Earlier")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                                .padding(.horizontal, 16)
-                                .padding(.top, thisWeek.isEmpty ? 0 : 8)
-                            
+                        Section {
                             ForEach(earlier) { experiment in
                                 Button(action: {
                                     onSelectExperiment(experiment)
                                 }) {
-                                    ExperimentCardRow(
-                                        title: experiment.title,
-                                        subtitle: experiment.completedAt != nil ? "Completed \(experiment.completedAt!.formatted(date: .abbreviated, time: .omitted))" : "Completed",
-                                        leadingIcon: "checkmark.seal.fill"
-                                    )
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "checkmark.seal.fill")
+                                            .font(.title3)
+                                            .foregroundColor(.green)
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(experiment.title)
+                                                .font(.subheadline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.primary)
+                                            
+                                            if let completedAt = experiment.completedAt {
+                                                Text("Completed \(completedAt.formatted(date: .abbreviated, time: .omitted))")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        ExperimentRowMenu(
+                                            kind: .completed,
+                                            onDuplicate: { onDuplicate(experiment) },
+                                            onDelete: { onDelete(experiment) }
+                                        )
+                                    }
                                 }
                                 .buttonStyle(.plain)
-                                .padding(.horizontal, 16)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive, action: { onDelete(experiment) }) {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                    Button(action: { onDuplicate(experiment) }) {
+                                        Label("Duplicate", systemImage: "doc.on.doc")
+                                    }
+                                    .tint(.orange)
+                                }
                             }
+                        } header: {
+                            Text(S.sectionEarlier)
                         }
                     }
                 }
-                .padding(.vertical, 16)
             }
         }
         .navigationTitle("Completed Experiments")
@@ -1099,6 +1370,15 @@ struct ContentView: View {
                     },
                     onSelectDay: { day in
                         homePath.append(.day(day))
+                    },
+                    onRenameExperiment: { experiment in
+                        activeSheet = .rename(experiment)
+                    },
+                    onDuplicateExperiment: { experiment in
+                        activeSheet = .duplicate(experiment)
+                    },
+                    onDeleteExperiment: { experiment in
+                        experimentToDelete = experiment
                     }
                 )
                 .navigationTitle("Life Experiment")
@@ -1107,28 +1387,28 @@ struct ContentView: View {
                 }
             }
             .tabItem {
-                Label("Home", systemImage: "house.fill")
+                Label(S.tabHome, systemImage: "house.fill")
             }
             .tag(Tab.home)
             
             // Tab 2: Active Experiments
             NavigationStack(path: $activePath) {
                 activeExperimentsView
-                    .navigationTitle("Active Experiments")
+                    .navigationTitle(S.sectionActiveExperiments)
                     .navigationBarTitleDisplayMode(.large)
                     .navigationDestination(for: Route.self) { route in
                         routeDestination(route: route, path: $activePath)
                     }
             }
             .tabItem {
-                Label("Active", systemImage: "list.bullet")
+                Label(S.tabActive, systemImage: "list.bullet")
             }
             .tag(Tab.active)
             
             // Tab 3: Create (placeholder - sheet is presented via onChange)
             Color.clear
                 .tabItem {
-                    Label("Create", systemImage: "plus.circle.fill")
+                    Label(S.tabCreate, systemImage: "plus.circle.fill")
                 }
                 .tag(Tab.create)
             
@@ -1140,7 +1420,7 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label("Summary", systemImage: "chart.bar.fill")
+                Label(S.tabSummary, systemImage: "chart.bar.fill")
             }
             .tag(Tab.summary)
             
@@ -1152,7 +1432,7 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label("Profile", systemImage: "person.fill")
+                Label(S.tabProfile, systemImage: "person.fill")
             }
             .tag(Tab.profile)
         }
@@ -1199,19 +1479,19 @@ struct ContentView: View {
                 seedCatalog = SeedCatalogLoader.load()
             }
         }
-        .alert("Delete Experiment?", isPresented: Binding(
+        .alert(S.experimentDeleteConfirm, isPresented: Binding(
             get: { experimentToDelete != nil },
             set: { if !$0 { experimentToDelete = nil } }
         ), presenting: experimentToDelete) { experiment in
-            Button("Cancel", role: .cancel) {
+            Button(S.actionCancel, role: .cancel) {
                 experimentToDelete = nil
             }
-            Button("Delete", role: .destructive) {
+            Button(S.actionDelete, role: .destructive) {
                 deleteExperiment(id: experiment.id)
                 experimentToDelete = nil
             }
         } message: { experiment in
-            Text("All logs and data for \"\(experiment.title)\" will be deleted. This cannot be undone.")
+            Text("All logs and data for \"\(experiment.title)\" " + S.experimentDeleteMessage)
         }
     }
     
@@ -1231,11 +1511,11 @@ struct ContentView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.secondary)
                     
-                    Text("No Active Experiments")
+                    Text(S.emptyNoActiveExperiments)
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("Start your first experiment to begin tracking")
+                    Text(S.emptyNoActiveSubtitle)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -1246,7 +1526,7 @@ struct ContentView: View {
                     }) {
                         HStack {
                             Image(systemName: "plus.circle.fill")
-                            Text("Create Experiment")
+                            Text(S.actionCreate + " Experiment")
                                 .fontWeight(.medium)
                         }
                         .foregroundColor(.white)
@@ -1283,6 +1563,15 @@ struct ContentView: View {
                     },
                     onCreateExperiment: {
                         showCreateExperimentSheet = true
+                    },
+                    onRename: { experiment in
+                        activeSheet = .rename(experiment)
+                    },
+                    onDuplicate: { experiment in
+                        activeSheet = .duplicate(experiment)
+                    },
+                    onDelete: { experiment in
+                        experimentToDelete = experiment
                     }
                 )
             }
@@ -1328,6 +1617,15 @@ struct ContentView: View {
                 },
                 onCreateExperiment: {
                     showCreateExperimentSheet = true
+                },
+                onRename: { experiment in
+                    activeSheet = .rename(experiment)
+                },
+                onDuplicate: { experiment in
+                    activeSheet = .duplicate(experiment)
+                },
+                onDelete: { experiment in
+                    experimentToDelete = experiment
                 }
             )
             
@@ -1343,6 +1641,12 @@ struct ContentView: View {
                 completedExperiments: completedExperiments,
                 onSelectExperiment: { experiment in
                     path.wrappedValue.append(.experiment(experiment.id))
+                },
+                onDuplicate: { experiment in
+                    activeSheet = .duplicate(experiment)
+                },
+                onDelete: { experiment in
+                    experimentToDelete = experiment
                 }
             )
             
@@ -1410,8 +1714,11 @@ struct ExperimentEditorView: View {
     @State private var showRevertTitle: Bool = false
     @State private var isProgrammaticTitleChange: Bool = false
     @FocusState private var focusedField: Field?
-
-
+    
+    // Dimension state
+    @State private var selectedImpact: ExperimentImpact?
+    @State private var hasManuallyEditedImpact: Bool = false
+    @State private var showDimensionPicker: Bool = false
 
     // For rename "no changes -> disable"
     private let originalExperiment: Experiment?
@@ -1509,6 +1816,44 @@ struct ExperimentEditorView: View {
         return useCustomCategory || selectedSeedCategoryId != nil
     }
 
+    private var selectedSeedSubcategory: SeedSubcategory? {
+        guard !useCustomCategory,
+              !useCustomSubcategory,
+              let category = selectedSeedCategory,
+              let subId = selectedSeedSubcategoryId else {
+            return nil
+        }
+        return category.subcategories.first(where: { $0.id == subId })
+    }
+    
+    private var defaultImpact: ExperimentImpact? {
+        guard let subcategory = selectedSeedSubcategory else { return nil }
+        return impactFromDefaultDimensions(subcategory.default_dimensions)
+    }
+    
+    private var displayedImpact: ExperimentImpact? {
+        if hasManuallyEditedImpact {
+            return selectedImpact
+        }
+        return defaultImpact
+    }
+    
+    private var isSeedBased: Bool {
+        return !useCustomCategory && selectedSeedCategoryId != nil && selectedSeedSubcategoryId != nil
+    }
+    
+    private var isCustom: Bool {
+        return useCustomCategory
+    }
+    
+    private var hasSeedCategory: Bool {
+        return !useCustomCategory && selectedSeedCategoryId != nil
+    }
+    
+    private var hasSeedSubcategory: Bool {
+        return !useCustomCategory && selectedSeedSubcategoryId != nil
+    }
+
     private var availablePrompts: [String] {
         // Only show prompts in create or duplicate mode
         switch mode {
@@ -1519,12 +1864,7 @@ struct ExperimentEditorView: View {
         }
         
         // Only show prompts for seed subcategories (not custom)
-        guard !useCustomCategory,
-              !useCustomSubcategory,
-              let category = selectedSeedCategory,
-              let subId = selectedSeedSubcategoryId,
-              let subcategory = category.subcategories.first(where: { $0.id == subId }),
-              !subcategory.prompts.isEmpty else {
+        guard let subcategory = selectedSeedSubcategory, !subcategory.prompts.isEmpty else {
             return []
         }
         
@@ -1532,9 +1872,25 @@ struct ExperimentEditorView: View {
         return Array(subcategory.prompts.prefix(3))
     }
 
-    private var isPrimaryDisabled: Bool {
+    private var isCreateActionDisabled: Bool {
         let t = trimmed(title)
         if t.isEmpty { return true }
+        
+        let isCreateOrDuplicate: Bool = {
+            if case .create = mode { return true }
+            if case .duplicate = mode { return true }
+            return false
+        }()
+        
+        // If a seed category is selected, require a subcategory
+        if hasSeedCategory && !hasSeedSubcategory {
+            return true
+        }
+        
+        // For custom category experiments in create/duplicate mode, require primary dimension selection
+        if isCustom && isCreateOrDuplicate && selectedImpact == nil {
+            return true
+        }
 
         // rename mode: disable if no changes
         if case .rename = mode, let original = originalExperiment {
@@ -1808,6 +2164,29 @@ struct ExperimentEditorView: View {
                         }
                     }
                 }
+                
+                // Validation text for seed category without subcategory
+                if hasSeedCategory && !hasSeedSubcategory {
+                    Text("Please select a subcategory.")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 4)
+                        .padding(.top, -8)
+                }
+                
+                // Default Dimensions Card (for seed-based experiments)
+                if let impact = displayedImpact, isSeedBased {
+                    DefaultDimensionsCard(impact: impact) {
+                        showDimensionPicker = true
+                    }
+                }
+                
+                // Custom Dimension Selection Card (for custom category experiments)
+                if isCustom {
+                    CustomDimensionSelectionCard(selectedImpact: selectedImpact) {
+                        showDimensionPicker = true
+                    }
+                }
 
                 Spacer()
             }
@@ -1819,13 +2198,31 @@ struct ExperimentEditorView: View {
                     baselineTitleForRevert = ""
                 }
             }
+            .onChange(of: selectedSeedSubcategoryId) { _, _ in
+                // Reset manual editing when subcategory changes (only for seed-based)
+                if !hasManuallyEditedImpact && isSeedBased {
+                    selectedImpact = defaultImpact
+                }
+            }
+            .onChange(of: useCustomCategory) { _, newValue in
+                // Reset manual editing flag when switching between custom and seed
+                // This ensures seed defaults are respected when switching to seed
+                hasManuallyEditedImpact = false
+                selectedImpact = newValue ? nil : defaultImpact
+            }
+            .sheet(isPresented: $showDimensionPicker) {
+                DimensionPickerSheet(initialImpact: displayedImpact) { newImpact in
+                    selectedImpact = newImpact
+                    hasManuallyEditedImpact = true
+                }
+            }
             .navigationTitle(mode.navTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(S.actionCancel) { dismiss() }
                 }
-
+                
                 ToolbarItem(placement: .confirmationAction) {
                     Button(mode.primaryButtonTitle) {
                         let now = Date()
@@ -1837,6 +2234,7 @@ struct ExperimentEditorView: View {
                                 title: finalTitle,
                                 category: draftCategory,
                                 subcategory: draftSubcategory,
+                                impact: displayedImpact,
                                 status: .active,
                                 createdAt: now,
                                 updatedAt: now
@@ -1848,6 +2246,7 @@ struct ExperimentEditorView: View {
                             updated.title = finalTitle
                             updated.category = draftCategory
                             updated.subcategory = draftSubcategory
+                            updated.impact = displayedImpact
                             updated.updatedAt = now
                             onCommit(updated)
 
@@ -1858,6 +2257,7 @@ struct ExperimentEditorView: View {
                                 title: finalTitle,
                                 category: draftCategory,
                                 subcategory: draftSubcategory,
+                                impact: displayedImpact,
                                 status: .active,
                                 createdAt: now,
                                 updatedAt: now,
@@ -1870,7 +2270,7 @@ struct ExperimentEditorView: View {
 
                         dismiss()
                     }
-                    .disabled(isPrimaryDisabled)
+                    .disabled(isCreateActionDisabled)
                 }
             }
             .onAppear {
@@ -1892,6 +2292,12 @@ struct ExperimentEditorView: View {
                         title = "\(from.title) (Copy)"
                     }
                     prefillCategorySubcategory(from: from)
+                    
+                    // Prefill impact if it exists
+                    if let impact = from.impact {
+                        selectedImpact = impact
+                        hasManuallyEditedImpact = true
+                    }
                 }
             }
         }
@@ -1902,6 +2308,12 @@ struct ExperimentEditorView: View {
     private func prefill(from exp: Experiment) {
         title = exp.title
         prefillCategorySubcategory(from: exp)
+        
+        // Prefill impact if it exists
+        if let impact = exp.impact {
+            selectedImpact = impact
+            hasManuallyEditedImpact = true
+        }
     }
 
     private func prefillCategorySubcategory(from exp: Experiment) {
@@ -2033,7 +2445,7 @@ struct DayDetailContent: View {
             }
             .padding(.horizontal)
             
-            Button("Save") {
+            Button(S.actionSave) {
                 var updated = record
                 updated.note = draftNote
                 updated.mood = draftMood
@@ -2202,7 +2614,7 @@ struct ExperimentDetailView: View {
                                 .focused($noteFocused)
                         }
                         
-                        Button("Save") {
+                        Button(S.actionSave) {
                             if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 showEmptyNoteAlert = true
                             } else if draftMood == nil {
@@ -2214,7 +2626,7 @@ struct ExperimentDetailView: View {
                         .buttonStyle(.borderedProminent)
                     }
                     
-                    Button("Complete Experiment") {
+                    Button(S.experimentCompleteButton) {
                         showCompleteConfirm = true
                     }
                     .buttonStyle(.bordered)
@@ -2379,17 +2791,17 @@ struct ExperimentDetailView: View {
         } message: {
             Text("It takes one tap and helps you see patterns over time.")
         }
-        .alert("Complete this experiment?", isPresented: $showCompleteConfirm) {
-            Button("Cancel", role: .cancel) { }
-            Button("Complete", role: .destructive) {
+        .alert(S.experimentCompleteConfirm, isPresented: $showCompleteConfirm) {
+            Button(S.actionCancel, role: .cancel) { }
+            Button(S.actionComplete, role: .destructive) {
                 completeExperiment()
             }
         } message: {
-            Text("You won't be able to add new logs after completion.")
+            Text(S.experimentCompleteMessage)
         }
-        .alert("Reopen this experiment?", isPresented: $showReopenConfirm) {
-            Button("Cancel", role: .cancel) { }
-            Button("Reopen") {
+        .alert(S.experimentReopenConfirm, isPresented: $showReopenConfirm) {
+            Button(S.actionCancel, role: .cancel) { }
+            Button(S.actionReopen) {
                 reopenExperiment()
             }
         } message: {
@@ -2474,6 +2886,264 @@ struct ExperimentDetailView: View {
         showSavedToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             showSavedToast = false
+        }
+    }
+}
+
+// MARK: - Dimension UI Components
+
+struct DimensionChip: View {
+    let dimension: Dimension
+    let isPrimary: Bool
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            if isPrimary {
+                Image(systemName: "star.fill")
+                    .font(.caption2)
+                    .foregroundColor(.yellow)
+            }
+            Text(dimension.title)
+                .font(.subheadline)
+                .fontWeight(isPrimary ? .semibold : .regular)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(isPrimary ? Color.blue.opacity(0.15) : Color(.systemGray5))
+        .foregroundColor(isPrimary ? .blue : .primary)
+        .cornerRadius(16)
+    }
+}
+
+struct DefaultDimensionsCard: View {
+    let impact: ExperimentImpact
+    let onEdit: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("This experiment usually helps with:")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Button(action: onEdit) {
+                    Text("Edit")
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            LazyVGrid(columns: [
+                GridItem(.adaptive(minimum: 100), spacing: 8)
+            ], alignment: .leading, spacing: 8) {
+                DimensionChip(dimension: impact.primary, isPrimary: true)
+                
+                ForEach(impact.secondary, id: \.self) { dimension in
+                    DimensionChip(dimension: dimension, isPrimary: false)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+}
+
+struct CustomDimensionSelectionCard: View {
+    let selectedImpact: ExperimentImpact?
+    let onChoose: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let impact = selectedImpact {
+                // Show selected dimensions with Edit button
+                HStack {
+                    Text("This experiment helps with:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button(action: onChoose) {
+                        Text("Edit")
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                LazyVGrid(columns: [
+                    GridItem(.adaptive(minimum: 100), spacing: 8)
+                ], alignment: .leading, spacing: 8) {
+                    DimensionChip(dimension: impact.primary, isPrimary: true)
+                    
+                    ForEach(impact.secondary, id: \.self) { dimension in
+                        DimensionChip(dimension: dimension, isPrimary: false)
+                    }
+                }
+            } else {
+                // Show "Choose dimensions" prompt
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("What does this experiment help with most? (required)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Button(action: onChoose) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Choose dimensions")
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.vertical, 8)
+                    }
+                    
+                    Text("Don't overthink it — you can adjust later.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+}
+
+struct DimensionPickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var selectedPrimary: Dimension
+    @State private var selectedAdditional: Set<Dimension>
+    
+    let initialImpact: ExperimentImpact?
+    let onSave: (ExperimentImpact) -> Void
+    
+    init(initialImpact: ExperimentImpact?, onSave: @escaping (ExperimentImpact) -> Void) {
+        self.initialImpact = initialImpact
+        self.onSave = onSave
+        
+        // Initialize state
+        if let impact = initialImpact {
+            _selectedPrimary = State(initialValue: impact.primary)
+            _selectedAdditional = State(initialValue: Set(impact.secondary))
+        } else {
+            _selectedPrimary = State(initialValue: .self_understanding)
+            _selectedAdditional = State(initialValue: [])
+        }
+    }
+    
+    private var availableAdditional: [Dimension] {
+        Dimension.allCases.filter { $0 != selectedPrimary }
+    }
+    
+    private var canSave: Bool {
+        selectedAdditional.count <= 2
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Text("Select the primary dimension this experiment focuses on.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    ForEach(Dimension.allCases) { dimension in
+                        Button(action: {
+                            selectedPrimary = dimension
+                            // Remove from additional if it was there
+                            selectedAdditional.remove(dimension)
+                        }) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(dimension.title)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+                                    if let subtitle = dimension.subtitle {
+                                        Text(subtitle)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                if selectedPrimary == dimension {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    Text("Primary Dimension (Required)")
+                }
+                
+                Section {
+                    Text("Optionally select up to 2 additional dimensions.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    ForEach(availableAdditional) { dimension in
+                        Button(action: {
+                            if selectedAdditional.contains(dimension) {
+                                selectedAdditional.remove(dimension)
+                            } else if selectedAdditional.count < 2 {
+                                selectedAdditional.insert(dimension)
+                            }
+                        }) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(dimension.title)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+                                    if let subtitle = dimension.subtitle {
+                                        Text(subtitle)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                if selectedAdditional.contains(dimension) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.blue)
+                                } else {
+                                    Image(systemName: "circle")
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(selectedAdditional.count >= 2 && !selectedAdditional.contains(dimension))
+                        .opacity((selectedAdditional.count >= 2 && !selectedAdditional.contains(dimension)) ? 0.5 : 1.0)
+                    }
+                } header: {
+                    Text("Additional Dimensions (Optional, max 2)")
+                } footer: {
+                    if selectedAdditional.count >= 2 {
+                        Text("Maximum of 2 additional dimensions reached")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+            }
+            .navigationTitle("Edit Dimensions")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(S.actionCancel) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(S.actionSave) {
+                        let impact = ExperimentImpact(
+                            primary: selectedPrimary,
+                            secondary: Array(selectedAdditional).sorted(by: { $0.title < $1.title })
+                        )
+                        onSave(impact)
+                        dismiss()
+                    }
+                    .disabled(!canSave)
+                }
+            }
         }
     }
 }
