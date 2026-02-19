@@ -17,20 +17,20 @@ struct ProfileView: View {
                         .resizable()
                         .frame(width: 80, height: 80)
                         .foregroundColor(.blue)
-                    
+
                     Text("Life Experimenter")
                         .font(.title2)
                         .fontWeight(.semibold)
-                    
+
                     Text("Tracking your journey")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 .padding(.top, 40)
-                
+
                 Divider()
                     .padding(.horizontal)
-                
+
                 // Settings button
                 VStack(spacing: 12) {
                     Button(action: {
@@ -54,7 +54,7 @@ struct ProfileView: View {
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal)
-                
+
                 Spacer()
             }
         }
@@ -62,3 +62,4 @@ struct ProfileView: View {
         .navigationBarTitleDisplayMode(.large)
     }
 }
+
