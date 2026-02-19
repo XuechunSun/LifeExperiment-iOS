@@ -27,3 +27,19 @@ Each day I do:
 - SwiftUI
 - Xcode
 - Git + GitHub
+
+## Development Documentation
+
+Comprehensive framework for AI-assisted development:
+
+📚 **[Development Docs →](./experience/README.md)**
+
+Includes:
+- Product rules & feature specifications
+- Summary logic (Strength vs Growth calculations)
+- UI guidelines & layout patterns
+- State management best practices
+- Dimension weighting rules
+- Debugging principles & common patterns
+
+These docs serve as context for AI-assisted development and prevent recurring bugs.
