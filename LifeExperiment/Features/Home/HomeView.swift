@@ -135,7 +135,7 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 // 1. Calendar Footprint - Always visible
-                CalendarFootprintView(experiments: experiments, onSelectDay: onSelectDay)
+                CalendarFootprintView(experiments: experiments, onUpdate: onUpdate, onSelectDay: onSelectDay)
 
                 Divider()
 

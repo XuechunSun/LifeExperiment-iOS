@@ -4,6 +4,7 @@ import SwiftUI
 
 struct CalendarFootprintView: View {
     let experiments: [Experiment]
+    let onUpdate: (Experiment) -> Void
     let onSelectDay: (Date) -> Void
     @State private var weekOffset: Int = 0
 
@@ -106,6 +107,26 @@ struct CalendarFootprintView: View {
         }
     }
 
+    private var loggedDates: Set<Date> {
+        let calendar = Calendar.current
+        var dates = Set<Date>()
+
+        for experiment in experiments {
+            dates.insert(calendar.startOfDay(for: experiment.createdAt))
+            dates.insert(calendar.startOfDay(for: experiment.updatedAt))
+
+            for log in experiment.logs {
+                dates.insert(calendar.startOfDay(for: log.date))
+            }
+
+            if let completedAt = experiment.completedAt {
+                dates.insert(calendar.startOfDay(for: completedAt))
+            }
+        }
+
+        return dates
+    }
+
     private var weekHeaderText: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
@@ -183,7 +204,7 @@ struct CalendarFootprintView: View {
             }
 
             // See full calendar link
-            NavigationLink(destination: FullCalendarView()) {
+            NavigationLink(destination: FullCalendarView(loggedDates: loggedDates, experiments: experiments, onUpdate: onUpdate)) {
                 HStack {
                     Text("See full calendar")
                         .font(.subheadline)
@@ -303,21 +324,6 @@ struct CalendarDayCell: View {
         .padding(.vertical, 8)
         .background(Color(.systemGray6))
         .cornerRadius(8)
-    }
-}
-
-// MARK: - Stub Views
-
-struct FullCalendarView: View {
-    var body: some View {
-        VStack {
-            Text("Full Calendar View")
-                .font(.title)
-            Text("Coming soon...")
-                .foregroundColor(.secondary)
-        }
-        .navigationTitle("Full Calendar")
-        .navigationBarTitleDisplayMode(.large)
     }
 }
 
