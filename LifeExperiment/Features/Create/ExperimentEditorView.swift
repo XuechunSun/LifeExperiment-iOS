@@ -22,10 +22,7 @@ struct ExperimentEditorView: View {
 
     @State private var customSubcategoryText: String = ""
     @State private var saveCustomSubcategoryToList: Bool = false
-    @AppStorage("customSubcategoriesByCategoryData") private var customSubcategoriesByCategoryData: Data = Data()
-    @State private var customSubcategoriesByCategory: [String: [String]] = [:]
-    @State private var didLoadCustomSubcategories = false
-    @State private var isPersistingCustomSubcategories = false
+    @StateObject private var savedStore = SubcategorySavedStore()
     @State private var showManageSheet: Bool = false
     @State private var pendingDeleteSavedName: String? = nil
     @State private var showDeleteSavedConfirm: Bool = false
@@ -82,7 +79,7 @@ struct ExperimentEditorView: View {
 
     private var savedCustomSubcategoriesForCurrentCategory: [String] {
         guard let key = customSubcategoryCategoryKey else { return [] }
-        return Array(customSubcategories(forKey: key).prefix(5))
+        return savedStore.saved(for: key)
     }
 
     private var shouldShowSaveCustomSubcategoryToggle: Bool {
@@ -94,105 +91,15 @@ struct ExperimentEditorView: View {
     private var willReplaceOldestSavedIfAdded: Bool {
         guard shouldShowSaveCustomSubcategoryToggle else { return false }
         guard let value = trimmedOrNil(customSubcategoryText) else { return false }
-        let list = savedCustomSubcategoriesForCurrentCategory
-        guard list.count >= 5 else { return false }
-        let exists = list.contains { $0.lowercased() == value.lowercased() }
-        return !exists
-    }
-
-    private func decodeCustomSubcategories(_ data: Data) -> [String: [String]] {
-        guard !data.isEmpty else { return [:] }
-        return (try? JSONDecoder().decode([String: [String]].self, from: data)) ?? [:]
-    }
-
-    private func persistCustomSubcategories() {
-        // Prevent self-write AppStorage updates from triggering redundant decode churn.
-        isPersistingCustomSubcategories = true
-        customSubcategoriesByCategoryData = (try? JSONEncoder().encode(customSubcategoriesByCategory)) ?? Data()
-        DispatchQueue.main.async {
-            isPersistingCustomSubcategories = false
-        }
-    }
-
-    private func mergeSavedLists(_ existing: [String], _ incoming: [String]) -> [String] {
-        var out = existing
-        for name in incoming {
-            let v = trimmed(name)
-            guard !v.isEmpty else { continue }
-            out.removeAll { $0.caseInsensitiveCompare(v) == .orderedSame }
-            out.append(v)
-        }
-        if out.count > 5 {
-            out = Array(out.suffix(5))
-        }
-        return out
-    }
-
-    private func migrateLegacyCustomSubcategoryKeysIfNeeded(_ map: [String: [String]]) -> ([String: [String]], Bool) {
-        guard let catalog = seedCatalog else { return (map, false) }
-        let titleToStable = Dictionary(uniqueKeysWithValues: catalog.categories.map { ($0.title, "seed:\($0.id)") })
-        var migrated: [String: [String]] = [:]
-        var changed = false
-
-        for (oldKey, list) in map {
-            let target: String
-            if oldKey == "Other" {
-                target = "__other__"
-            } else if oldKey == "__other__" || oldKey.hasPrefix("seed:") {
-                target = oldKey
-            } else if let stable = titleToStable[oldKey] {
-                target = stable
-            } else {
-                target = oldKey
-            }
-            if target != oldKey {
-                changed = true
-            }
-            migrated[target] = mergeSavedLists(migrated[target] ?? [], list)
-        }
-
-        return (migrated, changed)
-    }
-
-    private func legacyCategoryTitleKey(forStableKey key: String) -> String? {
-        if key == "__other__" { return "Other" }
-        guard key.hasPrefix("seed:") else { return nil }
-        let seedId = String(key.dropFirst("seed:".count))
-        guard let catalog = seedCatalog else { return nil }
-        return catalog.categories.first(where: { $0.id == seedId })?.title
-    }
-
-    private func customSubcategories(forKey key: String) -> [String] {
-        if let stable = customSubcategoriesByCategory[key], !stable.isEmpty {
-            return stable
-        }
-        if let legacyKey = legacyCategoryTitleKey(forStableKey: key),
-           let legacy = customSubcategoriesByCategory[legacyKey], !legacy.isEmpty {
-            return legacy
-        }
-        return []
+        return savedStore.willReplaceOldestIfAdding(value, for: customSubcategoryCategoryKey ?? "")
     }
 
     private func upsertCustomSubcategory(_ name: String, key: String) {
-        let value = trimmed(name)
-        guard !value.isEmpty else { return }
-
-        var list = customSubcategories(forKey: key)
-        let lowered = value.lowercased()
-        list.removeAll { $0.lowercased() == lowered }
-        list.insert(value, at: 0)
-        if list.count > 5 {
-            list = Array(list.prefix(5))
-        }
-        customSubcategoriesByCategory[key] = list
-        persistCustomSubcategories()
+        savedStore.upsert(name, for: key)
     }
 
     private func removeCustomSubcategory(_ name: String, key: String) {
-        var list = customSubcategories(forKey: key)
-        list.removeAll { $0.caseInsensitiveCompare(name) == .orderedSame }
-        customSubcategoriesByCategory[key] = list
-        persistCustomSubcategories()
+        savedStore.remove(name, for: key)
 
         let selected = trimmed(customSubcategoryText)
         if !selected.isEmpty && selected.caseInsensitiveCompare(name) == .orderedSame {
@@ -203,6 +110,27 @@ struct ExperimentEditorView: View {
                 useCustomSubcategory = false
                 selectedSeedSubcategoryId = nil
             }
+        }
+    }
+
+    private func enterCustomSubcategoryMode() {
+        useCustomSubcategory = true
+        selectedSeedSubcategoryId = nil
+        customSubcategoryText = ""
+        pickedSavedSubcategory = false
+        saveCustomSubcategoryToList = false
+        focusedField = .customSubcategory
+    }
+
+    private func pickSavedSubcategory(_ name: String) {
+        useCustomSubcategory = true
+        selectedSeedSubcategoryId = nil
+        isProgrammaticSubcategorySet = true
+        customSubcategoryText = name
+        pickedSavedSubcategory = true
+        saveCustomSubcategoryToList = false
+        DispatchQueue.main.async {
+            isProgrammaticSubcategorySet = false
         }
     }
 
@@ -578,24 +506,13 @@ struct ExperimentEditorView: View {
                                     Menu {
                                         ForEach(savedCustomSubcategoriesForCurrentCategory, id: \.self) { name in
                                             Button(name) {
-                                                useCustomSubcategory = true
-                                                isProgrammaticSubcategorySet = true
-                                                customSubcategoryText = name
-                                                pickedSavedSubcategory = true
-                                                saveCustomSubcategoryToList = false
-                                                DispatchQueue.main.async {
-                                                    isProgrammaticSubcategorySet = false
-                                                }
+                                                pickSavedSubcategory(name)
                                             }
                                         }
 
                                         Divider()
                                         Button("Custom...") {
-                                            useCustomSubcategory = true
-                                            customSubcategoryText = ""
-                                            pickedSavedSubcategory = false
-                                            saveCustomSubcategoryToList = false
-                                            focusedField = .customSubcategory
+                                            enterCustomSubcategoryMode()
                                         }
                                     } label: {
                                         HStack {
@@ -640,7 +557,7 @@ struct ExperimentEditorView: View {
                                     .padding(.top, 8)
                                 }
                             }
-                        } else if canPickSubcategoryFromSeed, let category = selectedSeedCategory {
+                        } else if canPickSubcategoryFromSeed {
                             VStack(alignment: .leading, spacing: 0) {
                                 Menu {
                                     ForEach(seedSubcategoryMenuItems) { s in
@@ -658,27 +575,14 @@ struct ExperimentEditorView: View {
                                         Divider()
                                         ForEach(savedCustomItems, id: \.self) { name in
                                             Button(name) {
-                                                useCustomSubcategory = true
-                                                selectedSeedSubcategoryId = nil
-                                                isProgrammaticSubcategorySet = true
-                                                customSubcategoryText = name
-                                                pickedSavedSubcategory = true
-                                                saveCustomSubcategoryToList = false
-                                                DispatchQueue.main.async {
-                                                    isProgrammaticSubcategorySet = false
-                                                }
+                                                pickSavedSubcategory(name)
                                             }
                                         }
                                     }
 
                                     Divider()
                                     Button("Custom...") {
-                                        useCustomSubcategory = true
-                                        selectedSeedSubcategoryId = nil
-                                        customSubcategoryText = ""
-                                        pickedSavedSubcategory = false
-                                        saveCustomSubcategoryToList = false
-                                        focusedField = .customSubcategory
+                                        enterCustomSubcategoryMode()
                                     }
                                 } label: {
                                     HStack {
@@ -848,11 +752,6 @@ struct ExperimentEditorView: View {
                     hasManuallyEditedImpact = true
                 }
             }
-            .onChange(of: customSubcategoriesByCategoryData) { _, newValue in
-                if didLoadCustomSubcategories && !isPersistingCustomSubcategories {
-                    customSubcategoriesByCategory = decodeCustomSubcategories(newValue)
-                }
-            }
             .navigationTitle(mode.navTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -919,15 +818,7 @@ struct ExperimentEditorView: View {
                 }
             }
             .onAppear {
-                if !didLoadCustomSubcategories {
-                    let decoded = decodeCustomSubcategories(customSubcategoriesByCategoryData)
-                    let (migrated, changed) = migrateLegacyCustomSubcategoryKeysIfNeeded(decoded)
-                    customSubcategoriesByCategory = migrated
-                    didLoadCustomSubcategories = true
-                    if changed {
-                        persistCustomSubcategories()
-                    }
-                }
+                savedStore.loadIfNeeded(seedCatalog: seedCatalog)
 
                 // Prefill from mode
                 switch mode {
