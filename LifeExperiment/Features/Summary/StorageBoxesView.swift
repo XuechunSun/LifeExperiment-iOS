@@ -6,11 +6,6 @@ struct StorageBoxesView: View {
     let experiments: [Experiment]
     let seedCatalog: SeedCatalog?
     let onUpdate: (Experiment) -> Void
-    @Binding var showCreateStorageBox: Bool
-
-    private var seedCategorySet: Set<String> {
-        Set(seedCatalog?.categories.map { $0.title } ?? [])
-    }
 
     private var uncategorizedExperiments: [Experiment] {
         experiments.filter { exp in
@@ -19,21 +14,14 @@ struct StorageBoxesView: View {
         }
     }
 
-    private var customExperiments: [Experiment] {
+    private var otherExperiments: [Experiment] {
         experiments.filter { exp in
             guard let category = exp.category?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !category.isEmpty else {
                 return false
             }
-            return !seedCategorySet.contains(category)
+            return category == "Other"
         }
-    }
-
-    private var customCategoryNames: [String] {
-        let names = customExperiments.compactMap { exp in
-            exp.category?.trimmingCharacters(in: .whitespacesAndNewlines)
-        }.filter { !$0.isEmpty }
-        return Array(Set(names)).sorted()
     }
 
     private var allCategories: [String] {
@@ -44,8 +32,8 @@ struct StorageBoxesView: View {
             categories.append(contentsOf: catalog.categories.map { $0.title })
         }
 
-        // Add "Custom"
-        categories.append("Custom")
+        // Add "Other"
+        categories.append("Other")
 
         // Add "Uncategorized"
         categories.append("Uncategorized")
@@ -60,9 +48,9 @@ struct StorageBoxesView: View {
             let exps: [Experiment]
             let customNames: [String]
 
-            if category == "Custom" {
-                exps = customExperiments
-                customNames = customCategoryNames
+            if category == "Other" {
+                exps = otherExperiments
+                customNames = []
             } else if category == "Uncategorized" {
                 exps = uncategorizedExperiments
                 customNames = []
@@ -78,18 +66,14 @@ struct StorageBoxesView: View {
             boxes.append(CategoryBox(category: category, experiments: exps, updatedAt: updatedAt, customCategoryNames: customNames))
         }
 
-        // Sort: non-empty boxes first (by updatedAt desc), then empty boxes (alphabetically)
-        return boxes.sorted { box1, box2 in
-            if box1.isEmpty && box2.isEmpty {
-                return box1.category < box2.category
-            } else if box1.isEmpty {
-                return false
-            } else if box2.isEmpty {
-                return true
-            } else {
-                return box1.updatedAt > box2.updatedAt
+        let coreBoxes = boxes
+            .filter { $0.category != "Other" && $0.category != "Uncategorized" }
+            .sorted {
+                $0.category.localizedCaseInsensitiveCompare($1.category) == .orderedAscending
             }
-        }
+        let otherBox = boxes.first { $0.category == "Other" }
+        let uncategorizedBox = boxes.first { $0.category == "Uncategorized" }
+        return coreBoxes + [otherBox, uncategorizedBox].compactMap { $0 }
     }
 
     var body: some View {
@@ -101,36 +85,13 @@ struct StorageBoxesView: View {
                 ForEach(categoryBoxes) { box in
                     StorageBoxTile(box: box, onUpdate: onUpdate)
                 }
-
-                // Create new storage box tile
-                Button(action: {
-                    showCreateStorageBox = true
-                }) {
-                    VStack(spacing: 8) {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-
-                        Text("New Category")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 120)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.blue.opacity(0.5), style: StrokeStyle(lineWidth: 2, dash: [5]))
-                    )
-                }
             }
         }
     }
 }
 
 struct CategoryBox: Identifiable {
-    let id = UUID()
+    var id: String { category }
     let category: String
     let experiments: [Experiment]
     let updatedAt: Date
@@ -161,9 +122,6 @@ struct StorageBoxTile: View {
     private var subtitleText: String? {
         if box.isEmpty {
             return "Empty"
-        } else if box.category == "Custom" && !box.customCategoryNames.isEmpty {
-            // Show up to 2 custom category names
-            return box.customCategoryNames.prefix(2).joined(separator: ", ")
         } else if !box.subcategories.isEmpty {
             return box.subcategories.prefix(2).joined(separator: ", ")
         }
@@ -252,21 +210,6 @@ struct StorageBoxTile: View {
                 }
             }
         }
-    }
-}
-
-struct CreateStorageBoxView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack {
-            Text("Create Storage Box")
-                .font(.title)
-            Text("Coming soon...")
-                .foregroundColor(.secondary)
-        }
-        .navigationTitle("New Category")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

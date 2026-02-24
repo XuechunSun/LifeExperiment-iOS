@@ -9,7 +9,6 @@ struct SummaryView: View {
 
     @State private var showFullCalendar: Bool = false
     @State private var selectedDay: Date?
-    @State private var showCreateStorageBox: Bool = false
 
     // Toggle to show/hide Calendar Footprint (currently hidden for v1)
     private let showCalendarFootprint: Bool = false
@@ -45,7 +44,7 @@ struct SummaryView: View {
                 Divider()
 
                 // Module 2: Storage Boxes by Category
-                StorageBoxesView(experiments: experiments, seedCatalog: seedCatalog, onUpdate: onUpdate, showCreateStorageBox: $showCreateStorageBox)
+                StorageBoxesView(experiments: experiments, seedCatalog: seedCatalog, onUpdate: onUpdate)
 
                 // Module 3: Calendar Footprint (hidden for v1, can be restored later)
                 if showCalendarFootprint {
@@ -65,9 +64,6 @@ struct SummaryView: View {
         }
         .navigationDestination(item: $selectedDay) { day in
             DayDetailView(day: day, experiments: experiments, onUpdate: onUpdate)
-        }
-        .navigationDestination(isPresented: $showCreateStorageBox) {
-            CreateStorageBoxView()
         }
     }
 }

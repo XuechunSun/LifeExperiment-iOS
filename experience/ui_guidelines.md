@@ -1381,6 +1381,31 @@ enum MotionTokens {
 
 ---
 
+# Create/Subcategory Hardening Notes
+
+## Recent Issues
+
+- List row buttons can fail due to row hit-testing; destructive actions become unclickable.
+- Popover/swipe delete patterns are unstable on phone and can cause accidental deletion.
+- Other-category subcategory menu can disappear from conflicting visibility conditions.
+- Custom mode can appear broken if state reset is incomplete (text not cleared, focus not moved).
+- AppStorage self-writes can trigger onChange decode loops and UI churn.
+- Persistence keys based on display titles are unstable across rename/localization.
+- Hint text can conflict with state (saved selection vs new custom entry).
+- Max-cap replacement behavior can surprise users when not pre-announced.
+
+## Rules
+
+- Use reliable row actions in `List` (`.buttonStyle(.borderless)` for inline buttons); avoid overlapping delete mechanisms.
+- Require confirmation for destructive deletes in management flows.
+- Make mode switches atomic: set mode flags, clear conflicting state, and set focus in one action.
+- Use stable persistence keys (`seed:<id>`, `__other__`), never display titles.
+- Decode persisted JSON only on initial load or true external changes; guard internal writes.
+- Keep copy state-aware (enter vs edit, saved vs custom); avoid generic hints.
+- If max-cap policy drops oldest items, show warning before save when replacement will occur.
+
+---
+
 # Framework Maintenance
 
 ## When to Update This Document
