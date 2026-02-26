@@ -23,6 +23,7 @@ struct ExperimentEditorView: View {
     @State private var customSubcategoryText: String = ""
     @State private var saveCustomSubcategoryToList: Bool = false
     @StateObject private var savedStore = SubcategorySavedStore()
+    @StateObject private var customImpactStore = CustomImpactMappingStore()
     @State private var showManageSheet: Bool = false
     @State private var pendingDeleteSavedName: String? = nil
     @State private var showDeleteSavedConfirm: Bool = false
@@ -240,15 +241,27 @@ struct ExperimentEditorView: View {
     }
 
     private var defaultImpact: ExperimentImpact? {
-        guard let subcategory = selectedSeedSubcategory else { return nil }
-        return impactFromDefaultDimensions(subcategory.default_dimensions)
+        DefaultDimensionMapping.suggestedImpact(from: selectedSeedSubcategory)
+    }
+
+    private var suggestedCustomImpact: ExperimentImpact? {
+        guard isCustomSubcategoryMode else { return nil }
+        guard let key = customSubcategoryCategoryKey else { return nil }
+        guard let text = trimmedOrNil(customSubcategoryText) else { return nil }
+        return customImpactStore.suggestedImpact(categoryKey: key, subcategoryText: text)
     }
 
     private var displayedImpact: ExperimentImpact? {
         if hasManuallyEditedImpact {
             return selectedImpact
         }
-        return defaultImpact
+        if isSeedBased {
+            return defaultImpact
+        }
+        if isCustomSubcategoryMode {
+            return suggestedCustomImpact
+        }
+        return nil
     }
 
     private var isSeedBased: Bool {
@@ -257,6 +270,10 @@ struct ExperimentEditorView: View {
 
     private var isCustom: Bool {
         return isOtherCategory
+    }
+
+    private var isCustomSubcategoryMode: Bool {
+        isOtherCategory || useCustomSubcategory
     }
 
     private var hasSeedCategory: Bool {
@@ -299,8 +316,8 @@ struct ExperimentEditorView: View {
             return true
         }
 
-        // For custom category experiments in create/duplicate mode, require primary dimension selection
-        if isCustom && isCreateOrDuplicate && selectedImpact == nil {
+        // For custom subcategory mode in create/duplicate, require an available impact
+        if isCustomSubcategoryMode && isCreateOrDuplicate && displayedImpact == nil {
             return true
         }
 
@@ -309,7 +326,8 @@ struct ExperimentEditorView: View {
             let sameTitle = trimmed(original.title) == t
             let sameCategory = (original.category ?? "") == (draftCategory ?? "")
             let sameSub = (original.subcategory ?? "") == (draftSubcategory ?? "")
-            return sameTitle && sameCategory && sameSub
+            let sameImpact = (original.impact == displayedImpact)
+            return sameTitle && sameCategory && sameSub && sameImpact
         }
 
         return false
@@ -665,8 +683,8 @@ struct ExperimentEditorView: View {
                 }
 
                 // Custom Dimension Selection Card (for custom category experiments)
-                if isCustom {
-                    CustomDimensionSelectionCard(selectedImpact: selectedImpact) {
+                if isCustomSubcategoryMode {
+                    CustomDimensionSelectionCard(selectedImpact: displayedImpact) {
                         showDimensionPicker = true
                     }
                 }
@@ -750,6 +768,11 @@ struct ExperimentEditorView: View {
                 DimensionPickerSheet(initialImpact: displayedImpact) { newImpact in
                     selectedImpact = newImpact
                     hasManuallyEditedImpact = true
+                    if isCustomSubcategoryMode,
+                       let key = customSubcategoryCategoryKey,
+                       let text = trimmedOrNil(customSubcategoryText) {
+                        customImpactStore.saveImpact(newImpact, categoryKey: key, subcategoryText: text)
+                    }
                 }
             }
             .navigationTitle(mode.navTitle)
@@ -819,6 +842,7 @@ struct ExperimentEditorView: View {
             }
             .onAppear {
                 savedStore.loadIfNeeded(seedCatalog: seedCatalog)
+                customImpactStore.loadIfNeeded()
 
                 // Prefill from mode
                 switch mode {
