@@ -33,7 +33,7 @@ struct ExperimentEditorView: View {
     @State private var hasBaselineTitle: Bool = false
     @State private var showRevertTitle: Bool = false
     @State private var isProgrammaticTitleChange: Bool = false
-    @FocusState private var focusedField: Field?
+    @FocusState private var focusedField: ExperimentEditorFocusField?
 
     // Dimension state
     @State private var selectedImpact: ExperimentImpact?
@@ -56,11 +56,6 @@ struct ExperimentEditorView: View {
         case .create:
             self.originalExperiment = nil
         }
-    }
-
-    private enum Field: Hashable {
-        case title
-        case customSubcategory
     }
 
     private func trimmed(_ s: String) -> String {
@@ -133,6 +128,14 @@ struct ExperimentEditorView: View {
         DispatchQueue.main.async {
             isProgrammaticSubcategorySet = false
         }
+    }
+
+    private func selectSeedSubcategory(_ id: String) {
+        useCustomSubcategory = false
+        selectedSeedSubcategoryId = id
+        customSubcategoryText = ""
+        saveCustomSubcategoryToList = false
+        pickedSavedSubcategory = false
     }
 
     private var selectedSeedCategory: SeedCategory? {
@@ -353,30 +356,11 @@ struct ExperimentEditorView: View {
             .cornerRadius(12)
     }
 
-    private func customInputBlock(hint: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Divider()
-            Text(hint)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            TextField(placeholder, text: text)
-                .textFieldStyle(.plain)
-        }
-        .padding(.top, 8)
-    }
-
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
 
-                // Title
-                cardField(label: "Title") {
-                    cardBackground {
-                        TextField("Experiment Title", text: $title)
-                            .focused($focusedField, equals: .title)
-                            .textFieldStyle(.plain)
-                    }
-                }
+                TitleSection(title: $title, focusedField: $focusedField)
 
                 // Suggested Prompts
                 if !availablePrompts.isEmpty {
@@ -444,222 +428,43 @@ struct ExperimentEditorView: View {
                     }
                 }
 
-                // Category
-                cardField(label: "Category") {
-                    cardBackground {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Menu {
-                                if let catalog = seedCatalog {
-                                    ForEach(catalog.categories) { c in
-                                        Button(c.title) {
-                                            isOtherCategory = false
-                                            selectedSeedCategoryId = c.id
-
-                                            // default to first seed subcategory for required flow
-                                            selectedSeedSubcategoryId = seedCatalog?.categories
-                                                .first(where: { $0.id == c.id })?
-                                                .subcategories
-                                                .first(where: { $0.title.caseInsensitiveCompare("None") != .orderedSame })?
-                                                .id
-                                            useCustomSubcategory = false
-                                            customSubcategoryText = ""
-                                            saveCustomSubcategoryToList = false
-                                            pickedSavedSubcategory = false
-                                        }
-                                    }
-                                }
-
-                                Button("Other") {
-                                    isOtherCategory = true
-                                    selectedSeedCategoryId = nil
-
-                                    // switching category clears subcategory
-                                    selectedSeedSubcategoryId = nil
-                                    useCustomSubcategory = true
-                                    customSubcategoryText = ""
-                                    saveCustomSubcategoryToList = false
-                                    pickedSavedSubcategory = false
-                                }
-                            } label: {
-                                HStack {
-                                    Text(categoryDisplayText)
-                                        .foregroundColor(categoryDisplayText == "Select..." ? .secondary : .primary)
-                                    Spacer()
-                                    Image(systemName: "chevron.down")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .contentShape(Rectangle())
-                                .simultaneousGesture(TapGesture().onEnded {
-                                    focusedField = nil
-                                })
-                            }
-                        }
+                CategorySection(
+                    seedCatalog: seedCatalog,
+                    isOtherCategory: $isOtherCategory,
+                    selectedSeedCategoryId: $selectedSeedCategoryId,
+                    selectedSeedSubcategoryId: $selectedSeedSubcategoryId,
+                    useCustomSubcategory: $useCustomSubcategory,
+                    customSubcategoryText: $customSubcategoryText,
+                    saveCustomSubcategoryToList: $saveCustomSubcategoryToList,
+                    pickedSavedSubcategory: $pickedSavedSubcategory,
+                    categoryDisplayText: categoryDisplayText,
+                    onDismissKeyboard: {
+                        focusedField = nil
                     }
-                }
+                )
 
-                // Subcategory
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Subcategory")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .textCase(.uppercase)
-                        Spacer()
-                        if !savedCustomSubcategoriesForCurrentCategory.isEmpty {
-                            Button("Manage") {
-                                showManageSheet = true
-                            }
-                            .buttonStyle(.plain)
-                            .contentShape(Rectangle())
-                            .font(.subheadline)
-                            .foregroundStyle(.blue)
-                        }
+                SubcategorySection(
+                    isOtherCategory: isOtherCategory,
+                    canPickSubcategoryFromSeed: canPickSubcategoryFromSeed,
+                    hasCategorySelected: hasCategorySelected,
+                    subcategoryDisplayText: subcategoryDisplayText,
+                    savedCustomSubcategoriesForCurrentCategory: savedCustomSubcategoriesForCurrentCategory,
+                    seedSubcategoryMenuItems: seedSubcategoryMenuItems,
+                    savedSubcategoriesForSeedMenu: savedSubcategoriesForSeedMenu,
+                    useCustomSubcategory: useCustomSubcategory,
+                    pickedSavedSubcategory: pickedSavedSubcategory,
+                    shouldShowSaveCustomSubcategoryToggle: shouldShowSaveCustomSubcategoryToggle,
+                    willReplaceOldestSavedIfAdded: willReplaceOldestSavedIfAdded,
+                    customSubcategoryText: $customSubcategoryText,
+                    saveCustomSubcategoryToList: $saveCustomSubcategoryToList,
+                    showManageSheet: $showManageSheet,
+                    enterCustomSubcategoryMode: enterCustomSubcategoryMode,
+                    pickSavedSubcategory: pickSavedSubcategory,
+                    selectSeedSubcategoryId: selectSeedSubcategory,
+                    onDismissKeyboard: {
+                        focusedField = nil
                     }
-
-                    cardBackground {
-                        if isOtherCategory {
-                            VStack(alignment: .leading, spacing: 0) {
-                                if !savedCustomSubcategoriesForCurrentCategory.isEmpty {
-                                    Menu {
-                                        ForEach(savedCustomSubcategoriesForCurrentCategory, id: \.self) { name in
-                                            Button(name) {
-                                                pickSavedSubcategory(name)
-                                            }
-                                        }
-
-                                        Divider()
-                                        Button("Custom...") {
-                                            enterCustomSubcategoryMode()
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Text(subcategoryDisplayText)
-                                                .foregroundColor(subcategoryDisplayText == "Select..." || subcategoryDisplayText == "Enter..." ? .secondary : .primary)
-                                            Spacer()
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .font(.subheadline)
-                                                .foregroundColor(.primary)
-                                        }
-                                        .contentShape(Rectangle())
-                                        .simultaneousGesture(TapGesture().onEnded {
-                                            focusedField = nil
-                                        })
-                                    }
-                                }
-
-                                if savedCustomSubcategoriesForCurrentCategory.isEmpty || useCustomSubcategory {
-                                    let hintText = pickedSavedSubcategory
-                                        ? "You can edit this subcategory below"
-                                        : "Please enter a custom subcategory below"
-                                    customInputBlock(
-                                        hint: hintText,
-                                        placeholder: "Custom Subcategory",
-                                        text: $customSubcategoryText
-                                    )
-                                }
-
-                                if shouldShowSaveCustomSubcategoryToggle {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Toggle("Save to this category’s list", isOn: $saveCustomSubcategoryToList)
-                                            .font(.subheadline)
-                                        Text("Up to 5 saved")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
-                                        if willReplaceOldestSavedIfAdded {
-                                            Text("Max 5 saved — saving this will replace the oldest.")
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    .padding(.top, 8)
-                                }
-                            }
-                        } else if canPickSubcategoryFromSeed {
-                            VStack(alignment: .leading, spacing: 0) {
-                                Menu {
-                                    ForEach(seedSubcategoryMenuItems) { s in
-                                        Button(s.title) {
-                                            useCustomSubcategory = false
-                                            selectedSeedSubcategoryId = s.id
-                                            customSubcategoryText = ""
-                                            saveCustomSubcategoryToList = false
-                                            pickedSavedSubcategory = false
-                                        }
-                                    }
-
-                                    let savedCustomItems = savedSubcategoriesForSeedMenu
-                                    if !savedCustomItems.isEmpty {
-                                        Divider()
-                                        ForEach(savedCustomItems, id: \.self) { name in
-                                            Button(name) {
-                                                pickSavedSubcategory(name)
-                                            }
-                                        }
-                                    }
-
-                                    Divider()
-                                    Button("Custom...") {
-                                        enterCustomSubcategoryMode()
-                                    }
-                                } label: {
-                                    HStack {
-                                        Text(subcategoryDisplayText)
-                                            .foregroundColor(subcategoryDisplayText == "Select..." || subcategoryDisplayText == "Enter..." ? .secondary : .primary)
-                                        Spacer()
-                                        Image(systemName: "chevron.up.chevron.down")
-                                            .font(.subheadline)
-                                            .foregroundColor(.primary)
-                                    }
-                                    .contentShape(Rectangle())
-                                    .simultaneousGesture(TapGesture().onEnded {
-                                        focusedField = nil
-                                    })
-                                }
-
-                                if useCustomSubcategory {
-                                    customInputBlock(
-                                        hint: "Please enter a custom subcategory below",
-                                        placeholder: "Custom Subcategory",
-                                        text: $customSubcategoryText
-                                    )
-
-                                    if shouldShowSaveCustomSubcategoryToggle {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Toggle("Save to this category’s list", isOn: $saveCustomSubcategoryToList)
-                                                .font(.subheadline)
-                                            Text("Up to 5 saved")
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
-                                            if willReplaceOldestSavedIfAdded {
-                                                Text("Max 5 saved — saving this will replace the oldest.")
-                                                    .font(.caption2)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                        }
-                                        .padding(.top, 8)
-                                    }
-                                }
-                            }
-                        } else {
-                            // No category selected
-                            if hasCategorySelected {
-                                EmptyView()
-                            } else {
-                                // No category selected at all - show disabled row with chevron
-                                HStack {
-                                    Text("Select a category first")
-                                        .foregroundColor(.secondary)
-                                        .italic()
-                                    Spacer()
-                                    Image(systemName: "chevron.up.chevron.down")
-                                        .font(.caption)
-                                        .opacity(0.0)
-                                }
-                            }
-                        }
-                    }
-                }
+                )
 
                 if !hasCategorySelected {
                     Text("Please select a category.")
@@ -675,19 +480,12 @@ struct ExperimentEditorView: View {
                         .padding(.top, -8)
                 }
 
-                // Default Dimensions Card (for seed-based experiments)
-                if let impact = displayedImpact, isSeedBased {
-                    DefaultDimensionsCard(impact: impact) {
-                        showDimensionPicker = true
-                    }
-                }
-
-                // Custom Dimension Selection Card (for custom category experiments)
-                if isCustomSubcategoryMode {
-                    CustomDimensionSelectionCard(selectedImpact: displayedImpact) {
-                        showDimensionPicker = true
-                    }
-                }
+                DimensionSection(
+                    isSeedBased: isSeedBased,
+                    isCustomSubcategoryMode: isCustomSubcategoryMode,
+                    displayedImpact: displayedImpact,
+                    showDimensionPicker: $showDimensionPicker
+                )
 
                 Spacer()
             }
