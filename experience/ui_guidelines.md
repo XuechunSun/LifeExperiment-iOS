@@ -1406,6 +1406,15 @@ enum MotionTokens {
 
 ---
 
+# Detail Page v1.5 Notes
+
+- Use one page-level horizontal padding source for detail pages so back area, title, chips, metadata, sections, and history share the same leading edge.
+- Keep title/header text explicitly leading-aligned (`.multilineTextAlignment(.leading)` + matching frame alignment) to prevent indentation drift from mixed center/leading containers.
+- Insight Snapshot is local-only (no server/AI), non-judgmental, and should never show raw scores.
+- Snapshot eligibility rule: show only when the recent 7-day window has at least 3 logs with mood values; otherwise hide the section entirely.
+
+---
+
 # Framework Maintenance
 
 ## When to Update This Document
@@ -1451,3 +1460,30 @@ enum MotionTokens {
 
 *Framework established: 2026-02-11*  
 *Last updated: 2026-02-11*
+
+---
+
+## DynamicProperty & Binding Rules (AppPreferences)
+
+- `AppPreferences` must conform to `DynamicProperty` when used inside SwiftUI views.
+- Always declare it as a stored property inside a view: `private var preferences = AppPreferences()`.
+- Do NOT define it as a computed property (avoid `var preferences: AppPreferences { AppPreferences() }`).
+- Do NOT use `$preferences.xxx` (it is not a property wrapper).
+- Always use explicit bindings exposed by `AppPreferences` (for example `preferences.uiStyleBinding`, `preferences.imageLoggingEnabledBinding`).
+
+---
+
+## Stability Rules: Preferences & View IDs
+
+- AppPreferences is the single source of truth for user preferences; views must not re-declare `@AppStorage` keys ad-hoc.
+- AppPreferences should be `DynamicProperty` and instantiated as `private var preferences = AppPreferences()` inside views.
+- Never use `$preferences.xxx` unless the preference is an actual property wrapper. Prefer explicit `xxxBinding` from AppPreferences.
+- ForEach IDs must be stable and unique; avoid using only display text as an ID.
+
+---
+
+## Stability Rules: SwiftUI Access Control & Synthesized Initializers
+
+- If a SwiftUI View struct contains a stored property with a default value and it is marked `private`, Swift may synthesize a memberwise initializer whose access becomes too restrictive, causing `initializer is inaccessible due to 'private' protection level`.
+- Prefer one of: (a) make the helper View `fileprivate` when used across the file, (b) avoid private stored defaulted properties in helper Views, or (c) provide an explicit initializer and avoid relying on the synthesized memberwise init.
+- Keep helper components file-scoped unless they are truly shared.

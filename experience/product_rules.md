@@ -260,6 +260,40 @@ func validLogDays(for experiment: Experiment) -> Set<Date> {
 
 ---
 
+## Custom Subcategory Dimension Suggestion Rules (v2)
+
+### Objective
+- Balance guidance with user autonomy for custom subcategory dimension selection.
+
+### Rule 1 — History Always Wins
+- If a custom subcategory has saved impact mapping, use it.
+- Never override saved mapping with fallback.
+
+### Rule 2 — Seed Category + Custom Subcategory
+- If a seed category is selected, user chooses `Custom...`, and no history exists:
+  - Provide a conservative fallback **primary** dimension.
+  - Keep secondary/tertiary as `nil`.
+  - User can override freely.
+
+### Rule 3 — Other Category
+- If category is `Other`:
+  - Do not auto-assign dimensions.
+  - Require explicit user selection.
+
+### Rule 4 — Disable Logic
+- Create/Duplicate stays disabled when:
+  - custom subcategory under `Other`, and no dimension chosen.
+- Create/Duplicate can be enabled when:
+  - seed category fallback is applied, or
+  - history mapping exists.
+
+### Design Philosophy
+- Provide guidance when context exists.
+- Preserve autonomy when intent is undefined.
+- Respect memory when user preference was already expressed.
+
+---
+
 ## Dimension Selection Rules
 
 ### Requirements

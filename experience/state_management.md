@@ -468,6 +468,15 @@ struct SummaryView: View {
 
 ---
 
+### Preferences Binding Rule (AppPreferences)
+
+- `AppPreferences` MUST conform to `DynamicProperty`.
+- Views MUST NOT use `$preferences.xxx`; always use explicit bindings such as `preferences.uiStyleBinding` and `preferences.imageLoggingEnabledBinding`.
+- Views should instantiate preferences as `private var preferences = AppPreferences()`.
+- Rationale: avoids `Cannot find $preferences in scope` and improves SwiftUI refresh stability.
+
+---
+
 ## State Management Checklist
 
 Before implementing new features, verify:

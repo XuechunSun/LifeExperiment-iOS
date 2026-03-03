@@ -12,6 +12,8 @@ struct ExperimentDetailView: View {
     @State private var showEmptyNoteAlert = false
     @State private var showMoodRequiredAlert = false
     @State private var showBlankReviewToast = false
+    @State private var showFullHistory = false
+    @State private var showAddPhotoComingSoon = false
     @FocusState private var noteFocused: Bool
 
     // Review draft fields
@@ -45,287 +47,352 @@ struct ExperimentDetailView: View {
         localExperiment.logs.sorted { $0.date > $1.date }
     }
 
+    private let pageHorizontalPadding: CGFloat = 20
+    private var preferences = AppPreferences()
+
+    private var insightLines: [InsightLine] {
+        InsightCalculator.compute(logs: localExperiment.logs, now: Date())
+    }
+
+    private var canShowImages: Bool {
+        preferences.imageLoggingEnabled && localExperiment.allowsImageLogging
+    }
+
     var body: some View {
+        detailContent
+            .overlay(alignment: .top) { toastOverlay }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarContent }
+            .alert("Add a quick note?", isPresented: $showEmptyNoteAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("A short note helps you remember what happened today.")
+            }
+            .alert("Pick a mood?", isPresented: $showMoodRequiredAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("It takes one tap and helps you see patterns over time.")
+            }
+            .alert("Coming soon", isPresented: $showAddPhotoComingSoon) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Add photo will be available in a future update.")
+            }
+            .alert(S.experimentCompleteConfirm, isPresented: $showCompleteConfirm) {
+                Button(S.actionCancel, role: .cancel) { }
+                Button(S.actionComplete, role: .destructive) { completeExperiment() }
+            } message: {
+                Text(S.experimentCompleteMessage)
+            }
+            .alert(S.experimentReopenConfirm, isPresented: $showReopenConfirm) {
+                Button(S.actionCancel, role: .cancel) { }
+                Button(S.actionReopen) { reopenExperiment() }
+            } message: {
+                Text("You'll be able to add new logs again.")
+            }
+    }
+
+    private var detailContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Header
-                VStack(alignment: .center, spacing: 12) {
-                    // Title
-                    Text(localExperiment.title)
-                        .font(.title2)
-                        .fontWeight(.bold)
+            VStack(alignment: .leading, spacing: 20) {
+                headerSection
+                todaySection
+                reviewSection
+                historySection
+            }
+            .padding(.horizontal, pageHorizontalPadding)
+            .padding(.vertical, 16)
+        }
+    }
 
-                    // Completed banner
-                    if isCompleted {
-                        VStack(spacing: 4) {
-                            Text("This experiment is completed. Logging is disabled.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .italic()
+    @ViewBuilder
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .center, spacing: 0) {
+                Text(localExperiment.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
 
-                            if let completedAt = localExperiment.completedAt {
-                                Text("Completed on \(completedAt, style: .date)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-
-                            Text("Completed ✓")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    // Category tags
-                    if localExperiment.category != nil || localExperiment.subcategory != nil {
-                        HStack(spacing: 8) {
-                            if let category = localExperiment.category {
-                                Text(category)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(Color(.systemGray6))
-                                    .clipShape(Capsule())
-                            }
-
-                            if let subcategory = localExperiment.subcategory {
-                                Text(subcategory)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(Color(.systemGray6))
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-
-                    // Created date
-                    Text("Created \(localExperiment.createdAt, style: .date)")
+            if isCompleted {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("This experiment is completed. Logging is disabled.")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                        .italic()
 
-                // Today Section (only when active)
-                if !isCompleted {
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("How did you feel today?")
-                                .font(.headline)
-
-                            MoodSelectorView(selectedMood: $draftMood)
-                        }
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Notes:")
-                                .font(.headline)
-
-                            TextEditor(text: $draftNote)
-                                .frame(minHeight: 120)
-                                .padding(8)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                                .focused($noteFocused)
-                        }
-
-                        Button(S.actionSave) {
-                            if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                showEmptyNoteAlert = true
-                            } else if draftMood == nil {
-                                showMoodRequiredAlert = true
-                            } else {
-                                saveTodayLog()
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
+                    if let completedAt = localExperiment.completedAt {
+                        Text("Completed on \(completedAt, style: .date)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
 
-                    Button(S.experimentCompleteButton) {
+                    Text("Completed ✓")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+
+            if localExperiment.category != nil || localExperiment.subcategory != nil {
+                HStack(spacing: 8) {
+                    if let category = localExperiment.category {
+                        Text(category)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color(.systemGray6))
+                            .clipShape(Capsule())
+                    }
+                    if let subcategory = localExperiment.subcategory {
+                        Text(subcategory)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color(.systemGray6))
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+
+            Text("Created \(localExperiment.createdAt, style: .date)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var todaySection: some View {
+        if !isCompleted {
+            if !insightLines.isEmpty {
+                ExperimentInsightSnapshotSection(lines: insightLines)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("How did you feel today?")
+                        .font(.headline)
+                    MoodSelectorView(selectedMood: $draftMood)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Notes:")
+                            .font(.headline)
+
+                        Spacer()
+
+                        if canShowImages {
+                            Button {
+                                showAddPhotoComingSoon = true
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "camera")
+                                    Text("Add photo")
+                                        .underline()
+                                }
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Add photo")
+                        }
+                    }
+                    .frame(minHeight: 24)
+
+                    TextEditor(text: $draftNote)
+                        .frame(minHeight: 80, maxHeight: 96)
+                        .padding(6)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(preferences.uiStyle.cardCornerRadius)
+                        .focused($noteFocused)
+                }
+
+                HStack {
+                    Button("Complete Experiment") {
                         showCompleteConfirm = true
                     }
                     .buttonStyle(.bordered)
+                    .tint(.secondary)
 
-                    Divider()
-                }
+                    Spacer()
 
-                // Review Section (only for completed experiments)
-                if isCompleted {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Review")
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        if let review = localExperiment.review, review.locked {
-                            // Read-only review
-                            VStack(alignment: .leading, spacing: 16) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("What did I try?")
-                                        .font(.headline)
-                                    Text(review.whatDidITry)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("What happened?")
-                                        .font(.headline)
-                                    Text(review.whatHappened)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("What will I do differently next time?")
-                                        .font(.headline)
-                                    Text(review.whatWillIDoDifferently)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
+                    Button("Save") {
+                        if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            showEmptyNoteAlert = true
+                        } else if draftMood == nil {
+                            showMoodRequiredAlert = true
                         } else {
-                            // Editable review
-                            VStack(alignment: .leading, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("What did I try? (Optional)")
-                                        .font(.headline)
-                                    TextEditor(text: $draftWhatDidITry)
-                                        .frame(minHeight: 80)
-                                        .padding(8)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                }
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("What happened? (Optional)")
-                                        .font(.headline)
-                                    TextEditor(text: $draftWhatHappened)
-                                        .frame(minHeight: 80)
-                                        .padding(8)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                }
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("What will I do differently next time? (Optional)")
-                                        .font(.headline)
-                                    TextEditor(text: $draftWhatWillIDoDifferently)
-                                        .frame(minHeight: 80)
-                                        .padding(8)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                }
-
-                                Button("Save Review") {
-                                    saveReview()
-                                }
-                                .buttonStyle(.borderedProminent)
-                            }
+                            saveTodayLog()
                         }
                     }
-
-                    Divider()
+                    .buttonStyle(.borderedProminent)
                 }
+            }
 
-                // History Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("History")
-                        .font(.title2)
-                        .fontWeight(.bold)
+            Divider()
+        }
+    }
 
-                    if sortedLogs.isEmpty {
-                        Text("No logs yet. Start logging today!")
-                            .foregroundColor(.secondary)
-                            .italic()
-                    } else {
-                        ForEach(sortedLogs) { log in
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text(log.date, style: .date)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
+    @ViewBuilder
+    private var reviewSection: some View {
+        if isCompleted {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Review")
+                    .font(.title2)
+                    .fontWeight(.bold)
 
-                                    if let mood = log.mood {
-                                        Text(mood.emoji)
-                                    }
-
-                                    Spacer()
-                                }
-
-                                if !log.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                    Text(log.note)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(2)
-                                }
-                            }
-                            .padding(.vertical, 4)
+                if let review = localExperiment.review, review.locked {
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("What did I try?")
+                                .font(.headline)
+                            Text(review.whatDidITry)
+                                .foregroundColor(.secondary)
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("What happened?")
+                                .font(.headline)
+                            Text(review.whatHappened)
+                                .foregroundColor(.secondary)
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("What will I do differently next time?")
+                                .font(.headline)
+                            Text(review.whatWillIDoDifferently)
+                                .foregroundColor(.secondary)
                         }
                     }
-                }
-            }
-            .padding()
-        }
-        .overlay(alignment: .top) {
-            if showSavedToast {
-                Text("Saved ✓")
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.green)
-                    .cornerRadius(20)
-                    .shadow(radius: 4)
-                    .padding(.top, 8)
-            } else if showBlankReviewToast {
-                Text("Saved. Review left blank.")
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.orange)
-                    .cornerRadius(20)
-                    .shadow(radius: 4)
-                    .padding(.top, 8)
-            }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if isCompleted {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Reopen") {
-                        showReopenConfirm = true
+                } else {
+                    VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("What did I try? (Optional)")
+                                .font(.headline)
+                            TextEditor(text: $draftWhatDidITry)
+                                .frame(minHeight: 80)
+                                .padding(8)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("What happened? (Optional)")
+                                .font(.headline)
+                            TextEditor(text: $draftWhatHappened)
+                                .frame(minHeight: 80)
+                                .padding(8)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("What will I do differently next time? (Optional)")
+                                .font(.headline)
+                            TextEditor(text: $draftWhatWillIDoDifferently)
+                                .frame(minHeight: 80)
+                                .padding(8)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                        }
+
+                        Button("Save Review") { saveReview() }
+                            .buttonStyle(.borderedProminent)
                     }
                 }
             }
+
+            Divider()
         }
-        .alert("Add a quick note?", isPresented: $showEmptyNoteAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("A short note helps you remember what happened today.")
-        }
-        .alert("Pick a mood?", isPresented: $showMoodRequiredAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("It takes one tap and helps you see patterns over time.")
-        }
-        .alert(S.experimentCompleteConfirm, isPresented: $showCompleteConfirm) {
-            Button(S.actionCancel, role: .cancel) { }
-            Button(S.actionComplete, role: .destructive) {
-                completeExperiment()
+    }
+
+    @ViewBuilder
+    private var historySection: some View {
+        let visibleLogs = showFullHistory ? sortedLogs : Array(sortedLogs.prefix(6))
+
+        VStack(alignment: .leading, spacing: 12) {
+            Text("History")
+                .font(.title2)
+                .fontWeight(.bold)
+
+            if sortedLogs.isEmpty {
+                Text("No logs yet. Start logging today!")
+                    .foregroundColor(.secondary)
+                    .italic()
+            } else {
+                ForEach(visibleLogs) { log in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(log.date, style: .date)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+
+                            Text(log.mood?.emoji ?? " ")
+                                .frame(width: 24, alignment: .leading)
+
+                            Spacer()
+                        }
+
+                        if !log.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text(log.note)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                if sortedLogs.count > 10 {
+                    Button(showFullHistory ? "Show less" : "See earlier entries") {
+                        showFullHistory.toggle()
+                    }
+                    .font(.subheadline)
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.blue)
+                    .padding(.top, 4)
+                }
             }
-        } message: {
-            Text(S.experimentCompleteMessage)
         }
-        .alert(S.experimentReopenConfirm, isPresented: $showReopenConfirm) {
-            Button(S.actionCancel, role: .cancel) { }
-            Button(S.actionReopen) {
-                reopenExperiment()
+    }
+
+    @ViewBuilder
+    private var toastOverlay: some View {
+        if showSavedToast {
+            Text("Saved ✓")
+                .font(.subheadline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.green)
+                .cornerRadius(20)
+                .shadow(radius: 4)
+                .padding(.top, 8)
+        } else if showBlankReviewToast {
+            Text("Saved. Review left blank.")
+                .font(.subheadline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.orange)
+                .cornerRadius(20)
+                .shadow(radius: 4)
+                .padding(.top, 8)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        if isCompleted {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Reopen") { showReopenConfirm = true }
             }
-        } message: {
-            Text("You'll be able to add new logs again.")
         }
     }
 
@@ -409,4 +476,46 @@ struct ExperimentDetailView: View {
         }
     }
 }
+
+fileprivate struct ExperimentInsightSnapshotSection: View {
+    let lines: [InsightLine]
+    fileprivate var preferences = AppPreferences()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Insight Snapshot")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(lines) { line in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(emoji(for: line.kind))
+                            .font(.caption)
+
+                        Text(line.text)
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(preferences.uiStyle.cardPadding)
+        .background(Color(.systemGray6))
+        .cornerRadius(preferences.uiStyle.cardCornerRadius)
+    }
+
+    private func emoji(for kind: InsightKind) -> String {
+        switch kind {
+        case .mood:
+            return "🧭"
+        case .stability:
+            return "🌊"
+        case .rhythm:
+            return "🗓️"
+        }
+    }
+}
+
+
 

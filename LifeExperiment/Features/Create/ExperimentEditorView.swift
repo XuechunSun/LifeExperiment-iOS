@@ -27,6 +27,7 @@ struct ExperimentEditorView: View {
     @State private var showManageSheet: Bool = false
     @State private var pendingDeleteSavedName: String? = nil
     @State private var showDeleteSavedConfirm: Bool = false
+    @State private var allowsImageLogging: Bool = true
 
     // Prompt revert state
     @State private var baselineTitleForRevert: String = ""
@@ -42,6 +43,7 @@ struct ExperimentEditorView: View {
 
     // For rename "no changes -> disable"
     private let originalExperiment: Experiment?
+    private var preferences = AppPreferences()
 
     init(seedCatalog: SeedCatalog?, mode: ExperimentEditorMode, onCommit: @escaping (Experiment) -> Void) {
         self.seedCatalog = seedCatalog
@@ -251,7 +253,16 @@ struct ExperimentEditorView: View {
         guard isCustomSubcategoryMode else { return nil }
         guard let key = customSubcategoryCategoryKey else { return nil }
         guard let text = trimmedOrNil(customSubcategoryText) else { return nil }
-        return customImpactStore.suggestedImpact(categoryKey: key, subcategoryText: text)
+        if let history = customImpactStore.suggestedImpact(categoryKey: key, subcategoryText: text) {
+            return history
+        }
+        if isOtherCategory {
+            return nil
+        }
+        if useCustomSubcategory, let seedCategoryId = selectedSeedCategoryId {
+            return DefaultDimensionMapping.fallbackImpactForSeedCustomSubcategory(seedCategoryId: seedCategoryId)
+        }
+        return nil
     }
 
     private var displayedImpact: ExperimentImpact? {
@@ -330,7 +341,8 @@ struct ExperimentEditorView: View {
             let sameCategory = (original.category ?? "") == (draftCategory ?? "")
             let sameSub = (original.subcategory ?? "") == (draftSubcategory ?? "")
             let sameImpact = (original.impact == displayedImpact)
-            return sameTitle && sameCategory && sameSub && sameImpact
+            let sameImageSetting = original.allowsImageLogging == allowsImageLogging
+            return sameTitle && sameCategory && sameSub && sameImpact && sameImageSetting
         }
 
         return false
@@ -354,6 +366,20 @@ struct ExperimentEditorView: View {
             .padding()
             .background(Color(.systemGray6))
             .cornerRadius(12)
+    }
+
+    @ViewBuilder
+    private var imageLoggingSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Image Logging")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+
+            cardBackground {
+                Toggle("Allow images for this experiment", isOn: $allowsImageLogging)
+            }
+        }
     }
 
     var body: some View {
@@ -487,6 +513,10 @@ struct ExperimentEditorView: View {
                     showDimensionPicker: $showDimensionPicker
                 )
 
+                if preferences.imageLoggingEnabled {
+                    imageLoggingSection
+                }
+
                 Spacer()
             }
             .padding()
@@ -602,7 +632,8 @@ struct ExperimentEditorView: View {
                                 impact: displayedImpact,
                                 status: .active,
                                 createdAt: now,
-                                updatedAt: now
+                                updatedAt: now,
+                                allowsImageLogging: allowsImageLogging
                             )
                             onCommit(exp)
 
@@ -612,6 +643,7 @@ struct ExperimentEditorView: View {
                             updated.category = draftCategory
                             updated.subcategory = draftSubcategory
                             updated.impact = displayedImpact
+                            updated.allowsImageLogging = allowsImageLogging
                             updated.updatedAt = now
                             onCommit(updated)
 
@@ -628,7 +660,8 @@ struct ExperimentEditorView: View {
                                 updatedAt: now,
                                 logs: from.logs,
                                 review: nil,
-                                completedAt: nil
+                                completedAt: nil,
+                                allowsImageLogging: allowsImageLogging
                             )
                             onCommit(exp)
                         }
@@ -645,8 +678,7 @@ struct ExperimentEditorView: View {
                 // Prefill from mode
                 switch mode {
                 case .create:
-                    // leave empty
-                    break
+                    allowsImageLogging = preferences.imageLoggingEnabled
 
                 case .rename(let existing):
                     prefill(from: existing)
@@ -666,6 +698,7 @@ struct ExperimentEditorView: View {
                         selectedImpact = impact
                         hasManuallyEditedImpact = true
                     }
+                    allowsImageLogging = from.allowsImageLogging
                 }
             }
         }
@@ -676,6 +709,7 @@ struct ExperimentEditorView: View {
     private func prefill(from exp: Experiment) {
         title = exp.title
         prefillCategorySubcategory(from: exp)
+        allowsImageLogging = exp.allowsImageLogging
 
         // Prefill impact if it exists
         if let impact = exp.impact {

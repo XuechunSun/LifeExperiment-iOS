@@ -84,6 +84,7 @@ struct Experiment: Identifiable, Codable, Hashable {
     var logs: [DailyLog] = []
     var review: ExperimentReview?
     var completedAt: Date?
+    var allowsImageLogging: Bool = true
 
     init(
         id: UUID = UUID(),
@@ -96,7 +97,8 @@ struct Experiment: Identifiable, Codable, Hashable {
         updatedAt: Date? = nil,
         logs: [DailyLog] = [],
         review: ExperimentReview? = nil,
-        completedAt: Date? = nil
+        completedAt: Date? = nil,
+        allowsImageLogging: Bool = true
     ) {
         self.id = id
         self.title = title
@@ -109,6 +111,7 @@ struct Experiment: Identifiable, Codable, Hashable {
         self.logs = logs
         self.review = review
         self.completedAt = completedAt
+        self.allowsImageLogging = allowsImageLogging
     }
 
     init(from decoder: Decoder) throws {
@@ -124,6 +127,7 @@ struct Experiment: Identifiable, Codable, Hashable {
         logs = (try? container.decode([DailyLog].self, forKey: .logs)) ?? []
         review = try? container.decode(ExperimentReview.self, forKey: .review)
         completedAt = try? container.decode(Date.self, forKey: .completedAt)
+        allowsImageLogging = (try? container.decode(Bool.self, forKey: .allowsImageLogging)) ?? true
     }
 }
 

@@ -473,6 +473,16 @@ if validDays.isEmpty {
 
 ---
 
+## Access Control: Don't private-initialize reusable View helpers
+
+- If a helper `View` is instantiated outside its own type body (even within the same file), do NOT mark its `init` as `private`.
+- Prefer no explicit `init` for simple helper views; rely on Swift's memberwise init.
+- If you need a custom init, keep it `internal` (no modifier) unless you intentionally want to restrict construction.
+- Symptom: `initializer is inaccessible due to 'private' protection level`.
+- Fix: remove `private` from `init` or remove explicit init.
+
+---
+
 ## Post-Fix Documentation
 
 After fixing a bug, consider:
