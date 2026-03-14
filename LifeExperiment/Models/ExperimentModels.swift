@@ -56,12 +56,29 @@ struct DailyLog: Identifiable, Codable, Hashable {
     var date: Date
     var note: String
     var mood: Mood?
+    var photoLocalPath: String?
 
-    init(id: UUID = UUID(), date: Date = Date(), note: String = "", mood: Mood? = nil) {
+    init(
+        id: UUID = UUID(),
+        date: Date = Date(),
+        note: String = "",
+        mood: Mood? = nil,
+        photoLocalPath: String? = nil
+    ) {
         self.id = id
         self.date = date
         self.note = note
         self.mood = mood
+        self.photoLocalPath = photoLocalPath
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        date = try container.decode(Date.self, forKey: .date)
+        note = (try? container.decode(String.self, forKey: .note)) ?? ""
+        mood = try? container.decode(Mood.self, forKey: .mood)
+        photoLocalPath = try? container.decode(String.self, forKey: .photoLocalPath)
     }
 }
 

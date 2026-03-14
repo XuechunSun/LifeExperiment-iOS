@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct ExperimentDetailView: View {
     let onUpdate: (Experiment) -> Void
@@ -13,7 +15,12 @@ struct ExperimentDetailView: View {
     @State private var showMoodRequiredAlert = false
     @State private var showBlankReviewToast = false
     @State private var showFullHistory = false
-    @State private var showAddPhotoComingSoon = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var draftPhotoLocalPath: String?
+    @State private var photoMarkedForRemoval = false
+    @State private var isSavingPhoto = false
+    @State private var photoErrorMessage: String?
+    @State private var showPhotoErrorAlert = false
     @FocusState private var noteFocused: Bool
 
     // Review draft fields
@@ -29,6 +36,7 @@ struct ExperimentDetailView: View {
         if let todayLog = experiment.logs.first(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
             _draftNote = State(initialValue: todayLog.note)
             _draftMood = State(initialValue: todayLog.mood)
+            _draftPhotoLocalPath = State(initialValue: todayLog.photoLocalPath)
         }
 
         // Initialize review draft fields if review exists
@@ -58,6 +66,24 @@ struct ExperimentDetailView: View {
         preferences.imageLoggingEnabled && localExperiment.allowsImageLogging
     }
 
+    private var persistedTodayPhotoLocalPath: String? {
+        let today = Calendar.current.startOfDay(for: Date())
+        return localExperiment.logs.first(where: { Calendar.current.isDate($0.date, inSameDayAs: today) })?.photoLocalPath
+    }
+
+    private var photoDraftHelperText: String? {
+        guard canShowImages else { return nil }
+        let persisted = persistedTodayPhotoLocalPath
+        if draftPhotoLocalPath == persisted { return nil }
+        if draftPhotoLocalPath != nil {
+            return "Photo will be saved when you tap Save."
+        }
+        if persisted != nil {
+            return "Photo will be removed when you tap Save."
+        }
+        return nil
+    }
+
     var body: some View {
         detailContent
             .overlay(alignment: .top) { toastOverlay }
@@ -73,10 +99,10 @@ struct ExperimentDetailView: View {
             } message: {
                 Text("It takes one tap and helps you see patterns over time.")
             }
-            .alert("Coming soon", isPresented: $showAddPhotoComingSoon) {
+            .alert("Couldn't attach photo.", isPresented: $showPhotoErrorAlert, presenting: photoErrorMessage) { _ in
                 Button("OK", role: .cancel) { }
-            } message: {
-                Text("Add photo will be available in a future update.")
+            } message: { message in
+                Text(message)
             }
             .alert(S.experimentCompleteConfirm, isPresented: $showCompleteConfirm) {
                 Button(S.actionCancel, role: .cancel) { }
@@ -89,6 +115,12 @@ struct ExperimentDetailView: View {
                 Button(S.actionReopen) { reopenExperiment() }
             } message: {
                 Text("You'll be able to add new logs again.")
+            }
+            .onChange(of: selectedPhotoItem) { _, newItem in
+                guard let newItem else { return }
+                Task {
+                    await handleSelectedPhoto(item: newItem)
+                }
             }
     }
 
@@ -189,9 +221,7 @@ struct ExperimentDetailView: View {
                         Spacer()
 
                         if canShowImages {
-                            Button {
-                                showAddPhotoComingSoon = true
-                            } label: {
+                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                                 HStack(spacing: 6) {
                                     Image(systemName: "camera")
                                     Text("Add photo")
@@ -202,6 +232,7 @@ struct ExperimentDetailView: View {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .disabled(isSavingPhoto)
                             .accessibilityLabel("Add photo")
                         }
                     }
@@ -213,6 +244,43 @@ struct ExperimentDetailView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(preferences.uiStyle.cardCornerRadius)
                         .focused($noteFocused)
+
+                    if canShowImages,
+                       let path = draftPhotoLocalPath,
+                       !photoMarkedForRemoval,
+                       let image = LocalPhotoStore.loadImage(fromRelativePath: path) {
+                        HStack(spacing: 10) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 44, height: 44)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                            Text("Photo attached")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Button("Remove") {
+                                draftPhotoLocalPath = nil
+                                photoMarkedForRemoval = true
+                            }
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                            Spacer()
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
+
+                    if let helperText = photoDraftHelperText {
+                        Text(helperText)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 2)
+                    }
                 }
 
                 HStack {
@@ -336,6 +404,12 @@ struct ExperimentDetailView: View {
                             Text(log.mood?.emoji ?? " ")
                                 .frame(width: 24, alignment: .leading)
 
+                            if log.photoLocalPath != nil {
+                                Image(systemName: "photo")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
                             Spacer()
                         }
 
@@ -458,8 +532,14 @@ struct ExperimentDetailView: View {
         if let index = localExperiment.logs.firstIndex(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
             localExperiment.logs[index].note = draftNote
             localExperiment.logs[index].mood = draftMood
+            localExperiment.logs[index].photoLocalPath = draftPhotoLocalPath
         } else {
-            let newLog = DailyLog(date: today, note: draftNote, mood: draftMood)
+            let newLog = DailyLog(
+                date: today,
+                note: draftNote,
+                mood: draftMood,
+                photoLocalPath: draftPhotoLocalPath
+            )
             localExperiment.logs.append(newLog)
         }
 
@@ -470,10 +550,73 @@ struct ExperimentDetailView: View {
         Haptics.success()
 
         noteFocused = false
+        photoMarkedForRemoval = false
         showSavedToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             showSavedToast = false
         }
+    }
+
+    @MainActor
+    private func handleSelectedPhoto(item: PhotosPickerItem) async {
+        isSavingPhoto = true
+        defer {
+            isSavingPhoto = false
+            selectedPhotoItem = nil
+        }
+
+        guard let data = try? await item.loadTransferable(type: Data.self) else {
+            photoErrorMessage = "Please try selecting another photo."
+            showPhotoErrorAlert = true
+            return
+        }
+        guard let relativePath = LocalPhotoStore.saveImageData(data) else {
+            photoErrorMessage = "Unable to save this photo locally."
+            showPhotoErrorAlert = true
+            return
+        }
+        photoErrorMessage = nil
+        photoMarkedForRemoval = false
+        draftPhotoLocalPath = relativePath
+    }
+}
+
+private enum LocalPhotoStore {
+    private static let folderName = "LogPhotos"
+
+    private static func photosDirectoryURL() -> URL? {
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let directory = documentsURL.appendingPathComponent(folderName, isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
+    static func saveImageData(_ data: Data) -> String? {
+        guard let image = UIImage(data: data),
+              let jpegData = image.jpegData(compressionQuality: 0.85),
+              let directory = photosDirectoryURL() else {
+            return nil
+        }
+
+        let fileName = "logphoto_\(UUID().uuidString).jpg"
+        let fileURL = directory.appendingPathComponent(fileName)
+        do {
+            try jpegData.write(to: fileURL, options: .atomic)
+            return "\(folderName)/\(fileName)"
+        } catch {
+            return nil
+        }
+    }
+
+    static func loadImage(fromRelativePath relativePath: String) -> UIImage? {
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let fileURL = documentsURL.appendingPathComponent(relativePath)
+        guard let data = try? Data(contentsOf: fileURL) else { return nil }
+        return UIImage(data: data)
     }
 }
 
