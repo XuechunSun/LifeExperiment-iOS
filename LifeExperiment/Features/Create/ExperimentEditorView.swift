@@ -3,6 +3,7 @@ import SwiftUI
 struct ExperimentEditorView: View {
     let seedCatalog: SeedCatalog?
     let mode: ExperimentEditorMode
+    let createPrefill: ExperimentEditorPrefill?
 
     /// called when user taps primary button
     let onCommit: (Experiment) -> Void
@@ -45,9 +46,15 @@ struct ExperimentEditorView: View {
     private let originalExperiment: Experiment?
     private var preferences = AppPreferences()
 
-    init(seedCatalog: SeedCatalog?, mode: ExperimentEditorMode, onCommit: @escaping (Experiment) -> Void) {
+    init(
+        seedCatalog: SeedCatalog?,
+        mode: ExperimentEditorMode,
+        createPrefill: ExperimentEditorPrefill? = nil,
+        onCommit: @escaping (Experiment) -> Void
+    ) {
         self.seedCatalog = seedCatalog
         self.mode = mode
+        self.createPrefill = createPrefill
         self.onCommit = onCommit
 
         switch mode {
@@ -312,6 +319,14 @@ struct ExperimentEditorView: View {
         return Array(subcategory.prompts.prefix(3))
     }
 
+    private var shouldHideTitlePromptsForPrefill: Bool {
+        guard case .create = mode else { return false }
+        guard let createPrefill else { return false }
+        return !trimmed(createPrefill.title).isEmpty &&
+            !(createPrefill.categoryTitle ?? "").isEmpty &&
+            !(createPrefill.subcategoryTitle ?? "").isEmpty
+    }
+
     private var isCreateActionDisabled: Bool {
         let t = trimmed(title)
         if t.isEmpty { return true }
@@ -389,7 +404,7 @@ struct ExperimentEditorView: View {
                 TitleSection(title: $title, focusedField: $focusedField)
 
                 // Suggested Prompts
-                if !availablePrompts.isEmpty {
+                if !availablePrompts.isEmpty && !shouldHideTitlePromptsForPrefill {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Suggested prompts for title")
@@ -679,6 +694,7 @@ struct ExperimentEditorView: View {
                 switch mode {
                 case .create:
                     allowsImageLogging = preferences.imageLoggingEnabled
+                    applyCreatePrefillIfNeeded()
 
                 case .rename(let existing):
                     prefill(from: existing)
@@ -764,6 +780,32 @@ struct ExperimentEditorView: View {
             customSubcategoryText = sub ?? ""
             saveCustomSubcategoryToList = false
             pickedSavedSubcategory = false
+        }
+    }
+
+    private func applyCreatePrefillIfNeeded() {
+        guard let createPrefill else { return }
+
+        title = createPrefill.title
+
+        // If the prefill category matches an existing seed category title, reuse it.
+        // Otherwise leave category unset for the user to choose safely.
+        if let categoryTitle = createPrefill.categoryTitle,
+           let catalog = seedCatalog,
+           let seedCat = catalog.categories.first(where: { $0.title == categoryTitle }) {
+            isOtherCategory = false
+            selectedSeedCategoryId = seedCat.id
+
+            if let subcategoryTitle = createPrefill.subcategoryTitle,
+               let seedSub = seedCat.subcategories.first(where: { $0.title == subcategoryTitle }) {
+                useCustomSubcategory = false
+                selectedSeedSubcategoryId = seedSub.id
+                customSubcategoryText = ""
+            } else {
+                useCustomSubcategory = false
+                selectedSeedSubcategoryId = nil
+                customSubcategoryText = ""
+            }
         }
     }
 }

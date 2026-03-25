@@ -147,7 +147,7 @@ struct CalendarFootprintView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Calendar Footprint")
+            Text("This Week")
                 .font(.headline)
 
             // Week navigation header

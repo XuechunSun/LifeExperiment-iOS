@@ -6,6 +6,7 @@ struct HomeView: View {
     let loadExperiments: () -> [Experiment]
     let seedCatalog: SeedCatalog?
     let onCreateExperiment: () -> Void
+    let onTrySuggestion: (ExperimentSuggestion) -> Void
     let onSelectExperiment: (Experiment) -> Void
     let onUpdate: (Experiment) -> Void
     let onShowActiveMore: () -> Void
@@ -16,6 +17,8 @@ struct HomeView: View {
     let onDuplicateExperiment: (Experiment) -> Void
     let onDeleteExperiment: (Experiment) -> Void
 
+    private static let cachedSuggestions: [ExperimentSuggestion] = ExperimentSuggestionsLoader.load()
+
     // MARK: - State Determination
 
     private var experiments: [Experiment] {
@@ -24,6 +27,10 @@ struct HomeView: View {
 
     private var activeExperiments: [Experiment] {
         experiments.filter { $0.status == .active }
+    }
+
+    private var allSuggestions: [ExperimentSuggestion] {
+        Self.cachedSuggestions
     }
 
     // Helper: Check if experiment was updated on a specific day (created, logged, or completed)
@@ -71,6 +78,34 @@ struct HomeView: View {
         }
     }
 
+    private var hasLoggedToday: Bool {
+        let calendar = Calendar.current
+        let today = Date()
+        return experiments.contains { experiment in
+            experiment.logs.contains { log in
+                calendar.isDate(log.date, inSameDayAs: today)
+            }
+        }
+    }
+
+    private var homeGuideState: HomeGuideState {
+        if activeExperiments.isEmpty {
+            return .noActive
+        } else if hasLoggedToday {
+            return .loggedToday
+        } else {
+            return .activeNoLogToday
+        }
+    }
+
+    private var guideCopy: GuideCopy {
+        GuideCopyProvider.copy(for: homeGuideState)
+    }
+
+    private var guideSuggestions: [ExperimentSuggestion] {
+        suggestions(for: homeGuideState)
+    }
+
     // MARK: - Continue Recording Logic
 
     // Candidates: active experiments NOT updated today
@@ -95,13 +130,7 @@ struct HomeView: View {
 
     // Title varies by state
     private var continueRecordingTitle: String {
-        if currentState == .updatedToday {
-            // State B: Weakened, optional tone
-            return "Keep going (optional)"
-        } else {
-            // State A: Primary CTA
-            return "Continue Recording"
-        }
+        "Continue"
     }
 
     // MARK: - Completed Logic
@@ -139,60 +168,27 @@ struct HomeView: View {
 
                 Divider()
 
-                // 2. CTA (Emotional Trigger) - Always visible
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(ctaText)
-                        .font(.title3)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-
-                    if let ctaSubtext = ctaSubtext {
-                        Text(ctaSubtext)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                GuideCardView(
+                    copy: guideCopy,
+                    suggestions: guideSuggestions,
+                    onStartSuggestion: { suggestion in
+                        onTrySuggestion(suggestion)
+                    },
+                    onExploreMore: {
+                        onCreateExperiment()
                     }
-                }
+                )
 
-                // 3. Recent Events - Card style
-                if !recentEvents.isEmpty {
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(S.sectionRecentEvents)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-
-                        let eventsToShow = Array(recentEvents.prefix(2))
-
-                        if eventsToShow.count == 2 {
-                            // Two-column grid
-                            LazyVGrid(columns: [
-                                GridItem(.flexible(), spacing: 12),
-                                GridItem(.flexible(), spacing: 12)
-                            ], spacing: 12) {
-                                ForEach(eventsToShow) { event in
-                                    RecentEventCard(event: event)
-                                }
-                            }
-                        } else {
-                            // Single card
-                            ForEach(eventsToShow) { event in
-                                RecentEventCard(event: event)
-                            }
-                        }
-                    }
-                }
-
-                // 4. Continue Recording - State A (primary) & State B (weakened/optional)
+                // 3. Continue Recording - State A (primary) & State B (weakened/optional)
                 if shouldShowContinueRecording {
                     Divider()
 
                     VStack(alignment: .leading, spacing: 12) {
-                        let isWeakened = (currentState == .updatedToday)
+                        let isWeakened = hasLoggedToday
 
                         HStack {
                             Text(continueRecordingTitle)
-                                .font(isWeakened ? .subheadline : .headline)
+                                .font(.headline)
                                 .foregroundColor(isWeakened ? .secondary : .primary)
 
                             Spacer()
@@ -241,27 +237,33 @@ struct HomeView: View {
                     }
                 }
 
-                // 5. Start New Experiment - Always visible
-                Divider()
+                // 5. Recent Events - Card style
+                if !recentEvents.isEmpty {
+                    Divider()
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(currentState == .noActiveExperiments ? "Start Your First Experiment" : "Start New Experiment")
-                        .font(.headline)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(S.sectionRecentEvents)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
 
-                    Button(action: {
-                        onCreateExperiment()
-                    }) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title3)
-                            Text("Create Experiment")
-                                .fontWeight(.medium)
+                        let eventsToShow = Array(recentEvents.prefix(2))
+
+                        if eventsToShow.count == 2 {
+                            // Two-column grid
+                            LazyVGrid(columns: [
+                                GridItem(.flexible(), spacing: 12),
+                                GridItem(.flexible(), spacing: 12)
+                            ], spacing: 12) {
+                                ForEach(eventsToShow) { event in
+                                    RecentEventCard(event: event)
+                                }
+                            }
+                        } else {
+                            // Single card
+                            ForEach(eventsToShow) { event in
+                                RecentEventCard(event: event)
+                            }
                         }
-                        .foregroundColor(.blue)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(8)
                     }
                 }
 
@@ -334,8 +336,8 @@ struct HomeView: View {
         var body: some View {
             HStack(spacing: 10) {
                 Image(systemName: event.iconSystemName)
-                    .font(.headline)
-                    .foregroundColor(.blue)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(event.title)
@@ -353,20 +355,84 @@ struct HomeView: View {
                 Spacer(minLength: 0)
             }
             .padding(12)
-            .background(Color(.secondarySystemBackground))
+            .background(Color(.systemGray6))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 
-    // MARK: - CTA Text Logic (Quote-based)
+    private func suggestions(for state: HomeGuideState) -> [ExperimentSuggestion] {
+        let unusedSuggestions = allSuggestions.filter { suggestion in
+            !usedExperimentTitles.contains(normalizedTitle(suggestion.title))
+        }
+        let prioritized: [ExperimentSuggestion]
 
-    private var ctaText: String {
-        let quotes = CTALoader.loadQuotes()
-        return CTALoader.pickDailyQuote(from: quotes) ?? "Begin anywhere."
+        switch state {
+        case .noActive:
+            prioritized = unusedSuggestions.filter { $0.mode == .starter || $0.effort == .low }
+        case .activeNoLogToday:
+            prioritized = unusedSuggestions.filter { $0.mode == .reset || $0.mode == .reflective }
+        case .loggedToday:
+            let primary = unusedSuggestions.filter { $0.mode == .social || $0.mode == .reflective }
+            let fallback = unusedSuggestions.filter { $0.mode == .starter }
+            prioritized = deduplicatedSuggestions(primary + fallback)
+        }
+
+        var selected = pickDiverseSuggestions(from: prioritized, limit: 3)
+
+        if selected.count < 3 {
+            let otherUnused = deduplicatedSuggestions(unusedSuggestions.filter { suggestion in
+                !selected.contains(where: { $0.id == suggestion.id })
+            })
+            selected += pickDiverseSuggestions(from: otherUnused, limit: 3 - selected.count)
+        }
+
+        if selected.count < 3 {
+            let anyRemaining = deduplicatedSuggestions(allSuggestions.filter { suggestion in
+                !selected.contains(where: { $0.id == suggestion.id })
+            })
+            selected += pickDiverseSuggestions(from: anyRemaining, limit: 3 - selected.count)
+        }
+
+        return Array(selected.prefix(3))
     }
 
-    private var ctaSubtext: String? {
-        return nil
+    private func deduplicatedSuggestions(_ suggestions: [ExperimentSuggestion]) -> [ExperimentSuggestion] {
+        var seen = Set<String>()
+        return suggestions.filter { suggestion in
+            seen.insert(suggestion.id).inserted
+        }
+    }
+
+    private var usedExperimentTitles: Set<String> {
+        Set(experiments.map { normalizedTitle($0.title) })
+    }
+
+    private func normalizedTitle(_ title: String) -> String {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func pickDiverseSuggestions(from suggestions: [ExperimentSuggestion], limit: Int) -> [ExperimentSuggestion] {
+        guard limit > 0 else { return [] }
+
+        var picks: [ExperimentSuggestion] = []
+        var usedCategories = Set<String>()
+
+        for suggestion in suggestions where picks.count < limit {
+            if !usedCategories.contains(suggestion.category) {
+                picks.append(suggestion)
+                usedCategories.insert(suggestion.category)
+            }
+        }
+
+        if picks.count < limit {
+            for suggestion in suggestions where picks.count < limit {
+                if !picks.contains(where: { $0.id == suggestion.id }) {
+                    picks.append(suggestion)
+                }
+            }
+        }
+
+        return picks
     }
 }
 

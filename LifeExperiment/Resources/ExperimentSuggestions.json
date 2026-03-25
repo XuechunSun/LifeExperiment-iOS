@@ -1,0 +1,405 @@
+[
+    {
+      "id": "walk_without_phone",
+      "title": "Take a 10-minute walk without your phone",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Movement",
+      "effort": "low",
+      "mode": "reset",
+      "tags": ["offline", "mental_space", "starter"]
+    },
+    {
+      "id": "drink_water_slowly",
+      "title": "Drink a glass of water slowly and notice how you feel",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Nutrition Awareness",
+      "effort": "low",
+      "mode": "starter",
+      "tags": ["body", "small_step"]
+    },
+    {
+      "id": "sleep_earlier_once",
+      "title": "Try going to bed 30 minutes earlier tonight",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Sleep & Rest",
+      "effort": "low",
+      "mode": "reset",
+      "tags": ["rest", "energy"]
+    },
+    {
+      "id": "stretch_for_five",
+      "title": "Stretch for 5 minutes and see if your energy shifts",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Movement",
+      "effort": "low",
+      "mode": "starter",
+      "tags": ["movement", "energy"]
+    },
+    {
+      "id": "notice_energy_peak",
+      "title": "Notice when your energy feels highest today",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Movement",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["energy", "pattern"]
+    },
+    {
+      "id": "eat_one_meal_slowly",
+      "title": "Eat one meal a little more slowly than usual",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Nutrition Awareness",
+      "effort": "low",
+      "mode": "starter",
+      "tags": ["body", "awareness"]
+    },
+    {
+      "id": "step_outside_morning",
+      "title": "Step outside for a few minutes in the morning",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Movement",
+      "effort": "low",
+      "mode": "reset",
+      "tags": ["morning", "light", "starter"]
+    },
+    {
+      "id": "rest_without_scrolling",
+      "title": "Take a short break without reaching for your phone",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Sleep & Rest",
+      "effort": "low",
+      "mode": "reset",
+      "tags": ["rest", "offline"]
+    },
+    {
+      "id": "body_check_in",
+      "title": "Pause once today and notice how your body feels",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Movement",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["body", "check_in"]
+    },
+    {
+      "id": "tiny_movement_reset",
+      "title": "Move your body for 5 minutes just to reset",
+      "category": "Body & Energy",
+      "prefillCategoryTitle": "Well-being Habits",
+      "prefillSubcategoryTitle": "Movement",
+      "effort": "low",
+      "mode": "reset",
+      "tags": ["movement", "reset"]
+    },
+  
+    {
+      "id": "write_one_avoided_thing",
+      "title": "Write down one thing you've been avoiding",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["awareness", "reflection"]
+    },
+    {
+      "id": "ask_what_i_need",
+      "title": "Ask yourself: what do I need a little more of today?",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["needs", "awareness"]
+    },
+    {
+      "id": "skip_one_autopilot",
+      "title": "Change one thing you usually do on autopilot",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "medium",
+      "mode": "starter",
+      "tags": ["pattern", "exploration"]
+    },
+    {
+      "id": "say_no_once",
+      "title": "Say no to one thing that drains you",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "medium",
+      "mode": "reflective",
+      "tags": ["boundary", "agency"]
+    },
+    {
+      "id": "try_new_place",
+      "title": "Go to one place you don't usually go",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "medium",
+      "mode": "starter",
+      "tags": ["novelty", "exploration"]
+    },
+    {
+      "id": "write_one_honest_sentence",
+      "title": "Write one honest sentence about how things really feel",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["honesty", "reflection"]
+    },
+    {
+      "id": "notice_what_drains_you",
+      "title": "Notice one thing that drains your energy today",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["energy", "pattern"]
+    },
+    {
+      "id": "notice_what_lifts_you",
+      "title": "Notice one thing that makes today feel lighter",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["pattern", "lightness"]
+    },
+    {
+      "id": "do_something_unusual_for_you",
+      "title": "Try one small choice that feels slightly unlike your usual self",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "medium",
+      "mode": "starter",
+      "tags": ["identity", "exploration"]
+    },
+    {
+      "id": "notice_hidden_resistance",
+      "title": "Notice where you feel resistance without trying to fix it",
+      "category": "Self Understanding",
+      "prefillCategoryTitle": "Life Reset",
+      "prefillSubcategoryTitle": "Self Reflection",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["resistance", "awareness"]
+    },
+  
+    {
+      "id": "text_someone_you_miss",
+      "title": "Text someone you've been thinking about",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "low",
+      "mode": "social",
+      "tags": ["connection", "outreach"]
+    },
+    {
+      "id": "small_kind_message",
+      "title": "Send one small message of appreciation",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "low",
+      "mode": "social",
+      "tags": ["gratitude", "connection"]
+    },
+    {
+      "id": "ask_someone_real_question",
+      "title": "Ask someone one real question instead of making small talk",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "medium",
+      "mode": "social",
+      "tags": ["conversation", "closeness"]
+    },
+    {
+      "id": "invite_someone_for_coffee",
+      "title": "Invite someone to a simple coffee or lunch",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "medium",
+      "mode": "social",
+      "tags": ["connection", "initiative"]
+    },
+    {
+      "id": "reply_with_more_presence",
+      "title": "Reply to one message with a little more presence than usual",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "low",
+      "mode": "social",
+      "tags": ["presence", "conversation"]
+    },
+    {
+      "id": "check_in_with_family",
+      "title": "Check in with a family member, even briefly",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "low",
+      "mode": "social",
+      "tags": ["family", "connection"]
+    },
+    {
+      "id": "share_small_update",
+      "title": "Share a small update about your day with someone you trust",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "low",
+      "mode": "social",
+      "tags": ["sharing", "closeness"]
+    },
+    {
+      "id": "thank_someone_directly",
+      "title": "Thank someone directly for something specific",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "low",
+      "mode": "social",
+      "tags": ["gratitude", "warmth"]
+    },
+    {
+      "id": "sit_with_someone_without_rushing",
+      "title": "Spend a few unhurried minutes with someone",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "medium",
+      "mode": "social",
+      "tags": ["presence", "time"]
+    },
+    {
+      "id": "reach_out_first",
+      "title": "Be the one who reaches out first today",
+      "category": "Connection",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "New Experiences",
+      "effort": "medium",
+      "mode": "social",
+      "tags": ["initiative", "agency"]
+    },
+  
+    {
+      "id": "journal_for_three",
+      "title": "Write for 3 minutes without trying to sound clear",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["writing", "expression"]
+    },
+    {
+      "id": "take_one_photo",
+      "title": "Take one photo of something that feels alive today",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "starter",
+      "tags": ["creative", "noticing"]
+    },
+    {
+      "id": "make_small_playlist",
+      "title": "Make a 3-song playlist for your current mood",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["music", "mood"]
+    },
+    {
+      "id": "draw_without_goal",
+      "title": "Draw something quickly without trying to make it good",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "starter",
+      "tags": ["play", "creative"]
+    },
+    {
+      "id": "describe_today_in_three_words",
+      "title": "Describe today in three words",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["words", "reflection"]
+    },
+    {
+      "id": "make_tiny_voice_note",
+      "title": "Record a short voice note about how today feels",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["voice", "expression"]
+    },
+    {
+      "id": "save_one_image_that_matches_mood",
+      "title": "Save one image that matches your mood today",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "starter",
+      "tags": ["mood", "visual"]
+    },
+    {
+      "id": "write_bad_poem",
+      "title": "Write a bad poem on purpose",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "starter",
+      "tags": ["play", "writing"]
+    },
+    {
+      "id": "notice_color_of_the_day",
+      "title": "Pick one color that feels like today",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "low",
+      "mode": "reflective",
+      "tags": ["color", "mood"]
+    },
+    {
+      "id": "make_small_something",
+      "title": "Make something tiny just for yourself",
+      "category": "Expression & Creativity",
+      "prefillCategoryTitle": "Life List",
+      "prefillSubcategoryTitle": "Creative Expression",
+      "effort": "medium",
+      "mode": "starter",
+      "tags": ["creative", "self_expression"]
+    }
+  ]

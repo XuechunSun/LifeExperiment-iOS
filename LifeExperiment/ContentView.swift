@@ -51,6 +51,7 @@ struct ContentView: View {
     @State private var showCreateExperimentSheet: Bool = false
     @State private var experimentToDelete: Experiment?
     @State private var activeSheet: ActiveSheet?
+    @State private var createPrefill: ExperimentEditorPrefill?
     
     // Seed catalog
     @State private var seedCatalog: SeedCatalog?
@@ -246,6 +247,15 @@ struct ContentView: View {
                     loadExperiments: getExperiments,
                     seedCatalog: seedCatalog,
                     onCreateExperiment: {
+                        createPrefill = nil
+                        showCreateExperimentSheet = true
+                    },
+                    onTrySuggestion: { suggestion in
+                        createPrefill = ExperimentEditorPrefill(
+                            title: suggestion.title,
+                            categoryTitle: suggestion.prefillCategoryTitle,
+                            subcategoryTitle: suggestion.prefillSubcategoryTitle
+                        )
                         showCreateExperimentSheet = true
                     },
                     onSelectExperiment: { experiment in
@@ -333,17 +343,20 @@ struct ContentView: View {
         .onChange(of: selectedTab) { oldValue, newValue in
             // When user switches to Create tab, present the create sheet
             if newValue == .create {
+                createPrefill = nil
                 showCreateExperimentSheet = true
             }
         }
         .sheet(isPresented: $showCreateExperimentSheet, onDismiss: {
             // When create sheet is dismissed, return to Home if still on Create tab
+            createPrefill = nil
             if selectedTab == .create {
                 selectedTab = .home
             }
         }) {
-            ExperimentEditorView(seedCatalog: seedCatalog, mode: .create) { experiment in
+            ExperimentEditorView(seedCatalog: seedCatalog, mode: .create, createPrefill: createPrefill) { experiment in
                 addExperiment(experiment)
+                createPrefill = nil
                 showCreateExperimentSheet = false
                 // Switch to Active tab after creation
                 selectedTab = .active
