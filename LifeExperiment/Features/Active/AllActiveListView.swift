@@ -22,115 +22,16 @@ struct AllActiveListView: View {
     }
 
     var body: some View {
-        List {
-            // Updated Today section
-            Section {
-                if updatedToday.isEmpty {
-                    Text(S.emptyNoUpdatesToday)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(updatedToday) { experiment in
-                        Button(action: {
-                            onSelectExperiment(experiment)
-                        }) {
-                            HStack(spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(experiment.title)
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-
-                                    Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Spacer()
-
-                                ExperimentRowMenu(
-                                    kind: .active,
-                                    onRename: { onRename(experiment) },
-                                    onDuplicate: { onDuplicate(experiment) },
-                                    onDelete: { onDelete(experiment) }
-                                )
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive, action: { onDelete(experiment) }) {
-                                Label("Delete", systemImage: "trash")
-                            }
-                            Button(action: { onDuplicate(experiment) }) {
-                                Label("Duplicate", systemImage: "doc.on.doc")
-                            }
-                            .tint(.orange)
-                            Button(action: { onRename(experiment) }) {
-                                Label("Rename", systemImage: "pencil")
-                            }
-                            .tint(.blue)
-                        }
-                    }
-                }
-            } header: {
+        ScrollView {
+            VStack(alignment: .leading, spacing: DSSpacing.lg) {
                 Text(S.sectionUpdatedToday)
-            }
+                    .lifeSectionTitle()
+                sectionCard(experiments: updatedToday, emptyText: S.emptyNoUpdatesToday)
 
-            // Not Updated Today section
-            Section {
-                if notUpdatedToday.isEmpty {
-                    Text(S.emptyAllUpdated)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(notUpdatedToday) { experiment in
-                        Button(action: {
-                            onSelectExperiment(experiment)
-                        }) {
-                            HStack(spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(experiment.title)
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-
-                                    Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Spacer()
-
-                                ExperimentRowMenu(
-                                    kind: .active,
-                                    onRename: { onRename(experiment) },
-                                    onDuplicate: { onDuplicate(experiment) },
-                                    onDelete: { onDelete(experiment) }
-                                )
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive, action: { onDelete(experiment) }) {
-                                Label("Delete", systemImage: "trash")
-                            }
-                            Button(action: { onDuplicate(experiment) }) {
-                                Label("Duplicate", systemImage: "doc.on.doc")
-                            }
-                            .tint(.orange)
-                            Button(action: { onRename(experiment) }) {
-                                Label("Rename", systemImage: "pencil")
-                            }
-                            .tint(.blue)
-                        }
-                    }
-                }
-            } header: {
                 Text(S.sectionNotUpdatedToday)
-            }
+                    .lifeSectionTitle()
+                sectionCard(experiments: notUpdatedToday, emptyText: S.emptyAllUpdated)
 
-            // Start New Experiment button
-            Section {
                 Button(action: {
                     onCreateExperiment()
                 }) {
@@ -142,11 +43,60 @@ struct AllActiveListView: View {
                     .foregroundColor(.blue)
                     .frame(maxWidth: .infinity)
                 }
-                .listRowBackground(Color.blue.opacity(0.1))
+                .padding(.vertical, DSSpacing.sm)
+                .lifeCard()
             }
+            .padding(DSSpacing.md)
         }
         .navigationTitle(S.sectionActiveExperiments)
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    @ViewBuilder
+    private func sectionCard(experiments: [Experiment], emptyText: String) -> some View {
+        if experiments.isEmpty {
+            Text(emptyText)
+                .lifeSecondaryText()
+                .padding(.vertical, DSSpacing.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .lifeCard()
+        } else {
+            VStack(spacing: 0) {
+                ForEach(Array(experiments.enumerated()), id: \.element.id) { index, experiment in
+                    Button(action: {
+                        onSelectExperiment(experiment)
+                    }) {
+                        HStack(spacing: DSSpacing.sm) {
+                            VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                                Text(experiment.title)
+                                    .font(DSText.rowTitle)
+                                    .foregroundColor(.primary)
+
+                                Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
+                                    .lifeCaption()
+                            }
+
+                            Spacer()
+
+                            ExperimentRowMenu(
+                                kind: .active,
+                                onRename: { onRename(experiment) },
+                                onDuplicate: { onDuplicate(experiment) },
+                                onDelete: { onDelete(experiment) }
+                            )
+                        }
+                        .padding(.vertical, DSSpacing.sm)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if index < experiments.count - 1 {
+                        Divider()
+                    }
+                }
+            }
+            .lifeCard()
+        }
     }
 }
 

@@ -36,10 +36,18 @@ struct SummaryView: View {
     }
 
     private struct HelpfulExperimentInsight: Identifiable {
+        enum Confidence: Int {
+            case low = 0
+            case medium = 1
+            case high = 2
+        }
+
         let experimentId: UUID
         let title: String
         let delta: Double
         let message: String
+        let experimentDayCount: Int
+        let confidence: Confidence
 
         var id: UUID { experimentId }
     }
@@ -64,7 +72,7 @@ struct SummaryView: View {
             }
         }
 
-        return experiments.compactMap { experiment in
+        return experiments.compactMap { (experiment: Experiment) -> HelpfulExperimentInsight? in
             let experimentEntries = moodEntries.filter { $0.experimentId == experiment.id }
             guard experimentEntries.count >= 3 else { return nil }
 
@@ -78,32 +86,82 @@ struct SummaryView: View {
             let comparisonAvg = comparisonEntries.map(\.score).reduce(0, +) / Double(comparisonEntries.count)
             let delta = experimentAvg - comparisonAvg
 
-            let message: String
-            if delta >= 0.5 {
-                message = "Often linked to better mood"
-            } else if delta >= 0.2 {
-                message = "Sometimes linked to better mood"
-            } else if delta > -0.2 {
-                message = "Mood feels fairly similar on these days"
+            let confidence: HelpfulExperimentInsight.Confidence
+            if experimentEntries.count >= 14 && delta >= 0.5 {
+                confidence = .high
+            } else if experimentEntries.count >= 7 && delta >= 0.3 {
+                confidence = .medium
             } else {
+                confidence = .low
+            }
+
+            let signalTypeText: String = {
+                let categoryText = (experiment.category ?? "").lowercased()
+                let titleText = experiment.title.lowercased()
+                let combined = "\(categoryText) \(titleText)"
+
+                if combined.contains("emotional") { return "emotional state" }
+                if combined.contains("body") || combined.contains("health") || combined.contains("fitness") { return "energy" }
+                if combined.contains("focus") || combined.contains("work") || combined.contains("productivity") { return "focus" }
+                if combined.contains("creative") || combined.contains("expression") { return "creativity" }
+                if combined.contains("social") || combined.contains("connection") { return "connection" }
+                return "mood"
+            }()
+
+            let message: String
+            if delta <= -0.2 {
                 message = "These days may feel more mixed"
+            } else if delta < 0.2 {
+                message = "Feels fairly similar on these days"
+            } else if confidence == .high {
+                message = "Often linked to better \(signalTypeText)"
+            } else if confidence == .medium {
+                message = "Sometimes linked to better \(signalTypeText)"
+            } else {
+                message = "A possible positive pattern in your \(signalTypeText)"
             }
 
             return HelpfulExperimentInsight(
                 experimentId: experiment.id,
                 title: experiment.title,
                 delta: delta,
-                message: message
+                message: message,
+                experimentDayCount: experimentEntries.count,
+                confidence: confidence
             )
         }
-        .sorted { lhs, rhs in
+        .sorted { (lhs: HelpfulExperimentInsight, rhs: HelpfulExperimentInsight) in
+            if lhs.confidence.rawValue != rhs.confidence.rawValue {
+                return lhs.confidence.rawValue > rhs.confidence.rawValue
+            }
             if lhs.delta != rhs.delta {
                 return lhs.delta > rhs.delta
+            }
+            if lhs.experimentDayCount != rhs.experimentDayCount {
+                return lhs.experimentDayCount > rhs.experimentDayCount
             }
             return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
         }
         .prefix(2)
-        .map { $0 }
+        .enumerated()
+        .map { index, insight in
+            guard index == 1,
+                  insight.message.hasPrefix("A possible positive pattern in your ") else {
+                return insight
+            }
+
+            return HelpfulExperimentInsight(
+                experimentId: insight.experimentId,
+                title: insight.title,
+                delta: insight.delta,
+                message: insight.message.replacingOccurrences(
+                    of: "A possible positive pattern in your ",
+                    with: "A weaker but similar pattern in your "
+                ),
+                experimentDayCount: insight.experimentDayCount,
+                confidence: insight.confidence
+            )
+        }
     }
 
     private func moodScore(for mood: Mood?) -> Double? {
@@ -124,61 +182,50 @@ struct SummaryView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("What Seems to Help")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-
-                    Text("Experiments that may be supporting your mood.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-
-                    if helpfulInsights.isEmpty {
-                        Text("Patterns will appear as you log more experiments.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                    } else {
-                        VStack(alignment: .leading, spacing: 12) {
-                            ForEach(helpfulInsights) { insight in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Experiment · \(insight.title)")
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                    Text(insight.message)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: DSSpacing.xl) {
+                SectionBlock(
+                    title: "What Seems to Help",
+                    subtitle: "Experiments that may be supporting your mood."
+                ) {
+                    VStack(alignment: .leading, spacing: DSSpacing.xs) {
+                        if helpfulInsights.isEmpty {
+                            Text("Patterns will appear as you log more experiment days.")
+                                .lifeSecondaryText()
+                                .padding(.top, DSSpacing.xxs)
+                        } else {
+                            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                                ForEach(helpfulInsights) { insight in
+                                    VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                                        Text("Experiment · \(insight.title)")
+                                            .font(DSText.rowTitle)
+                                        Text(insight.message)
+                                            .lifeSecondaryText()
+                                        Text("Based on \(insight.experimentDayCount) days of logs")
+                                            .lifeCaption()
+                                    }
                                 }
                             }
+                            .padding(.top, DSSpacing.xxs)
                         }
-                        .padding(.top, 4)
                     }
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-
-                Divider()
 
                 // Module 1: Dimension Insights (v1) - Now at top
                 DimensionInsightsView(experiments: experiments)
 
-                Divider()
-
                 // Module 2: Storage Boxes by Category
-                StorageBoxesView(experiments: experiments, seedCatalog: seedCatalog, onUpdate: onUpdate)
+                SectionBlock(title: "Storage Boxes by Category") {
+                    StorageBoxesView(experiments: experiments, seedCatalog: seedCatalog, onUpdate: onUpdate)
+                }
 
                 // Module 3: Calendar Footprint (hidden for v1, can be restored later)
                 if showCalendarFootprint {
-                    Divider()
-
                     CalendarFootprintView(experiments: experiments, onUpdate: onUpdate, onSelectDay: { day in
                         selectedDay = day
                     })
                 }
             }
-            .padding()
+            .padding(DSSpacing.md)
         }
         .navigationTitle("Summary")
         .navigationBarTitleDisplayMode(.large)

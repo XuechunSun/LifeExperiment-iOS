@@ -77,14 +77,9 @@ struct StorageBoxesView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Storage Boxes by Category")
-                .font(.headline)
-
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
-                ForEach(categoryBoxes) { box in
-                    StorageBoxTile(box: box, onUpdate: onUpdate)
-                }
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: DSSpacing.sm)], spacing: DSSpacing.sm) {
+            ForEach(categoryBoxes) { box in
+                StorageBoxTile(box: box, onUpdate: onUpdate)
             }
         }
     }
@@ -132,7 +127,7 @@ struct StorageBoxTile: View {
         Button(action: {
             showExperimentsList = true
         }) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DSSpacing.xs) {
                 // Box icon
                 Image(systemName: box.isEmpty ? "shippingbox" : "shippingbox.fill")
                     .font(.title)
@@ -141,8 +136,7 @@ struct StorageBoxTile: View {
 
                 // Category name
                 Text(box.category)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(DSText.rowTitle)
                     .foregroundColor(box.isEmpty ? .secondary : .primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
@@ -151,14 +145,14 @@ struct StorageBoxTile: View {
                 // Subtitle: custom categories, subcategories, or Empty label
                 if let subtitle = subtitleText {
                     Text(subtitle)
-                        .font(.caption2)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
                         .italic(box.isEmpty)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
-            .padding()
+            .padding(DSSpacing.md)
             .frame(height: 120)
             .background(box.isEmpty ? Color(.systemGray6).opacity(0.5) : Color(.systemGray6))
             .cornerRadius(12)
@@ -191,12 +185,38 @@ struct StorageBoxTile: View {
                         }
                     }
                 } else {
-                    List {
-                        ForEach(box.experiments.sorted { $0.updatedAt > $1.updatedAt }) { experiment in
-                            NavigationLink(destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)) {
-                                ExperimentCardRow(experiment: experiment)
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(Array(box.experiments.sorted { $0.updatedAt > $1.updatedAt }.enumerated()), id: \.element.id) { index, experiment in
+                                NavigationLink(destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)) {
+                                    HStack(spacing: DSSpacing.sm) {
+                                        VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                                            Text(experiment.title)
+                                                .font(DSText.rowTitle)
+                                                .foregroundColor(.primary)
+
+                                            Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
+                                                .lifeCaption()
+                                        }
+
+                                        Spacer()
+
+                                        Image(systemName: "chevron.right")
+                                            .font(DSText.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.vertical, DSSpacing.sm)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+
+                                if index < box.experiments.count - 1 {
+                                    Divider()
+                                }
                             }
                         }
+                        .lifeCard()
+                        .padding(DSSpacing.md)
                     }
                     .navigationTitle(box.category)
                     .navigationBarTitleDisplayMode(.inline)

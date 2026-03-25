@@ -28,7 +28,7 @@ struct CompletedListView: View {
         Group {
             if completedExperiments.isEmpty {
                 // Empty state
-                VStack(spacing: 16) {
+                VStack(spacing: DSSpacing.md) {
                     Spacer()
                         .frame(height: 60)
 
@@ -37,14 +37,12 @@ struct CompletedListView: View {
                         .fontWeight(.semibold)
 
                     Text(S.emptyNoCompletedSubtitle)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .lifeSecondaryText()
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
 
                     Text("Try something tiny—one day is still an experiment.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .lifeCaption()
                         .italic()
                         .padding(.top, 8)
 
@@ -52,111 +50,65 @@ struct CompletedListView: View {
                 }
                 .frame(maxWidth: .infinity)
             } else {
-                List {
-                    // This week section
-                    if !thisWeek.isEmpty {
-                        Section {
-                            ForEach(thisWeek) { experiment in
-                                Button(action: {
-                                    onSelectExperiment(experiment)
-                                }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "checkmark.seal.fill")
-                                            .font(.title3)
-                                            .foregroundColor(.green)
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(experiment.title)
-                                                .font(.subheadline)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.primary)
-
-                                            if let completedAt = experiment.completedAt {
-                                                Text("Completed \(completedAt.formatted(date: .abbreviated, time: .omitted))")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
-
-                                        Spacer()
-
-                                        ExperimentRowMenu(
-                                            kind: .completed,
-                                            onDuplicate: { onDuplicate(experiment) },
-                                            onDelete: { onDelete(experiment) }
-                                        )
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive, action: { onDelete(experiment) }) {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                    Button(action: { onDuplicate(experiment) }) {
-                                        Label("Duplicate", systemImage: "doc.on.doc")
-                                    }
-                                    .tint(.orange)
-                                }
-                            }
-                        } header: {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: DSSpacing.lg) {
+                        if !thisWeek.isEmpty {
                             Text(S.sectionThisWeek)
+                                .lifeSectionTitle()
+                            sectionCard(experiments: thisWeek)
                         }
-                    }
 
-                    // Earlier section
-                    if !earlier.isEmpty {
-                        Section {
-                            ForEach(earlier) { experiment in
-                                Button(action: {
-                                    onSelectExperiment(experiment)
-                                }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "checkmark.seal.fill")
-                                            .font(.title3)
-                                            .foregroundColor(.green)
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(experiment.title)
-                                                .font(.subheadline)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.primary)
-
-                                            if let completedAt = experiment.completedAt {
-                                                Text("Completed \(completedAt.formatted(date: .abbreviated, time: .omitted))")
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
-
-                                        Spacer()
-
-                                        ExperimentRowMenu(
-                                            kind: .completed,
-                                            onDuplicate: { onDuplicate(experiment) },
-                                            onDelete: { onDelete(experiment) }
-                                        )
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive, action: { onDelete(experiment) }) {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                    Button(action: { onDuplicate(experiment) }) {
-                                        Label("Duplicate", systemImage: "doc.on.doc")
-                                    }
-                                    .tint(.orange)
-                                }
-                            }
-                        } header: {
+                        if !earlier.isEmpty {
                             Text(S.sectionEarlier)
+                                .lifeSectionTitle()
+                            sectionCard(experiments: earlier)
                         }
                     }
+                    .padding(DSSpacing.md)
                 }
             }
         }
         .navigationTitle("Completed Experiments")
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func sectionCard(experiments: [Experiment]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(experiments.enumerated()), id: \.element.id) { index, experiment in
+                Button(action: {
+                    onSelectExperiment(experiment)
+                }) {
+                    HStack(spacing: DSSpacing.sm) {
+                        VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                            Text(experiment.title)
+                                .font(DSText.rowTitle)
+                                .foregroundColor(.primary)
+
+                            if let completedAt = experiment.completedAt {
+                                Text("Completed \(completedAt.formatted(date: .abbreviated, time: .omitted))")
+                                    .lifeCaption()
+                            }
+                        }
+
+                        Spacer()
+
+                        ExperimentRowMenu(
+                            kind: .completed,
+                            onDuplicate: { onDuplicate(experiment) },
+                            onDelete: { onDelete(experiment) }
+                        )
+                    }
+                    .padding(.vertical, DSSpacing.sm)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if index < experiments.count - 1 {
+                    Divider()
+                }
+            }
+        }
+        .lifeCard()
     }
 }
 

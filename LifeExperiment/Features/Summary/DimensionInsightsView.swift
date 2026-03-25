@@ -2,88 +2,40 @@ import SwiftUI
 
 // MARK: - Radar Axis Label View
 
-struct RadarAxisLabelView: View {
-    let title: String
-    let percentText: String
-    let angle: Double
-    let onInfo: () -> Void
-
-    var body: some View {
-        VStack(spacing: 3) {
-            // Title with info icon (baseline-aligned)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(title)
-                    .font(.footnote)
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(textAlignment)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .layoutPriority(1)
-
-                Button(action: onInfo) {
-                    Image(systemName: "info.circle")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .frame(width: 32, height: 32) // Tap target
-                }
-                .contentShape(Rectangle())
-                .fixedSize()
-            }
-
-            // Percentage
-            Text(percentText)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .monospacedDigit()
-        }
-        .frame(maxWidth: labelMaxWidth, alignment: frameAlignment)
-    }
-
-    // MARK: - Quadrant-based alignment
-
-    private var labelMaxWidth: CGFloat {
-        // Tighter width for bottom labels to prevent horizontal collision
-        if isBottomLabel {
-            return 140
-        }
-        return 160
-    }
-
-    private var textAlignment: TextAlignment {
-        let normalized = angle.truncatingRemainder(dividingBy: 2.0 * .pi)
-        // Right side (0 ± 45°)
-        if normalized > -.pi / 4 && normalized < .pi / 4 {
-            return .leading
-        }
-        // Left side (180° ± 45°)
-        else if normalized > 3 * .pi / 4 || normalized < -3 * .pi / 4 {
-            return .trailing
-        }
-        // Top/bottom
-        else {
-            return .center
-        }
-    }
-
-    private var frameAlignment: Alignment {
-        let normalized = angle.truncatingRemainder(dividingBy: 2.0 * .pi)
-        if normalized > -.pi / 4 && normalized < .pi / 4 {
-            return .leading
-        }
-        else if normalized > 3 * .pi / 4 || normalized < -3 * .pi / 4 {
-            return .trailing
-        }
-        else {
-            return .center
-        }
-    }
-
-    private var isBottomLabel: Bool {
-        let normalized = angle.truncatingRemainder(dividingBy: 2.0 * .pi)
-        // Bottom quadrant (roughly 45° to 135° in normalized space)
-        return normalized > .pi / 4 && normalized < 3 * .pi / 4
-    }
-}
+//struct RadarAxisLabelView: View {
+//    let shortTitle: String
+//    let percentText: String
+//    let onInfo: () -> Void
+//
+//    var body: some View {
+//        VStack(spacing: 2) {
+//            HStack(spacing: 4) {
+//                Text(shortTitle)
+//                    .font(.caption)
+//                    .foregroundColor(.primary)
+//                    .lineLimit(1)
+//                    .multilineTextAlignment(.center)
+//                    .fixedSize(horizontal: false, vertical: true)
+//
+//                Button(action: onInfo) {
+//                    Image(systemName: "info.circle")
+//                        .font(.caption2)
+//                        .foregroundColor(.secondary)
+//                        .frame(width: 18, height: 18)
+//                }
+//                .buttonStyle(.plain)
+//                .contentShape(Rectangle())
+//            }
+//            .frame(maxWidth: .infinity, alignment: .center)
+//
+//            Text(percentText)
+//                .font(.caption2)
+//                .foregroundColor(.secondary)
+//                .monospacedDigit()
+//        }
+//        .frame(maxWidth: 110)
+//    }
+//}
 
 // MARK: - Radar Chart View
 
@@ -91,41 +43,55 @@ struct RadarChartView: View {
     let axes: [Dimension]      // Fixed order = Dimension.allCases
     let values: [Double]       // Normalized 0...1, same count as axes
     let percentages: [Int]     // Percentage values (0-100) for display
-    @Binding var selectedDimension: Dimension?
+    let onInfoTap: (Dimension) -> Void
 
     @State private var animateProgress: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    // MARK: - Layout Constants
-
-    /// Base margin between grid boundary and label placement
-    private let labelMargin: CGFloat = 55
-
-    /// Extra spacing for bottom labels (prevents vertical collision with footnote)
-    private let bottomLabelExtraMargin: CGFloat = 35
-
-    /// Additional directional nudge to reduce collisions
-    private let nudgeAmount: CGFloat = 10
+    private enum LabelAnchorPosition {
+        case top
+        case topLeading
+        case topTrailing
+        case leading
+        case trailing
+        case bottomLeading
+        case bottomTrailing
+    }
 
     var body: some View {
         GeometryReader { geometry in
-            let size = min(geometry.size.width, geometry.size.height)
-            let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
-            let gridRadius = size * 0.35
-            let baseLabelRadius = gridRadius + labelMargin
+            let labelWidth: CGFloat = 92
+            let sideReserve: CGFloat = 44
+            let topReserve: CGFloat = 44
+            let bottomReserve: CGFloat = 44
+
+            let chartAreaWidth = max(120, geometry.size.width - (sideReserve * 2))
+            let chartAreaHeight = max(120, geometry.size.height - topReserve - bottomReserve)
+
+            let center = CGPoint(
+                x: geometry.size.width / 2,
+                y: topReserve + (chartAreaHeight / 2)
+            )
+
+            let gridRadius = max(80, min(chartAreaWidth, chartAreaHeight) / 2 * 1.08)
             let animatedValues = values.map { $0 * animateProgress }
 
             ZStack {
-                // Grid rings at 0.33, 0.66, 1.0
+                // Grid rings
                 ForEach([0.33, 0.66, 1.0], id: \.self) { scale in
                     Path { path in
-                        drawPolygon(path: &path, center: center, radius: gridRadius * scale, sides: axes.count)
+                        drawPolygon(
+                            path: &path,
+                            center: center,
+                            radius: gridRadius * scale,
+                            sides: axes.count
+                        )
                     }
                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                 }
 
-                // Axis lines from center to vertices
-                ForEach(0..<axes.count, id: \.self) { index in
+                // Axis lines
+                ForEach(Array(axes.indices), id: \.self) { index in
                     Path { path in
                         let angle = angleForIndex(index, totalCount: axes.count)
                         let point = pointOnCircle(center: center, radius: gridRadius, angle: angle)
@@ -135,7 +101,7 @@ struct RadarChartView: View {
                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                 }
 
-                // Value polygon (filled) - animated
+                // Filled polygon
                 Path { path in
                     for (index, value) in animatedValues.enumerated() {
                         let angle = angleForIndex(index, totalCount: axes.count)
@@ -148,9 +114,15 @@ struct RadarChartView: View {
                     }
                     path.closeSubpath()
                 }
-                .fill(Color.blue.opacity(0.18))
+                .fill(
+                    LinearGradient(
+                        colors: [Color.blue.opacity(0.35), Color.blue.opacity(0.15)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
 
-                // Value polygon (stroke) - animated
+                // Stroke polygon
                 Path { path in
                     for (index, value) in animatedValues.enumerated() {
                         let angle = angleForIndex(index, totalCount: axes.count)
@@ -163,37 +135,31 @@ struct RadarChartView: View {
                     }
                     path.closeSubpath()
                 }
-                .stroke(Color.blue, lineWidth: 2)
+                .stroke(Color.blue, lineWidth: 2.5)
 
-                // Dimension labels with percentages and info icons
-                ForEach(0..<axes.count, id: \.self) { index in
+                // Compact labels around chart
+                ForEach(Array(axes.indices), id: \.self) { index in
                     let dimension = axes[index]
                     let percentage = percentages[index]
-                    let angle = angleForIndex(index, totalCount: axes.count)
-
-                    // Use extra margin for bottom labels to prevent vertical collision
-                    let effectiveLabelRadius = isBottomLabel(angle: angle)
-                        ? baseLabelRadius + bottomLabelExtraMargin
-                        : baseLabelRadius
-
-                    let baseLabelPoint = pointOnCircle(center: center, radius: effectiveLabelRadius, angle: angle)
-
-                    // Apply directional nudge to reduce collisions
-                    let nudge = nudgeOffset(for: angle)
-                    let labelPoint = CGPoint(
-                        x: baseLabelPoint.x + nudge.width,
-                        y: baseLabelPoint.y + nudge.height
+                    let anchor = anchorPosition(for: index, totalCount: axes.count)
+                    let point = labelPosition(
+                        in: geometry.size,
+                        center: center,
+                        gridRadius: gridRadius,
+                        anchor: anchor,
+                        labelWidth: labelWidth
                     )
 
                     RadarAxisLabelView(
-                        title: dimension.title,
+                        shortTitle: shortLabel(for: dimension),
                         percentText: "\(percentage)%",
-                        angle: angle,
-                        onInfo: { selectedDimension = dimension }
+                        onInfo: { onInfoTap(dimension) }
                     )
-                    .position(labelPoint)
+                    .frame(width: labelWidth)
+                    .position(point)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onAppear {
                 if reduceMotion {
                     animateProgress = 1.0
@@ -203,8 +169,7 @@ struct RadarChartView: View {
                     }
                 }
             }
-            .onChange(of: values) {
-                // Re-animate if values change meaningfully
+            .onChange(of: values) { oldValue, newValue in
                 if !reduceMotion && animateProgress >= 1.0 {
                     animateProgress = 0
                     withAnimation(.easeOut(duration: 0.7)) {
@@ -215,33 +180,106 @@ struct RadarChartView: View {
         }
     }
 
-    // MARK: - Helper Functions
+    // MARK: - Label Mapping
 
-    /// Calculates directional nudge to push labels further from grid based on angle
-    /// This prevents label-to-grid and label-to-label collisions
-    private func nudgeOffset(for angle: Double) -> CGSize {
-        let dx = cos(angle) * nudgeAmount
-        let dy = sin(angle) * nudgeAmount
-        return CGSize(width: dx, height: dy)
+    private func shortLabel(for dimension: Dimension) -> String {
+        switch dimension {
+        case .emotion_awareness:
+            return "Emotional"
+        case .body_energy:
+            return "Body"
+        case .self_understanding:
+            return "Self"
+        case .execution:
+            return "Execution"
+        case .focus_flow:
+            return "Focus"
+        case .expression_creativity:
+            return "Expression"
+        case .connection:
+            return "Connection"
+        }
     }
 
-    /// Determines if a label is in the bottom quadrant (needs extra spacing)
-    private func isBottomLabel(angle: Double) -> Bool {
-        let normalized = angle.truncatingRemainder(dividingBy: 2.0 * .pi)
-        // Bottom half (roughly 45° to 135° in unit circle space)
-        return normalized > .pi / 4 && normalized < 3 * .pi / 4
+    // MARK: - Anchor Layout
+
+    private func anchorPosition(for index: Int, totalCount: Int) -> LabelAnchorPosition {
+        // Assumes 7 axes starting from top, then clockwise.
+        if totalCount == 7 {
+            switch index {
+            case 0: return .top
+            case 1: return .topTrailing
+            case 2: return .trailing
+            case 3: return .bottomTrailing
+            case 4: return .bottomLeading
+            case 5: return .leading
+            case 6: return .topLeading
+            default: return .top
+            }
+        }
+
+        // Safe fallback
+        let angle = angleForIndex(index, totalCount: totalCount)
+        if angle > -.pi / 6 && angle < .pi / 6 { return .trailing }
+        if angle >= .pi / 6 && angle < 5 * .pi / 6 { return .bottomTrailing }
+        if angle <= -5 * .pi / 6 || angle >= 5 * .pi / 6 { return .leading }
+        if angle < -.pi / 6 && angle > -5 * .pi / 6 { return .topTrailing }
+        return .top
     }
+
+    private func labelPosition(
+        in size: CGSize,
+        center: CGPoint,
+        gridRadius: CGFloat,
+        anchor: LabelAnchorPosition,
+        labelWidth: CGFloat
+    ) -> CGPoint {
+        let dx = gridRadius + 26
+        let dy = gridRadius + 18
+
+        let rawPoint: CGPoint
+        switch anchor {
+        case .top:
+            rawPoint = CGPoint(x: center.x, y: center.y - dy)
+        case .topLeading:
+            rawPoint = CGPoint(x: center.x - dx, y: center.y - dy * 0.65)
+        case .topTrailing:
+            rawPoint = CGPoint(x: center.x + dx, y: center.y - dy * 0.65)
+        case .leading:
+            rawPoint = CGPoint(x: center.x - dx - 24, y: center.y)
+        case .trailing:
+            rawPoint = CGPoint(x: center.x + dx + 28, y: center.y)
+        case .bottomLeading:
+            rawPoint = CGPoint(x: center.x - dx * 0.82, y: center.y + dy * 0.84)
+        case .bottomTrailing:
+            rawPoint = CGPoint(x: center.x + dx * 0.82, y: center.y + dy * 0.84)
+        }
+
+        let halfWidth = labelWidth / 2
+        let clampedX = min(max(rawPoint.x, halfWidth + 0.1), size.width - halfWidth - 0.1)
+        let clampedY = min(max(rawPoint.y, 22), size.height - 24)
+
+        return CGPoint(x: clampedX, y: clampedY)
+    }
+
+    // MARK: - Geometry Helpers
 
     private func angleForIndex(_ index: Int, totalCount: Int) -> Double {
-        // Start from top (90 degrees = -π/2) and go clockwise
         let angleStep = 2.0 * .pi / Double(totalCount)
         return -.pi / 2.0 + Double(index) * angleStep
     }
 
     private func pointOnCircle(center: CGPoint, radius: Double, angle: Double) -> CGPoint {
-        return CGPoint(
+        CGPoint(
             x: center.x + radius * cos(angle),
             y: center.y + radius * sin(angle)
+        )
+    }
+
+    private func pointOnCircle(center: CGPoint, radius: CGFloat, angle: Double) -> CGPoint {
+        CGPoint(
+            x: center.x + radius * CGFloat(cos(angle)),
+            y: center.y + radius * CGFloat(sin(angle))
         )
     }
 
@@ -257,16 +295,37 @@ struct RadarChartView: View {
         }
         path.closeSubpath()
     }
+}
 
-    private func textAlignmentForAngle(_ angle: Double) -> TextAlignment {
-        let normalized = angle.truncatingRemainder(dividingBy: 2.0 * .pi)
-        if normalized > -.pi / 4 && normalized < .pi / 4 {
-            return .leading
-        } else if normalized > 3 * .pi / 4 || normalized < -3 * .pi / 4 {
-            return .trailing
-        } else {
-            return .center
+struct RadarAxisLabelView: View {
+    let shortTitle: String
+    let percentText: String
+    let onInfo: () -> Void
+
+    var body: some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 3) {
+                Text(shortTitle)
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
+                    .allowsTightening(true)
+
+                Button(action: onInfo) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            Text(percentText)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary.opacity(0.6))
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -339,8 +398,7 @@ struct GrowthBarRow: View {
 
 struct DimensionInsightsView: View {
     let experiments: [Experiment]
-
-    @State private var selectedDimension: Dimension? = nil
+    @State private var selectedDimensionForInfo: Dimension? = nil
 
     // MARK: - Calculation Logic
 
@@ -517,21 +575,28 @@ struct DimensionInsightsView: View {
     // MARK: - UI
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // PART 1: Strength (Current Profile) - Radar Chart
-            VStack(alignment: .leading, spacing: 12) {
-                // Header
-                Text("Your Strength (Current Profile)")
-                    .font(.headline)
+        VStack(alignment: .leading, spacing: DSSpacing.xl) {
+            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                Text("Your Strength")
+                    .font(DSText.section)
                     .foregroundColor(.primary)
 
-                // Explanation text (single paragraph, 2 lines max)
-                Text("This reflects your current strengths based on completed experiments and consistency. It may change over time — and that's normal.")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 2)
+                if let insight = currentStrengthInsight {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("✨ You’re currently strongest in \(insight.top1.title) and \(insight.top2.title)")
+                            .font(.subheadline)
+                            .foregroundStyle(.primary.opacity(0.7))
+                            .fixedSize(horizontal: false, vertical: true)
 
+                        Text("🌱 You might explore more around \(insight.bottom.title)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 if hasEligibleExperiments {
                     // Radar chart with inline percentages on labels
                     let axes = Dimension.allCases
@@ -546,118 +611,120 @@ struct DimensionInsightsView: View {
                         axes: axes,
                         values: values,
                         percentages: percentages,
-                        selectedDimension: $selectedDimension
+                        onInfoTap: { dimension in
+                            selectedDimensionForInfo = dimension
+                        }
                     )
-                    .frame(height: 300)
-                    .padding(.vertical, 16)
+                    .frame(height: 270)
+                    .padding(.horizontal, 12)
+                    .padding(.top, DSSpacing.xs)
+                    .padding(.bottom, 0)
 
-                    // Footnote at bottom (with sufficient spacing to avoid label overlap)
-                    Text("* Based on completed experiments")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .italic()
-                        .padding(.top, 12)
+                    Text("Based on completed experiments. This profile can change over time.")
+                        .lifeCaption()
+                        .padding(.top, 4)
                 } else {
                     // Empty state
                     Text("Complete an experiment to see insights here.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .italic()
-                        .padding(.vertical, 16)
+                        .padding(.vertical, DSSpacing.md)
                 }
             }
-            .padding(16)
-            .background(Color(.systemGray6))
-            .cornerRadius(14)
-            .overlay {
-                // Info overlay with subtle dim background
-                if let dimension = selectedDimension {
-                    ZStack {
-                        // Subtle dimmed background
-                        Color.black.opacity(0.2)
-                            .ignoresSafeArea()
-                            .onTapGesture {
-                                selectedDimension = nil
-                            }
-
-                        // Info card with proper shadow
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text(dimension.title)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-
-                                Spacer()
-
-                                Button(action: {
-                                    selectedDimension = nil
-                                }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.title3)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-
-                            Text(dimension.blurb)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(20)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(16)
-                        .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 8)
-                        .padding(.horizontal, 40)
-                    }
+            .lifeCard()
+            .alert(
+                selectedDimensionForInfo?.title ?? "",
+                isPresented: Binding(
+                    get: { selectedDimensionForInfo != nil },
+                    set: { if !$0 { selectedDimensionForInfo = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {
+                    selectedDimensionForInfo = nil
                 }
+            } message: {
+                Text(selectedDimensionForInfo?.subtitle ?? selectedDimensionForInfo?.blurb ?? "")
             }
 
-            // PART 2: Growth (Accumulated Effort) - Bar Chart
             if hasEligibleExperiments && !sortedDimensionsByDays.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    // Header
-                    Text("Your Growth")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-
-                    // Explanation text (single paragraph, 2 lines max)
-                    Text("Every day you tried counts. This reflects the time you've invested — nothing more, nothing less.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 2)
-
-                    // Bar list (sorted by count, descending)
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(sortedDimensionsByDays, id: \.0) { dimension, days in
-                            GrowthBarRow(
-                                title: dimension.title,
-                                days: days,
-                                maxDays: maxDaysInGrowth
-                            )
+                SectionBlock(
+                    title: "Your Growth",
+                    subtitle: "Every day you tried counts. This reflects the time you've invested — nothing more, nothing less."
+                ) {
+                    VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                        // Bar list (sorted by count, descending)
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(sortedDimensionsByDays, id: \.0) { dimension, days in
+                                GrowthBarRow(
+                                    title: dimension.title,
+                                    days: days,
+                                    maxDays: maxDaysInGrowth
+                                )
+                            }
                         }
-                    }
-                    .padding(.top, 12)
 
-                    // Bottom info (total days + footnote)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Total logged days: \(totalLoggedDays)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .monospacedDigit()
+                        // Bottom info (total days + footnote)
+                        VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                            Text("Total logged days: \(totalLoggedDays)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .monospacedDigit()
 
-                        Text("* Dimensions with 0 days are hidden for now.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .italic()
+                            Text("* Dimensions with 0 days are hidden for now.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .italic()
+                        }
+                        .padding(.top, DSSpacing.sm)
                     }
-                    .padding(.top, 12)
                 }
-                .padding(16)
-                .background(Color(.systemGray6))
-                .cornerRadius(14)
             }
         }
+    }
+
+    private var currentStrengthInsight: (top1: Dimension, top2: Dimension, bottom: Dimension)? {
+        guard hasEligibleExperiments else { return nil }
+        let axes = Dimension.allCases
+        let percentages = axes.map { dimension in
+            Int((dimensionScores[dimension]?.percentage ?? 0.0) * 100)
+        }
+        return strengthInsightDimensions(axes: axes, percentages: percentages)
+    }
+
+    private func strengthInsightDimensions(
+        axes: [Dimension],
+        percentages: [Int]
+    ) -> (top1: Dimension, top2: Dimension, bottom: Dimension)? {
+        guard axes.count == percentages.count, axes.count >= 2 else { return nil }
+
+        let ranked = zip(axes.indices, zip(axes, percentages)).map { index, pair in
+            (index: index, dimension: pair.0, percentage: pair.1)
+        }
+
+        let strongest = ranked.sorted { lhs, rhs in
+            if lhs.percentage != rhs.percentage {
+                return lhs.percentage > rhs.percentage
+            }
+            // Stable tie-breaker: existing display order (Dimension.allCases)
+            return lhs.index < rhs.index
+        }
+
+        let weakest = ranked.sorted { lhs, rhs in
+            if lhs.percentage != rhs.percentage {
+                return lhs.percentage < rhs.percentage
+            }
+            // Stable tie-breaker: existing display order (Dimension.allCases)
+            return lhs.index < rhs.index
+        }
+
+        guard let top1 = strongest.first?.dimension,
+              let top2 = strongest.dropFirst().first?.dimension,
+              let bottom = weakest.first?.dimension else {
+            return nil
+        }
+
+        return (top1, top2, bottom)
     }
 }
 
