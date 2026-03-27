@@ -162,11 +162,11 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 28) {
                 // 1. Calendar Footprint - Always visible
                 CalendarFootprintView(experiments: experiments, onUpdate: onUpdate, onSelectDay: onSelectDay)
 
-                Divider()
+                sectionDivider
 
                 GuideCardView(
                     copy: guideCopy,
@@ -181,7 +181,7 @@ struct HomeView: View {
 
                 // 3. Continue Recording - State A (primary) & State B (weakened/optional)
                 if shouldShowContinueRecording {
-                    Divider()
+                    sectionDivider
 
                     VStack(alignment: .leading, spacing: 12) {
                         let isWeakened = hasLoggedToday
@@ -239,7 +239,7 @@ struct HomeView: View {
 
                 // 5. Recent Events - Card style
                 if !recentEvents.isEmpty {
-                    Divider()
+                    sectionDivider
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(S.sectionRecentEvents)
@@ -269,7 +269,7 @@ struct HomeView: View {
 
                 // 6. Completed - Lightweight section
                 if shouldShowCompleted {
-                    Divider()
+                    sectionDivider
 
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
@@ -328,6 +328,11 @@ struct HomeView: View {
         }
     }
 
+    private var sectionDivider: some View {
+        Divider()
+            .overlay(Color.primary.opacity(0.05))
+    }
+
     // MARK: - Recent Event Card Component
 
     struct RecentEventCard: View {
@@ -342,7 +347,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(event.title)
                         .font(.subheadline)
-                        .fontWeight(.semibold)
+                        .fontWeight(.medium)
                         .foregroundColor(.primary)
 
                     if let subtitle = event.subtitle {
@@ -355,7 +360,7 @@ struct HomeView: View {
                 Spacer(minLength: 0)
             }
             .padding(12)
-            .background(Color(.systemGray6))
+            .background(Color(.systemGray6).opacity(0.75))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }

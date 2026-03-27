@@ -118,7 +118,7 @@ struct SummaryView: View {
             } else if confidence == .medium {
                 message = "Sometimes linked to better \(signalTypeText)"
             } else {
-                message = "A possible positive pattern in your \(signalTypeText)"
+                message = "This might be helping your \(signalTypeText)"
             }
 
             return HelpfulExperimentInsight(
@@ -146,7 +146,7 @@ struct SummaryView: View {
         .enumerated()
         .map { index, insight in
             guard index == 1,
-                  insight.message.hasPrefix("A possible positive pattern in your ") else {
+                  insight.message.hasPrefix("This might be helping your ") else {
                 return insight
             }
 
@@ -155,8 +155,8 @@ struct SummaryView: View {
                 title: insight.title,
                 delta: insight.delta,
                 message: insight.message.replacingOccurrences(
-                    of: "A possible positive pattern in your ",
-                    with: "A weaker but similar pattern in your "
+                    of: "This might be helping your ",
+                    with: "A lighter version of this may be helping your "
                 ),
                 experimentDayCount: insight.experimentDayCount,
                 confidence: insight.confidence
@@ -185,7 +185,8 @@ struct SummaryView: View {
             VStack(alignment: .leading, spacing: DSSpacing.xl) {
                 SectionBlock(
                     title: "What Seems to Help",
-                    subtitle: "Experiments that may be supporting your mood."
+                    subtitle: "Experiments that may be supporting your mood.",
+                    backgroundColor: highlightCard
                 ) {
                     VStack(alignment: .leading, spacing: DSSpacing.xs) {
                         if helpfulInsights.isEmpty {
@@ -200,7 +201,7 @@ struct SummaryView: View {
                                             .font(DSText.rowTitle)
                                         Text(insight.message)
                                             .lifeSecondaryText()
-                                        Text("Based on \(insight.experimentDayCount) days of logs")
+                                        Text("Based on \(insight.experimentDayCount) days you showed up")
                                             .lifeCaption()
                                     }
                                 }

@@ -583,7 +583,7 @@ struct DimensionInsightsView: View {
 
                 if let insight = currentStrengthInsight {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("✨ You’re currently strongest in \(insight.top1.title) and \(insight.top2.title)")
+                        Text("✨ You tend to lean into \(insight.top1.title) and \(insight.top2.title)")
                             .font(.subheadline)
                             .foregroundStyle(.primary.opacity(0.7))
                             .fixedSize(horizontal: false, vertical: true)
@@ -598,6 +598,10 @@ struct DimensionInsightsView: View {
 
             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 if hasEligibleExperiments {
+                    Text("Your patterns so far")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
                     // Radar chart with inline percentages on labels
                     let axes = Dimension.allCases
                     let values = axes.map { dimension in
@@ -632,7 +636,10 @@ struct DimensionInsightsView: View {
                         .padding(.vertical, DSSpacing.md)
                 }
             }
-            .lifeCard()
+            .padding(DSSpacing.md)
+            .background(cardBackground)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
             .alert(
                 selectedDimensionForInfo?.title ?? "",
                 isPresented: Binding(
@@ -650,7 +657,8 @@ struct DimensionInsightsView: View {
             if hasEligibleExperiments && !sortedDimensionsByDays.isEmpty {
                 SectionBlock(
                     title: "Your Growth",
-                    subtitle: "Every day you tried counts. This reflects the time you've invested — nothing more, nothing less."
+                    subtitle: "Every day you tried counts. This reflects the time you've invested — nothing more, nothing less.",
+                    backgroundColor: cardBackground
                 ) {
                     VStack(alignment: .leading, spacing: DSSpacing.sm) {
                         // Bar list (sorted by count, descending)
@@ -666,7 +674,7 @@ struct DimensionInsightsView: View {
 
                         // Bottom info (total days + footnote)
                         VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                            Text("Total logged days: \(totalLoggedDays)")
+                            Text("You’ve shown up \(totalLoggedDays) times")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .monospacedDigit()

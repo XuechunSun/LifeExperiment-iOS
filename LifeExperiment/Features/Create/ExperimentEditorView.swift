@@ -36,6 +36,7 @@ struct ExperimentEditorView: View {
     @State private var showRevertTitle: Bool = false
     @State private var isProgrammaticTitleChange: Bool = false
     @FocusState private var focusedField: ExperimentEditorFocusField?
+    @State private var displayedPrompts: [String] = []
 
     // Dimension state
     @State private var selectedImpact: ExperimentImpact?
@@ -301,7 +302,7 @@ struct ExperimentEditorView: View {
         return !isOtherCategory && selectedSeedCategoryId != nil
     }
 
-    private var availablePrompts: [String] {
+    private var promptPool: [String] {
         // Only show prompts in create or duplicate mode
         switch mode {
         case .rename:
@@ -316,7 +317,7 @@ struct ExperimentEditorView: View {
         }
 
         // Return at most 3 prompts
-        return Array(subcategory.prompts.prefix(3))
+        return subcategory.prompts
     }
 
     private var shouldHideTitlePromptsForPrefill: Bool {
@@ -325,6 +326,11 @@ struct ExperimentEditorView: View {
         return !trimmed(createPrefill.title).isEmpty &&
             !(createPrefill.categoryTitle ?? "").isEmpty &&
             !(createPrefill.subcategoryTitle ?? "").isEmpty
+    }
+
+    private var isCreateMode: Bool {
+        if case .create = mode { return true }
+        return false
     }
 
     private var isCreateActionDisabled: Bool {
@@ -399,142 +405,39 @@ struct ExperimentEditorView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        if isCreateMode {
+                            categoryAndSubcategorySections
 
-                TitleSection(title: $title, focusedField: $focusedField)
+                            promptSection(scrollProxy: proxy)
 
-                // Suggested Prompts
-                if !availablePrompts.isEmpty && !shouldHideTitlePromptsForPrefill {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Suggested prompts for title")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .textCase(.uppercase)
+                            TitleSection(title: $title, focusedField: $focusedField)
+                                .id("title-section")
+                        } else {
+                            TitleSection(title: $title, focusedField: $focusedField)
+                                .id("title-section")
 
-                            Spacer()
+                            promptSection(scrollProxy: proxy)
 
-                            if showRevertTitle {
-                                Button(action: {
-                                    isProgrammaticTitleChange = true
-                                    title = baselineTitleForRevert
-                                    showRevertTitle = false
-                                    hasBaselineTitle = false
-                                    baselineTitleForRevert = ""
-                                    DispatchQueue.main.async {
-                                        isProgrammaticTitleChange = false
-                                    }
-                                }) {
-                                    Label("Revert", systemImage: "arrow.uturn.backward")
-                                        .font(.caption)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 6)
-                                        .background(Color(.systemGray5))
-                                        .clipShape(Capsule())
-                                }
-                            }
+                            categoryAndSubcategorySections
                         }
 
-                        cardBackground {
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
-                                ForEach(availablePrompts, id: \.self) { prompt in
-                                    Button(action: {
-                                        // Light haptic feedback
-                                        Haptics.lightImpact()
+                        DimensionSection(
+                            isSeedBased: isSeedBased,
+                            isCustomSubcategoryMode: isCustomSubcategoryMode,
+                            displayedImpact: displayedImpact,
+                            showDimensionPicker: $showDimensionPicker
+                        )
 
-                                        // Capture baseline only on first prompt tap
-                                        if !hasBaselineTitle {
-                                            baselineTitleForRevert = title
-                                            hasBaselineTitle = true
-                                        }
-
-                                        isProgrammaticTitleChange = true
-                                        title = prompt
-                                        showRevertTitle = true
-                                        DispatchQueue.main.async {
-                                            isProgrammaticTitleChange = false
-                                        }
-                                    }) {
-                                        Text(prompt)
-                                            .font(.subheadline)
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(Color.blue.opacity(0.1))
-                                            .foregroundColor(.blue)
-                                            .clipShape(Capsule())
-                                    }
-                                }
-                            }
+                        if preferences.imageLoggingEnabled {
+                            imageLoggingSection
                         }
                     }
+                    .padding()
                 }
-
-                CategorySection(
-                    seedCatalog: seedCatalog,
-                    isOtherCategory: $isOtherCategory,
-                    selectedSeedCategoryId: $selectedSeedCategoryId,
-                    selectedSeedSubcategoryId: $selectedSeedSubcategoryId,
-                    useCustomSubcategory: $useCustomSubcategory,
-                    customSubcategoryText: $customSubcategoryText,
-                    saveCustomSubcategoryToList: $saveCustomSubcategoryToList,
-                    pickedSavedSubcategory: $pickedSavedSubcategory,
-                    categoryDisplayText: categoryDisplayText,
-                    onDismissKeyboard: {
-                        focusedField = nil
-                    }
-                )
-
-                SubcategorySection(
-                    isOtherCategory: isOtherCategory,
-                    canPickSubcategoryFromSeed: canPickSubcategoryFromSeed,
-                    hasCategorySelected: hasCategorySelected,
-                    subcategoryDisplayText: subcategoryDisplayText,
-                    savedCustomSubcategoriesForCurrentCategory: savedCustomSubcategoriesForCurrentCategory,
-                    seedSubcategoryMenuItems: seedSubcategoryMenuItems,
-                    savedSubcategoriesForSeedMenu: savedSubcategoriesForSeedMenu,
-                    useCustomSubcategory: useCustomSubcategory,
-                    pickedSavedSubcategory: pickedSavedSubcategory,
-                    shouldShowSaveCustomSubcategoryToggle: shouldShowSaveCustomSubcategoryToggle,
-                    willReplaceOldestSavedIfAdded: willReplaceOldestSavedIfAdded,
-                    customSubcategoryText: $customSubcategoryText,
-                    saveCustomSubcategoryToList: $saveCustomSubcategoryToList,
-                    showManageSheet: $showManageSheet,
-                    enterCustomSubcategoryMode: enterCustomSubcategoryMode,
-                    pickSavedSubcategory: pickSavedSubcategory,
-                    selectSeedSubcategoryId: selectSeedSubcategory,
-                    onDismissKeyboard: {
-                        focusedField = nil
-                    }
-                )
-
-                if !hasCategorySelected {
-                    Text("Please select a category.")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding(.horizontal, 4)
-                        .padding(.top, -8)
-                } else if !hasRequiredSubcategorySelection {
-                    Text(isOtherCategory ? "Please enter a subcategory." : "Please select a subcategory.")
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding(.horizontal, 4)
-                        .padding(.top, -8)
-                }
-
-                DimensionSection(
-                    isSeedBased: isSeedBased,
-                    isCustomSubcategoryMode: isCustomSubcategoryMode,
-                    displayedImpact: displayedImpact,
-                    showDimensionPicker: $showDimensionPicker
-                )
-
-                if preferences.imageLoggingEnabled {
-                    imageLoggingSection
-                }
-
-                Spacer()
             }
-            .padding()
             .onChange(of: title) { _, _ in
                 if !isProgrammaticTitleChange {
                     showRevertTitle = false
@@ -547,6 +450,7 @@ struct ExperimentEditorView: View {
                 if !hasManuallyEditedImpact && isSeedBased {
                     selectedImpact = defaultImpact
                 }
+                refreshDisplayedPrompts()
             }
             .onChange(of: customSubcategoryText) { _, newValue in
                 if isProgrammaticSubcategorySet {
@@ -556,10 +460,14 @@ struct ExperimentEditorView: View {
                     pickedSavedSubcategory = false
                 }
             }
+            .onChange(of: useCustomSubcategory) { _, _ in
+                refreshDisplayedPrompts()
+            }
             .onChange(of: isOtherCategory) { _, newValue in
                 // Reset manual editing flag when switching between Other and seed
                 hasManuallyEditedImpact = false
                 selectedImpact = newValue ? nil : defaultImpact
+                refreshDisplayedPrompts()
             }
             .sheet(isPresented: $showManageSheet) {
                 NavigationStack {
@@ -695,9 +603,11 @@ struct ExperimentEditorView: View {
                 case .create:
                     allowsImageLogging = preferences.imageLoggingEnabled
                     applyCreatePrefillIfNeeded()
+                    refreshDisplayedPrompts()
 
                 case .rename(let existing):
                     prefill(from: existing)
+                    refreshDisplayedPrompts()
 
                 case .duplicate(let from):
                     // Suggest a default title, but allow user to edit
@@ -715,6 +625,7 @@ struct ExperimentEditorView: View {
                         hasManuallyEditedImpact = true
                     }
                     allowsImageLogging = from.allowsImageLogging
+                    refreshDisplayedPrompts()
                 }
             }
         }
@@ -805,6 +716,150 @@ struct ExperimentEditorView: View {
                 useCustomSubcategory = false
                 selectedSeedSubcategoryId = nil
                 customSubcategoryText = ""
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var categoryAndSubcategorySections: some View {
+        CategorySection(
+            seedCatalog: seedCatalog,
+            isOtherCategory: $isOtherCategory,
+            selectedSeedCategoryId: $selectedSeedCategoryId,
+            selectedSeedSubcategoryId: $selectedSeedSubcategoryId,
+            useCustomSubcategory: $useCustomSubcategory,
+            customSubcategoryText: $customSubcategoryText,
+            saveCustomSubcategoryToList: $saveCustomSubcategoryToList,
+            pickedSavedSubcategory: $pickedSavedSubcategory,
+            categoryDisplayText: categoryDisplayText,
+            onDismissKeyboard: {
+                focusedField = nil
+            }
+        )
+
+        SubcategorySection(
+            isOtherCategory: isOtherCategory,
+            canPickSubcategoryFromSeed: canPickSubcategoryFromSeed,
+            hasCategorySelected: hasCategorySelected,
+            subcategoryDisplayText: subcategoryDisplayText,
+            savedCustomSubcategoriesForCurrentCategory: savedCustomSubcategoriesForCurrentCategory,
+            seedSubcategoryMenuItems: seedSubcategoryMenuItems,
+            savedSubcategoriesForSeedMenu: savedSubcategoriesForSeedMenu,
+            useCustomSubcategory: useCustomSubcategory,
+            pickedSavedSubcategory: pickedSavedSubcategory,
+            shouldShowSaveCustomSubcategoryToggle: shouldShowSaveCustomSubcategoryToggle,
+            willReplaceOldestSavedIfAdded: willReplaceOldestSavedIfAdded,
+            customSubcategoryText: $customSubcategoryText,
+            saveCustomSubcategoryToList: $saveCustomSubcategoryToList,
+            showManageSheet: $showManageSheet,
+            enterCustomSubcategoryMode: enterCustomSubcategoryMode,
+            pickSavedSubcategory: pickSavedSubcategory,
+            selectSeedSubcategoryId: selectSeedSubcategory,
+            onDismissKeyboard: {
+                focusedField = nil
+            }
+        )
+
+        if !hasCategorySelected {
+            Text("Please select a category.")
+                .font(.caption)
+                .foregroundColor(.red)
+                .padding(.horizontal, 4)
+                .padding(.top, -8)
+        } else if !hasRequiredSubcategorySelection {
+            Text(isOtherCategory ? "Please enter a subcategory." : "Please select a subcategory.")
+                .font(.caption)
+                .foregroundColor(.red)
+                .padding(.horizontal, 4)
+                .padding(.top, -8)
+        }
+    }
+
+    @ViewBuilder
+    private func promptSection(scrollProxy: ScrollViewProxy) -> some View {
+        if !displayedPrompts.isEmpty && !shouldHideTitlePromptsForPrefill {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Suggested prompts")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .textCase(.uppercase)
+
+                    Spacer()
+
+                    if showRevertTitle {
+                        Button(action: {
+                            isProgrammaticTitleChange = true
+                            title = baselineTitleForRevert
+                            showRevertTitle = false
+                            hasBaselineTitle = false
+                            baselineTitleForRevert = ""
+                            DispatchQueue.main.async {
+                                isProgrammaticTitleChange = false
+                            }
+                        }) {
+                            Label("Revert", systemImage: "arrow.uturn.backward")
+                                .font(.caption)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color(.systemGray5))
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+
+                cardBackground {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 8)], spacing: 8) {
+                        ForEach(displayedPrompts, id: \.self) { prompt in
+                            Button(action: {
+                                applyPrompt(prompt, scrollProxy: scrollProxy)
+                            }) {
+                                Text(prompt)
+                                    .font(.subheadline)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(Color.blue.opacity(0.1))
+                                    .foregroundColor(.blue)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func refreshDisplayedPrompts() {
+        let pool = promptPool
+        guard !pool.isEmpty else {
+            displayedPrompts = []
+            return
+        }
+
+        let selectionCount = min(4, pool.count)
+        displayedPrompts = Array(pool.shuffled().prefix(selectionCount))
+    }
+
+    private func applyPrompt(_ prompt: String, scrollProxy: ScrollViewProxy) {
+        Haptics.lightImpact()
+
+        if !hasBaselineTitle {
+            baselineTitleForRevert = title
+            hasBaselineTitle = true
+        }
+
+        isProgrammaticTitleChange = true
+        title = prompt
+        showRevertTitle = true
+
+        DispatchQueue.main.async {
+            isProgrammaticTitleChange = false
+            focusedField = .title
+            withAnimation(.easeInOut(duration: 0.2)) {
+                scrollProxy.scrollTo("title-section", anchor: .center)
             }
         }
     }

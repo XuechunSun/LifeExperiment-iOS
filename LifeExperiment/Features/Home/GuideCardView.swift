@@ -7,12 +7,18 @@ struct GuideCardView: View {
     let onExploreMore: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DSSpacing.sm) {
-            VStack(alignment: .leading, spacing: DSSpacing.xs) {
-                Text(copy.headline)
-                    .font(.title3)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
+            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.blue.opacity(0.8))
+                        .frame(width: 6, height: 6)
+
+                    Text(copy.headline)
+                        .font(.title3)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                }
 
                 Text(copy.subheadline)
                     .lifeSecondaryText()
@@ -51,15 +57,24 @@ struct GuideCardView: View {
             .font(.subheadline)
             .foregroundColor(.blue)
             .buttonStyle(.plain)
-            .padding(.top, DSSpacing.xs)
+            .padding(.top, DSSpacing.xxs)
         }
-        .padding(DSSpacing.md)
-        .background(Color(.systemBackground))
+        .padding(DSSpacing.lg)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground),
+                    Color.blue.opacity(0.07)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                .stroke(Color.black.opacity(0.05), lineWidth: 1)
         )
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 4)
     }
 }
