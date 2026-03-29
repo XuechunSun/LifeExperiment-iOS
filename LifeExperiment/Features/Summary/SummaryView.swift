@@ -180,53 +180,67 @@ struct SummaryView: View {
         }
     }
 
+    private var primaryHelpfulInsight: HelpfulExperimentInsight? {
+        helpfulInsights.first
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DSSpacing.xl) {
-                SectionBlock(
-                    title: "What Seems to Help",
-                    subtitle: "Experiments that may be supporting your mood.",
-                    backgroundColor: highlightCard
-                ) {
-                    VStack(alignment: .leading, spacing: DSSpacing.xs) {
-                        if helpfulInsights.isEmpty {
-                            Text("Patterns will appear as you log more experiment days.")
-                                .lifeSecondaryText()
-                                .padding(.top, DSSpacing.xxs)
+                HighlightCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles")
+                                .foregroundColor(.white.opacity(0.9))
+                            Text("This might be helping you")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.9))
+                        }
+
+                        if let insight = primaryHelpfulInsight {
+                            Text("You felt better on days you did \(insight.title)")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.white)
+                                .lineLimit(3)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            Text("Based on \(insight.experimentDayCount) days you showed up")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.8))
                         } else {
-                            VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                                ForEach(helpfulInsights) { insight in
-                                    VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                                        Text("Experiment · \(insight.title)")
-                                            .font(DSText.rowTitle)
-                                        Text(insight.message)
-                                            .lifeSecondaryText()
-                                        Text("Based on \(insight.experimentDayCount) days you showed up")
-                                            .lifeCaption()
-                                    }
-                                }
-                            }
-                            .padding(.top, DSSpacing.xxs)
+                            Text("Patterns will appear as you keep showing up")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.white)
+                                .lineLimit(3)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
+                .padding(.horizontal, DSInset.pageHorizontal)
 
                 // Module 1: Dimension Insights (v1) - Now at top
                 DimensionInsightsView(experiments: experiments)
+                    .padding(.horizontal, DSInset.pageHorizontal)
 
-                // Module 2: Storage Boxes by Category
-                SectionBlock(title: "Storage Boxes by Category") {
+                // Module 2: Storage boxes / context
+                SectionBlock(
+                    title: "Where you’ve been exploring",
+                    subtitle: "The life areas your experiments have touched so far.",
+                    style: .storage
+                ) {
                     StorageBoxesView(experiments: experiments, seedCatalog: seedCatalog, onUpdate: onUpdate)
                 }
+                .padding(.horizontal, DSInset.pageHorizontal)
 
                 // Module 3: Calendar Footprint (hidden for v1, can be restored later)
                 if showCalendarFootprint {
                     CalendarFootprintView(experiments: experiments, onUpdate: onUpdate, onSelectDay: { day in
                         selectedDay = day
                     })
+                    .padding(.horizontal, DSInset.pageHorizontal)
                 }
             }
-            .padding(DSSpacing.md)
+            .padding(.vertical, DSSpacing.md)
         }
         .navigationTitle("Summary")
         .navigationBarTitleDisplayMode(.large)

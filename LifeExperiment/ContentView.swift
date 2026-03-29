@@ -124,6 +124,20 @@ struct ContentView: View {
         setExperiments(experiments)
     }
 
+    private func handleCreateCommit(_ experiment: Experiment, dismissStandardCreateSheet: Bool) {
+        addExperiment(experiment)
+        createPrefill = nil
+
+        if dismissStandardCreateSheet {
+            showCreateExperimentSheet = false
+        }
+
+        selectedTab = .active
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            activePath.append(.experiment(experiment.id))
+        }
+    }
+
     var message: String {
         switch getStatus() {
         case .idle:
@@ -256,7 +270,6 @@ struct ContentView: View {
                             categoryTitle: suggestion.prefillCategoryTitle,
                             subcategoryTitle: suggestion.prefillSubcategoryTitle
                         )
-                        showCreateExperimentSheet = true
                     },
                     onSelectExperiment: { experiment in
                         homePath.append(.experiment(experiment.id))
@@ -347,6 +360,10 @@ struct ContentView: View {
                 showCreateExperimentSheet = true
             }
         }
+        // TODO: Keep these as two presentation paths for now:
+        // - Bool-driven sheet handles the normal Create tab / empty create flow
+        // - Item-driven sheet handles suggestion-prefilled create reliably on first tap
+        // If create entry points expand further, consolidate behind a single presentation coordinator.
         .sheet(isPresented: $showCreateExperimentSheet, onDismiss: {
             // When create sheet is dismissed, return to Home if still on Create tab
             createPrefill = nil
@@ -355,15 +372,14 @@ struct ContentView: View {
             }
         }) {
             ExperimentEditorView(seedCatalog: seedCatalog, mode: .create, createPrefill: createPrefill) { experiment in
-                addExperiment(experiment)
-                createPrefill = nil
-                showCreateExperimentSheet = false
-                // Switch to Active tab after creation
-                selectedTab = .active
-                // Optionally push to the new experiment detail
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    activePath.append(.experiment(experiment.id))
-                }
+                handleCreateCommit(experiment, dismissStandardCreateSheet: true)
+            }
+        }
+        .sheet(item: $createPrefill, onDismiss: {
+            createPrefill = nil
+        }) { prefill in
+            ExperimentEditorView(seedCatalog: seedCatalog, mode: .create, createPrefill: prefill) { experiment in
+                handleCreateCommit(experiment, dismissStandardCreateSheet: false)
             }
         }
         .sheet(item: $activeSheet) { sheet in

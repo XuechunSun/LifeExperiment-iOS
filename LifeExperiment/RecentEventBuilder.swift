@@ -6,75 +6,59 @@ struct RecentEventBuilder {
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: today)
 
-        // Home state (roughly)
-        let activeExperiments = experiments.filter { $0.status == .active }
-        let hasUpdatedToday = experiments.contains { isUpdated(on: todayStart, experiment: $0) }
-        let noActive = activeExperiments.isEmpty
-
         var events: [RecentEvent] = []
 
-        // A) streak
-        let streak = calculateStreak(experiments: experiments, today: todayStart)
+        // 1. Consistency
+        let streak = calculateLogStreak(experiments: experiments, today: todayStart)
         if streak >= 2 {
             events.append(
                 RecentEvent(
                     iconSystemName: RecentEventTemplate.Icon.streak,
-                    title: "\(streak) days in a row",
-                    subtitle: "You’ve shown up consistently"
-                )
-            )
-        } else if streak == 1 && hasUpdatedToday && events.isEmpty {
-            events.append(
-                RecentEvent(
-                    iconSystemName: RecentEventTemplate.Icon.updated,
-                    title: "You made progress today",
-                    subtitle: nil
+                    title: "🔥 \(streak) days in a row",
+                    subtitle: "You’re building a rhythm"
                 )
             )
         }
 
-        // B) completed yesterday
+        // 2. Exploration
         if events.count < 2 {
-            let yesterday = calendar.date(byAdding: .day, value: -1, to: todayStart)!
-            let completedYesterday = experiments.filter { exp in
-                guard let completedAt = exp.completedAt else { return false }
-                return calendar.isDate(completedAt, inSameDayAs: yesterday)
-            }
-
-            if !completedYesterday.isEmpty {
-                let count = completedYesterday.count
-                events.append(
-                    RecentEvent(
-                        iconSystemName: RecentEventTemplate.Icon.completion,
-                        title: "Completed yesterday",
-                        subtitle: count > 1 ? "\(count) experiments finished" : "A real milestone"
-                    )
-                )
-            }
-        }
-
-        // C) first time category
-        if events.count < 2 && hasUpdatedToday {
-            if let category = firstTimeCategory(experiments: experiments, today: todayStart) {
+            if let category = firstTimeCategoryLoggedToday(experiments: experiments, today: todayStart) {
                 events.append(
                     RecentEvent(
                         iconSystemName: RecentEventTemplate.Icon.firstTime,
-                        title: "First time: \(category)",
-                        subtitle: "Love this direction"
+                        title: "✨ First time in \(category)",
+                        subtitle: "A new area to explore"
                     )
                 )
             }
         }
 
-        // D) empty state encouragement
-        if noActive && events.isEmpty {
-            events.append(
-                RecentEvent(
-                    iconSystemName: RecentEventTemplate.Icon.empty,
-                    title: "You’re here",
-                    subtitle: "That’s the first step"
+        // 3. Growth
+        if events.count < 2 {
+            let yesterday = calendar.date(byAdding: .day, value: -1, to: todayStart)!
+            if hasLog(on: todayStart, experiments: experiments) && !hasLog(on: yesterday, experiments: experiments) {
+                events.append(
+                    RecentEvent(
+                        iconSystemName: "leaf.fill",
+                        title: "🌱 You showed up today",
+                        subtitle: "A small return still counts"
+                    )
                 )
-            )
+            }
+        }
+
+        // 4. Awareness
+        if events.count < 2 {
+            let moodLogCount = moodLogCountThisWeek(experiments: experiments, today: todayStart)
+            if moodLogCount >= 3 {
+                events.append(
+                    RecentEvent(
+                        iconSystemName: "brain.head.profile",
+                        title: "🧠 You’ve been reflecting consistently",
+                        subtitle: "You’re noticing your inner patterns"
+                    )
+                )
+            }
         }
 
         return Array(events.prefix(2))
@@ -82,24 +66,22 @@ struct RecentEventBuilder {
 
     // MARK: - Helpers
 
-    private static func isUpdated(on day: Date, experiment: Experiment) -> Bool {
+    private static func hasLog(on day: Date, experiments: [Experiment]) -> Bool {
         let calendar = Calendar.current
-
-        if calendar.isDate(experiment.createdAt, inSameDayAs: day) { return true }
-        if experiment.logs.contains(where: { calendar.isDate($0.date, inSameDayAs: day) }) { return true }
-        if let completedAt = experiment.completedAt, calendar.isDate(completedAt, inSameDayAs: day) { return true }
-
-        return false
+        return experiments.contains { experiment in
+            experiment.logs.contains { log in
+                calendar.isDate(log.date, inSameDayAs: day)
+            }
+        }
     }
 
-    private static func calculateStreak(experiments: [Experiment], today: Date) -> Int {
+    private static func calculateLogStreak(experiments: [Experiment], today: Date) -> Int {
         let calendar = Calendar.current
         var streak = 0
         var checkDate = calendar.startOfDay(for: today)
 
         for _ in 0..<365 {
-            let hasUpdate = experiments.contains { isUpdated(on: checkDate, experiment: $0) }
-            if hasUpdate {
+            if hasLog(on: checkDate, experiments: experiments) {
                 streak += 1
                 guard let prev = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
                 checkDate = prev
@@ -110,23 +92,42 @@ struct RecentEventBuilder {
         return streak
     }
 
-    private static func firstTimeCategory(experiments: [Experiment], today: Date) -> String? {
-        // experiments updated today
-        let updatedToday = experiments.filter { isUpdated(on: today, experiment: $0) }
-
-        guard let todayExp = updatedToday.first(where: { exp in
-            let c = (exp.category ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            return !c.isEmpty
-        }) else { return nil }
-
-        let category = todayExp.category!.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let others = experiments.filter { exp in
-            exp.id != todayExp.id &&
-            (exp.category ?? "").trimmingCharacters(in: .whitespacesAndNewlines) == category
+    private static func firstTimeCategoryLoggedToday(experiments: [Experiment], today: Date) -> String? {
+        let calendar = Calendar.current
+        let todaysCategories = experiments.compactMap { experiment -> String? in
+            guard experiment.logs.contains(where: { calendar.isDate($0.date, inSameDayAs: today) }) else {
+                return nil
+            }
+            let category = (experiment.category ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return category.isEmpty ? nil : category
         }
 
-        return others.isEmpty ? category : nil
+        for category in todaysCategories {
+            let existedBeforeToday = experiments.contains { experiment in
+                guard (experiment.category ?? "").trimmingCharacters(in: .whitespacesAndNewlines) == category else {
+                    return false
+                }
+                return calendar.startOfDay(for: experiment.createdAt) < today
+            }
+
+            if !existedBeforeToday {
+                return category
+            }
+        }
+
+        return nil
+    }
+
+    private static func moodLogCountThisWeek(experiments: [Experiment], today: Date) -> Int {
+        let calendar = Calendar.current
+        let weekInterval = calendar.dateInterval(of: .weekOfYear, for: today)
+        return experiments.reduce(0) { total, experiment in
+            total + experiment.logs.filter { log in
+                guard log.mood != nil else { return false }
+                guard let weekInterval else { return false }
+                return weekInterval.contains(log.date)
+            }.count
+        }
     }
 }
 

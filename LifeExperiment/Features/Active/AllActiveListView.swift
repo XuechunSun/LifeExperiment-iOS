@@ -15,6 +15,11 @@ struct AllActiveListView: View {
     @State private var sortOption: SortOption = .lastUpdated
     @State private var isNotUpdatedExpanded: Bool = false
 
+    fileprivate enum SectionSurfaceStyle {
+        case primary
+        case secondary
+    }
+
     private enum SortOption: String, CaseIterable, Identifiable {
         case lastUpdated = "Last Updated"
         case createdDate = "Created Date"
@@ -51,7 +56,7 @@ struct AllActiveListView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: DSSpacing.lg) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Spacer()
 
@@ -71,16 +76,34 @@ struct AllActiveListView: View {
                         Label("Sort", systemImage: "arrow.up.arrow.down")
                             .font(.subheadline)
                             .foregroundColor(.blue)
+                            .padding(.horizontal, DSSpacing.sm)
+                            .padding(.vertical, DSSpacing.xs)
+                            .background(Color(.systemBackground))
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                            )
+                            .clipShape(Capsule())
                     }
                 }
+                .padding(.bottom, DSSpacing.sm)
 
-                Text(S.sectionUpdatedToday)
-                    .lifeSectionTitle()
-                sectionCard(experiments: updatedToday, emptyText: S.emptyNoUpdatesToday)
+                sectionHeader(S.sectionUpdatedToday, style: .primary)
+                    .padding(.bottom, DSSpacing.sm)
+                sectionCard(
+                    experiments: updatedToday,
+                    emptyText: S.emptyNoUpdatesToday,
+                    style: .primary
+                )
 
-                Text("Not Updated Today (\(notUpdatedToday.count))")
-                    .lifeSectionTitle()
-                sectionCard(experiments: visibleNotUpdatedToday, emptyText: S.emptyAllUpdated)
+                sectionHeader("Not Updated Today (\(notUpdatedToday.count))", style: .secondary)
+                    .padding(.top, DSSpacing.lg)
+                    .padding(.bottom, DSSpacing.sm)
+                sectionCard(
+                    experiments: visibleNotUpdatedToday,
+                    emptyText: S.emptyAllUpdated,
+                    style: .secondary
+                )
 
                 if shouldShowNotUpdatedToggle {
                     Button {
@@ -93,6 +116,7 @@ struct AllActiveListView: View {
                             .foregroundColor(.blue)
                     }
                     .buttonStyle(.plain)
+                    .padding(.top, DSSpacing.sm)
                 }
             }
             .padding(DSSpacing.md)
@@ -103,16 +127,20 @@ struct AllActiveListView: View {
     }
 
     @ViewBuilder
-    private func sectionCard(experiments: [Experiment], emptyText: String) -> some View {
+    private func sectionCard(
+        experiments: [Experiment],
+        emptyText: String,
+        style: SectionSurfaceStyle
+    ) -> some View {
         if experiments.isEmpty {
             Text(emptyText)
                 .lifeSecondaryText()
                 .padding(.vertical, DSSpacing.sm)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .lifeCard()
+                .modifier(ActiveSectionSurface(style: style))
         } else {
-            VStack(spacing: 0) {
-                ForEach(Array(experiments.enumerated()), id: \.element.id) { index, experiment in
+            VStack(spacing: DSSpacing.md) {
+                ForEach(experiments) { experiment in
                     Button(action: {
                         onSelectExperiment(experiment)
                     }) {
@@ -121,6 +149,8 @@ struct AllActiveListView: View {
                                 Text(experiment.title)
                                     .font(DSText.rowTitle)
                                     .foregroundColor(.primary)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
 
                                 Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
                                     .lifeCaption()
@@ -135,17 +165,57 @@ struct AllActiveListView: View {
                                 onDelete: { onDelete(experiment) }
                             )
                         }
-                        .padding(.vertical, DSSpacing.sm)
+                        .padding(DSSpacing.md)
+                        .background(cardBackground(for: style))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(cardBorderColor(for: style), lineWidth: 1)
+                        )
+                        .cornerRadius(12)
+                        .shadow(
+                            color: cardShadowColor(for: style),
+                            radius: 10,
+                            x: 0,
+                            y: 4
+                        )
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-
-                    if index < experiments.count - 1 {
-                        Divider()
-                    }
                 }
             }
-            .lifeCard()
+        }
+    }
+
+    private func sectionHeader(_ title: String, style: SectionSurfaceStyle) -> some View {
+        Text(title)
+            .font(style == .primary ? DSText.section : .headline)
+            .foregroundStyle(style == .primary ? .primary : Color.primary.opacity(0.72))
+    }
+
+    private func cardBackground(for style: SectionSurfaceStyle) -> Color {
+        switch style {
+        case .primary:
+            return Color(.systemBackground)
+        case .secondary:
+            return Color(.systemGray6).opacity(0.7)
+        }
+    }
+
+    private func cardBorderColor(for style: SectionSurfaceStyle) -> Color {
+        switch style {
+        case .primary:
+            return Color.black.opacity(0.05)
+        case .secondary:
+            return Color.black.opacity(0.03)
+        }
+    }
+
+    private func cardShadowColor(for style: SectionSurfaceStyle) -> Color {
+        switch style {
+        case .primary:
+            return Color.black.opacity(0.07)
+        case .secondary:
+            return Color.black.opacity(0.04)
         }
     }
 
@@ -166,6 +236,54 @@ struct AllActiveListView: View {
             case .createdDate:
                 return lhs.createdAt > rhs.createdAt
             }
+        }
+    }
+}
+
+private struct ActiveSectionSurface: ViewModifier {
+    let style: AllActiveListView.SectionSurfaceStyle
+
+    func body(content: Content) -> some View {
+        content
+            .padding(DSSpacing.md)
+            .background(backgroundColor)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(borderColor, lineWidth: 1)
+            )
+            .cornerRadius(12)
+            .shadow(
+                color: shadowColor,
+                radius: style == .primary ? 10 : 0,
+                x: 0,
+                y: style == .primary ? 4 : 0
+            )
+    }
+
+    private var backgroundColor: Color {
+        switch style {
+        case .primary:
+            return Color(.systemBackground)
+        case .secondary:
+            return Color(.systemGray6)
+        }
+    }
+
+    private var borderColor: Color {
+        switch style {
+        case .primary:
+            return Color.black.opacity(0.05)
+        case .secondary:
+            return Color.black.opacity(0.03)
+        }
+    }
+
+    private var shadowColor: Color {
+        switch style {
+        case .primary:
+            return Color.black.opacity(0.06)
+        case .secondary:
+            return .clear
         }
     }
 }

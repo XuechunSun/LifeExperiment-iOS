@@ -77,7 +77,7 @@ struct StorageBoxesView: View {
     }
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: DSSpacing.sm)], spacing: DSSpacing.sm) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: DSSpacing.md)], spacing: DSSpacing.md) {
             ForEach(categoryBoxes) { box in
                 StorageBoxTile(box: box, onUpdate: onUpdate)
             }
@@ -127,11 +127,11 @@ struct StorageBoxTile: View {
         Button(action: {
             showExperimentsList = true
         }) {
-            VStack(alignment: .leading, spacing: DSSpacing.xs) {
+            VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 // Box icon
                 Image(systemName: box.isEmpty ? "shippingbox" : "shippingbox.fill")
-                    .font(.title)
-                    .foregroundColor(box.isEmpty ? Color.gray.opacity(0.3) : .blue)
+                    .font(.title2)
+                    .foregroundColor(box.isEmpty ? Color.gray.opacity(0.24) : Color.blue.opacity(0.62))
                     .frame(maxWidth: .infinity, alignment: .center)
 
                 // Category name
@@ -152,11 +152,17 @@ struct StorageBoxTile: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
-            .padding(DSSpacing.md)
-            .frame(height: 120)
-            .background(box.isEmpty ? Color(.systemGray6).opacity(0.5) : Color(.systemGray6))
-            .cornerRadius(12)
+            .padding(.horizontal, DSSpacing.md)
+            .padding(.vertical, DSSpacing.lg)
+            .frame(height: 126)
+            .background(tileBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
+            )
+            .cornerRadius(14)
         }
+        .buttonStyle(.plain)
         .sheet(isPresented: $showExperimentsList) {
             NavigationStack {
                 if box.isEmpty {
@@ -228,6 +234,16 @@ struct StorageBoxTile: View {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private var tileBackground: some View {
+        Group {
+            if box.isEmpty {
+                Color(.systemBackground).opacity(0.55)
+            } else {
+                Color(.systemBackground).opacity(0.6)
             }
         }
     }

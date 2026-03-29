@@ -423,6 +423,100 @@ HStack(alignment: .firstTextBaseline, spacing: 6) {
 
 ---
 
+# S1: Insight Scorecard Pattern (HIGH PRIORITY)
+
+## Principle
+
+Data should NOT be presented raw.  
+Every insight must answer:
+
+→ "What does this mean for me?"
+
+Instead of:
+- Showing metrics
+- Showing charts
+
+We prioritize:
+- Interpretation
+- Emotional resonance
+- Narrative clarity
+
+---
+
+## Structure
+
+Every insight card MUST follow this 3-layer structure:
+
+1. Signal (small, soft)
+   → “This might be helping you”
+
+2. Meaning (primary, bold)
+   → “You felt better on days you did X”
+
+3. Evidence (supporting, light)
+   → “Based on 4 days you showed up”
+
+---
+
+## Visual Style
+
+- Background: soft gradient (low contrast, calming)
+- Text color: white with opacity hierarchy
+- Corner radius: 20+
+- Padding: generous (≥20pt)
+- No borders
+- No hard dividers
+
+---
+
+## Color Rules
+
+Avoid:
+- System gray cards for key insights
+
+Use:
+- Soft gradient (blue/purple/neutral)
+
+Example:
+LinearGradient(
+    colors: [
+        Color(red: 0.65, green: 0.72, blue: 0.95),
+        Color(red: 0.72, green: 0.65, blue: 0.95)
+    ],
+    startPoint: .topLeading,
+    endPoint: .bottomTrailing
+)
+
+---
+
+## Copywriting Rules
+
+❌ Avoid:
+- "Experiment: X"
+- "Score: 57%"
+- "Data shows..."
+
+✅ Use:
+- "You felt..."
+- "This might be helping..."
+- "You tend to..."
+
+---
+
+## When to Use
+
+MUST use for:
+- Summary highlight
+- Insights
+- Patterns
+- Recommendations
+
+DO NOT use for:
+- Raw lists
+- Settings
+- Input forms
+---
+
 # Interaction Rules
 
 ## I1: Accessible Hit Targets
@@ -554,6 +648,419 @@ VStack(alignment: .leading, spacing: LayoutTokens.cardElementSpacing) {
 - Corner radius: `14pt`
 - Internal spacing: `12pt`
 - Background: `Color(.systemGray6)` (system-adaptive)
+
+---
+
+## Visual Hierarchy Color System v1
+
+### Goal
+
+Use color to reinforce hierarchy, not decoration.
+
+### Rule 1 — One primary highlight per screen
+
+Each screen should have only ONE strong highlight card.
+
+Use:
+
+* soft blue → purple gradient
+* white text
+* strongest emotional / insight message only
+
+Example usage:
+
+* Summary top insight card
+* future Home hero insight card
+
+---
+
+### Rule 2 — Secondary insight cards use gradient tint, not flat gray
+
+Cards that support the main insight should feel alive, but not compete with the highlight card.
+
+Use:
+
+* very subtle purple/blue tinted background
+* low-contrast neutral text
+* no strong gradient
+* same corner radius / shadow language as other cards
+
+Best usage:
+
+* Strength card
+* Growth card
+
+---
+
+### Rule 3 — Tertiary / browse cards stay mostly neutral
+
+Cards used for browsing, categorization, or supporting structure should be the quietest.
+
+Use:
+
+* neutral or ultra-light tinted background
+* dark primary text
+* minimal emotional emphasis
+
+Best usage:
+
+* category/storage cards
+* utility sections
+* lists
+
+---
+
+### Rule 4 — Do not apply the same visual intensity everywhere
+
+Avoid making all cards colorful.
+
+Hierarchy must be:
+
+1. Highlight card = strongest
+2. Secondary insight card = soft tinted
+3. Tertiary browse card = mostly neutral
+
+If all cards are equally colorful, hierarchy is lost.
+
+---
+
+### Suggested Tokens
+
+Primary highlight gradient:
+
+* soft blue → soft purple
+
+Secondary tint:
+
+* purple.opacity(0.06~0.10)
+* blue.opacity(0.04~0.08)
+
+Tertiary neutral:
+
+* near-white
+* very light blue/gray
+* optional ultra-subtle tint only
+
+---
+
+### Final check
+
+Ask:
+
+* What is the one card this screen wants me to feel first?
+* Are supporting cards alive but quieter?
+* Is browsing content calm and low-pressure?
+
+
+
+---
+
+# Visual Hierarchy Color System v1
+
+## Principle
+
+Color must preserve hierarchy, not flatten it.
+
+One card may lead the emotional experience.
+Supporting cards may feel alive, but must stay quieter.
+Browse-oriented cards should remain mostly neutral.
+
+## Rules
+
+**VHC-MUST-1**: Use only one primary highlight card per screen.  
+→ Preferred treatment: strong soft blue/purple gradient
+
+**VHC-MUST-2**: Secondary insight cards may use subtle gradient tint only.  
+→ Keep opacity low enough that text contrast and calm tone remain intact
+
+**VHC-MUST-3**: Tertiary browse cards should stay mostly neutral.  
+→ Near-white or ultra-subtle tint is acceptable
+
+**VHC-NEVER-1**: Never make all cards equally colorful.  
+→ If every module is highlighted, hierarchy disappears
+
+**VHC-NEVER-2**: Never let secondary cards compete with the primary highlight.  
+→ Secondary tint must remain softer in contrast, saturation, and emotional pull
+
+## Hierarchy
+
+1. Primary highlight card = strong blue/purple gradient
+2. Secondary insight cards = subtle gradient tint
+3. Tertiary browse cards = mostly neutral
+
+## Applied Example
+
+- Summary highlight = strong emotional signal
+- Strength / Growth = soft tinted interpretation cards
+- Storage / browse context = lowest-emphasis neutral or near-neutral card
+
+## Final Check
+
+Ask:
+
+* Which one card leads the feeling of the screen?
+* Are secondary cards warm but restrained?
+* Does the lowest-emphasis content still feel calm and readable?
+
+---
+
+# Home Page Design System v1
+
+## Design Philosophy
+
+Home should reflect the user's relationship with content, not flatten everything into one card style.
+
+- Suggested = light, inviting, low pressure
+- Active = slightly elevated, primary focus
+- Feedback = warm, rewarding, emotional
+- Past = calm, minimal, non-distracting
+- Structure = flat, contextual, not content-like
+
+**Core principle**: Use elevation only for active engagement, not for suggestion or history.
+
+## Layer System
+
+### 1. Suggestion Layer
+
+**Purpose**: Invite exploration without implying commitment.
+
+**Visual style**:
+- Soft purple/blue gradient tint
+- No shadow / no elevation
+- Rounded corners in the `16-20pt` range
+- Emoji may act as the primary visual anchor
+
+**Typography**:
+- Title = medium emphasis
+- Metadata = caption / secondary
+
+**Interaction**:
+- Entire card is tappable
+- No explicit CTA button required when the card itself is the action
+
+**Rule**: Suggestion cards must feel lighter than all other cards. Never apply elevation or strong shadow.
+
+### 2. Active Layer
+
+**Purpose**: Represent the user's current engagement.
+
+**Visual style**:
+- Solid or lightly translucent surface
+- Subtle elevation allowed only here
+- Optional ultra-light border
+
+**Elevation**:
+```swift
+.shadow(color: .black.opacity(0.05), radius: 8, y: 3)
+```
+
+**Typography**:
+- Clear hierarchy: title > metadata
+- Stronger than suggestions
+
+**Rule**: Continue cards are the only Home components allowed to use elevation, and elevation must remain subtle and calm.
+
+### 3. Feedback Layer
+
+**Purpose**: Provide emotional reinforcement.
+
+**Visual style**:
+- Soft warm tint (orange / pink / neutral warm)
+- No shadow
+- One card per row
+- Emoji-led signal + short supporting line
+
+**Rule**: Feedback should feel rewarding but not dominant. Use color for emotion, not elevation.
+
+### 4. History Layer
+
+**Purpose**: Archive past actions without distraction.
+
+**Visual style**:
+- Flat neutral or very light tint
+- No shadow
+- Lowest visual weight on screen
+
+**Rule**: Completed cards must be the calmest element on screen. They should never compete with active or suggestion content.
+
+### 5. Structure Layer
+
+**Purpose**: Provide time or navigation context.
+
+**Visual style**:
+- Fully flat
+- Minimal color usage
+- No shadow / no gradient
+
+**Rule**: Calendar is structural UI, not content. Never apply elevation or decorative styling.
+
+## Home Color System
+
+### Gradient usage
+
+Reserved for:
+- Summary highlight card
+- Home guide / hero card
+
+Suggestion cards may use a very light tint version of the same gradient family.
+
+Do not:
+- Apply strong gradients everywhere
+- Mix multiple unrelated gradient families on one screen
+
+### Color hierarchy
+
+1. Primary Gradient = insight / guide highlight
+2. Soft Tint = suggestion / feedback
+3. Neutral = active / completed / structure
+
+
+## Emotion Calibration Rule
+
+Different sections carry different emotional weight.
+
+- Suggestion → neutral / inviting
+- Continue → focused / grounded
+- Recent Events → warm / rewarding
+- Completed → calm / quiet
+
+### Rule
+
+Emotion should be conveyed through:
+- subtle color
+- emoji
+- tone of copy
+
+NOT through:
+- heavy gradients
+- strong animation
+- excessive emphasis
+
+## Elevation System
+
+### Level 0 — Flat
+
+Use for:
+- Calendar
+- Suggestions
+- Completed
+- Most structural UI
+
+### Level 1 — Subtle Elevation
+
+Use for:
+- Continue / active engagement only
+
+```swift
+.shadow(color: .black.opacity(0.05), radius: 8, y: 3)
+```
+
+### Forbidden
+
+- Strong shadow
+- Glassmorphism blur
+- Floating-card styling everywhere
+
+**Rule**: If everything is elevated, nothing is important.
+
+## Interaction Rules
+
+### Suggestion
+- Tap opens Create with prefill
+- No extra CTA text required when the card is clearly tappable
+
+### Continue
+- Tap opens the active experiment
+
+### Recent Events
+- Passive feedback by default
+- Optional future navigation must remain secondary
+
+### Completed
+- Tap opens the past experiment
+
+## Layout Rules
+
+### Spacing
+- Section spacing must be greater than card spacing
+- Maintain visible breathing room between major Home blocks
+
+### Density
+- Prefer vertical stacking over multi-column layouts for content cards
+- Calm readability matters more than compact density
+
+## Action Clarity Rule
+
+Users should understand what is clickable without reading labels.
+
+### Implementation
+
+- Suggestion cards:
+  → fully tappable
+  → no CTA text required
+
+- Continue cards:
+  → fully tappable
+  → optional "..." for secondary actions
+
+- Avoid:
+  → mixing button + tappable card in same component
+  → redundant CTA text (e.g. "Try")
+
+### Rule
+
+If a card is tappable, its entire surface should behave consistently.
+
+Never require users to "find the tap target".
+
+**Rule**: Clarity > Density. Calm > Efficiency.
+
+## Summary Rule
+
+UI should guide behavior without explicit instruction:
+
+- Suggestion invites action
+- Continue supports action
+- Feedback reinforces action
+- Completed archives action
+
+## How to Use
+
+When updating Home:
+
+1. Identify the layer: Suggestion / Active / Feedback / History / Structure
+2. Apply only the style rules for that layer
+3. Do not mix elevation and color rules across layers
+4. Keep changes small and consistent with hierarchy
+
+## Component Identity Rule
+
+Each component type must have a visually distinct identity.
+
+Users should be able to recognize:
+
+- Suggestion vs Continue vs Completed
+WITHOUT reading text labels.
+
+### Implementation Guidelines
+
+- Suggestion:
+  → emoji + soft tint background
+
+- Continue:
+  → slightly elevated + clean neutral
+
+- Recent Events:
+  → warm tinted + emoji-led
+
+- Completed:
+  → flat + minimal + no color emphasis
+
+### Rule
+
+Component types must not share identical visual styles.
+
+If two components look the same, users will assume they behave the same.
 
 ---
 

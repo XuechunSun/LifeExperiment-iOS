@@ -1,6 +1,7 @@
 import Foundation
 
-struct ExperimentEditorPrefill {
+struct ExperimentEditorPrefill: Identifiable {
+    let id = UUID()
     let title: String
     let categoryTitle: String?
     let subcategoryTitle: String?

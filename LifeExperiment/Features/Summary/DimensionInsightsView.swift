@@ -344,23 +344,35 @@ struct GrowthBarRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Text(title)
-                .font(.footnote)
+                .font(.subheadline)
                 .foregroundColor(.primary)
-                .frame(width: 140, alignment: .leading)
+                .frame(width: 112, alignment: .leading)
 
             // Bar track with fill (responsive to available width, animated)
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color(.systemGray5))
+                    .fill(Color(.systemGray5).opacity(0.7))
                     .frame(height: 8)
 
                 GeometryReader { geometry in
                     let fillWidth = geometry.size.width * min(1.0, max(0.0, animatedFraction))
 
                     Capsule()
-                        .fill(Color.blue)
+                        //.fill(Color.blue)
+                        // .fill(
+                        //     LinearGradient(
+                        //         colors: [
+                        //             Color.blue.opacity(0.7),
+                        //             Color.purple.opacity(0.5)
+                        //         ],
+                        //         startPoint: .leading,
+                        //         endPoint: .trailing
+                        //     )
+                        // )
+                        //.fill(Color(red: 0.35, green: 0.55, blue: 0.85))
+                        .fill(Color.accentColor.opacity(0.6))
                         .frame(width: fillWidth, height: 8)
                 }
             }
@@ -386,10 +398,10 @@ struct GrowthBarRow: View {
             }
 
             Text("\(days) \(days == 1 ? "day" : "days")")
-                .font(.footnote)
+                .font(DSText.caption)
                 .foregroundColor(.secondary)
                 .monospacedDigit()
-                .frame(width: 60, alignment: .trailing)
+                .frame(width: 64, alignment: .trailing)
         }
     }
 }
@@ -576,70 +588,79 @@ struct DimensionInsightsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.xl) {
-            VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                Text("Your Strength")
-                    .font(DSText.section)
-                    .foregroundColor(.primary)
+            SectionBlock(
+                title: "Your Strength",
+                subtitle: "A gentle view of how you tend to show up across completed experiments.",
+                style: .strength
+            ) {
+                VStack(alignment: .leading, spacing: DSSpacing.md) {
+                    if hasEligibleExperiments {
+                        VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                            Text("Your patterns so far")
+                                .font(DSText.caption)
+                                .foregroundColor(.secondary.opacity(0.85))
+                                .padding(.leading, 22)
 
-                if let insight = currentStrengthInsight {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("✨ You tend to lean into \(insight.top1.title) and \(insight.top2.title)")
-                            .font(.subheadline)
-                            .foregroundStyle(.primary.opacity(0.7))
-                            .fixedSize(horizontal: false, vertical: true)
+                            if let insight = currentStrengthInsight {
+                                VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Image(systemName: "leaf")
+                                            .foregroundColor(.secondary)
+                                            .frame(width: 14, alignment: .leading)
+                                            .padding(.top, 2)
 
-                        Text("🌱 You might explore more around \(insight.bottom.title)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
+                                        Text("You tend to \(strengthPhrase(for: insight.top1)) and \(strengthPhrase(for: insight.top2))")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.primary.opacity(0.75))
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
 
-            VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                if hasEligibleExperiments {
-                    Text("Your patterns so far")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Image(systemName: "sparkles")
+                                            .foregroundColor(.secondary)
+                                            .frame(width: 14, alignment: .leading)
+                                            .padding(.top, 2)
 
-                    // Radar chart with inline percentages on labels
-                    let axes = Dimension.allCases
-                    let values = axes.map { dimension in
-                        dimensionScores[dimension]?.percentage ?? 0.0
-                    }
-                    let percentages = axes.map { dimension in
-                        Int((dimensionScores[dimension]?.percentage ?? 0.0) * 100)
-                    }
-
-                    RadarChartView(
-                        axes: axes,
-                        values: values,
-                        percentages: percentages,
-                        onInfoTap: { dimension in
-                            selectedDimensionForInfo = dimension
+                                        Text("You might explore more around \(insight.bottom.title.lowercased())")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                            }
                         }
-                    )
-                    .frame(height: 270)
-                    .padding(.horizontal, 12)
-                    .padding(.top, DSSpacing.xs)
-                    .padding(.bottom, 0)
 
-                    Text("Based on completed experiments. This profile can change over time.")
-                        .lifeCaption()
-                        .padding(.top, 4)
-                } else {
-                    // Empty state
-                    Text("Complete an experiment to see insights here.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .italic()
-                        .padding(.vertical, DSSpacing.md)
+                        let axes = Dimension.allCases
+                        let values = axes.map { dimension in
+                            dimensionScores[dimension]?.percentage ?? 0.0
+                        }
+                        let percentages = axes.map { dimension in
+                            Int((dimensionScores[dimension]?.percentage ?? 0.0) * 100)
+                        }
+
+                        RadarChartView(
+                            axes: axes,
+                            values: values,
+                            percentages: percentages,
+                            onInfoTap: { dimension in
+                                selectedDimensionForInfo = dimension
+                            }
+                        )
+                        .frame(height: 278)
+                        .padding(.top, DSSpacing.sm)
+
+                        Text("Based on completed experiments. This profile can change over time.")
+                            .lifeCaption()
+                            .padding(.top, DSSpacing.xxs)
+                    } else {
+                        Text("Complete an experiment to see insights here.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .italic()
+                            .padding(.vertical, DSSpacing.md)
+                    }
                 }
             }
-            .padding(DSSpacing.md)
-            .background(cardBackground)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
             .alert(
                 selectedDimensionForInfo?.title ?? "",
                 isPresented: Binding(
@@ -657,15 +678,19 @@ struct DimensionInsightsView: View {
             if hasEligibleExperiments && !sortedDimensionsByDays.isEmpty {
                 SectionBlock(
                     title: "Your Growth",
-                    subtitle: "Every day you tried counts. This reflects the time you've invested — nothing more, nothing less.",
-                    backgroundColor: cardBackground
+                    subtitle: "A gentle view of where your time and attention have been landing.",
+                    style: .growth
                 ) {
-                    VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                    VStack(alignment: .leading, spacing: DSSpacing.md) {
+                        Text("Where your attention has been landing")
+                            .font(DSText.caption)
+                            .foregroundColor(.secondary.opacity(0.85))
+
                         // Bar list (sorted by count, descending)
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: DSSpacing.sm) {
                             ForEach(sortedDimensionsByDays, id: \.0) { dimension, days in
                                 GrowthBarRow(
-                                    title: dimension.title,
+                                    title: shortLabel(for: dimension),
                                     days: days,
                                     maxDays: maxDaysInGrowth
                                 )
@@ -675,16 +700,16 @@ struct DimensionInsightsView: View {
                         // Bottom info (total days + footnote)
                         VStack(alignment: .leading, spacing: DSSpacing.xxs) {
                             Text("You’ve shown up \(totalLoggedDays) times")
-                                .font(.caption)
+                                .font(DSText.caption)
                                 .foregroundColor(.secondary)
                                 .monospacedDigit()
 
                             Text("* Dimensions with 0 days are hidden for now.")
-                                .font(.caption)
+                                .font(DSText.caption)
                                 .foregroundColor(.secondary)
                                 .italic()
                         }
-                        .padding(.top, DSSpacing.sm)
+                        .padding(.top, DSSpacing.md)
                     }
                 }
             }
@@ -698,6 +723,44 @@ struct DimensionInsightsView: View {
             Int((dimensionScores[dimension]?.percentage ?? 0.0) * 100)
         }
         return strengthInsightDimensions(axes: axes, percentages: percentages)
+    }
+
+    private func shortLabel(for dimension: Dimension) -> String {
+        switch dimension {
+        case .emotion_awareness:
+            return "Emotional"
+        case .body_energy:
+            return "Body"
+        case .self_understanding:
+            return "Self"
+        case .execution:
+            return "Execution"
+        case .focus_flow:
+            return "Focus"
+        case .expression_creativity:
+            return "Expression"
+        case .connection:
+            return "Connection"
+        }
+    }
+
+    private func strengthPhrase(for dimension: Dimension) -> String {
+        switch dimension {
+        case .emotion_awareness:
+            return "notice what you feel"
+        case .body_energy:
+            return "care for your energy"
+        case .execution:
+            return "take action"
+        case .focus_flow:
+            return "find your focus"
+        case .expression_creativity:
+            return "express yourself"
+        case .connection:
+            return "connect with others"
+        case .self_understanding:
+            return "understand yourself"
+        }
     }
 
     private func strengthInsightDimensions(

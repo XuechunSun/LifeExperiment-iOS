@@ -469,6 +469,10 @@ struct ExperimentEditorView: View {
                 selectedImpact = newValue ? nil : defaultImpact
                 refreshDisplayedPrompts()
             }
+            .onChange(of: createPrefill?.id) { _, _ in
+                applyCreatePrefillIfNeeded()
+                refreshDisplayedPrompts()
+            }
             .sheet(isPresented: $showManageSheet) {
                 NavigationStack {
                     List {
@@ -820,7 +824,16 @@ struct ExperimentEditorView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 10)
-                                    .background(Color.blue.opacity(0.1))
+                                    .background(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.purple.opacity(0.08),
+                                                Color.blue.opacity(0.06)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
                                     .foregroundColor(.blue)
                                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             }

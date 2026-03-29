@@ -168,28 +168,31 @@ struct HomeView: View {
 
                 sectionDivider
 
-                GuideCardView(
-                    copy: guideCopy,
-                    suggestions: guideSuggestions,
-                    onStartSuggestion: { suggestion in
-                        onTrySuggestion(suggestion)
-                    },
-                    onExploreMore: {
-                        onCreateExperiment()
-                    }
-                )
+                VStack(alignment: .leading, spacing: 12) {
+                    GuideCardView(copy: guideCopy)
+
+                    GuideSuggestionsSection(
+                        suggestions: guideSuggestions,
+                        onStartSuggestion: { suggestion in
+                            onTrySuggestion(suggestion)
+                        },
+                        onExploreMore: {
+                            onCreateExperiment()
+                        }
+                    )
+                }
 
                 // 3. Continue Recording - State A (primary) & State B (weakened/optional)
                 if shouldShowContinueRecording {
                     sectionDivider
 
                     VStack(alignment: .leading, spacing: 12) {
-                        let isWeakened = hasLoggedToday
+                        //let isWeakened = hasLoggedToday
 
                         HStack {
                             Text(continueRecordingTitle)
                                 .font(.headline)
-                                .foregroundColor(isWeakened ? .secondary : .primary)
+                                .foregroundColor(.primary)
 
                             Spacer()
 
@@ -212,11 +215,11 @@ struct HomeView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(experiment.title)
                                             .font(.subheadline)
-                                            .fontWeight(isWeakened ? .regular : .semibold)
-                                            .foregroundColor(isWeakened ? .secondary : .primary)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
 
                                         Text("Last updated \(experiment.updatedAt, style: .date)")
-                                            .font(isWeakened ? .caption2 : .caption)
+                                            .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
 
@@ -229,9 +232,14 @@ struct HomeView: View {
                                         onDelete: { onDeleteExperiment(experiment) }
                                     )
                                 }
-                                .padding()
-                                .background(Color(.systemGray6).opacity(isWeakened ? 0.5 : 1.0))
-                                .cornerRadius(8)
+                                .padding(DSSpacing.md)
+                                .background(Color(.systemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                                )
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 4)
                             }
                         }
                     }
@@ -243,26 +251,12 @@ struct HomeView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(S.sectionRecentEvents)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.headline)
+                            .foregroundColor(.primary.opacity(0.72))
 
                         let eventsToShow = Array(recentEvents.prefix(2))
-
-                        if eventsToShow.count == 2 {
-                            // Two-column grid
-                            LazyVGrid(columns: [
-                                GridItem(.flexible(), spacing: 12),
-                                GridItem(.flexible(), spacing: 12)
-                            ], spacing: 12) {
-                                ForEach(eventsToShow) { event in
-                                    RecentEventCard(event: event)
-                                }
-                            }
-                        } else {
-                            // Single card
-                            ForEach(eventsToShow) { event in
-                                RecentEventCard(event: event)
-                            }
+                        ForEach(eventsToShow) { event in
+                            RecentEventCard(event: event)
                         }
                     }
                 }
@@ -316,9 +310,10 @@ struct HomeView: View {
                                         onDelete: { onDeleteExperiment(experiment) }
                                     )
                                 }
-                                .padding()
+                                .padding(DSSpacing.md)
                                 .background(Color(.systemGray6).opacity(0.7))
-                                .cornerRadius(8)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
                             }
                         }
                     }
@@ -339,12 +334,13 @@ struct HomeView: View {
         let event: RecentEvent
 
         var body: some View {
-            HStack(spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
                 Image(systemName: event.iconSystemName)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.orange.opacity(0.8))
+                    .padding(.top, 1)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(event.title)
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -359,8 +355,17 @@ struct HomeView: View {
 
                 Spacer(minLength: 0)
             }
-            .padding(12)
-            .background(Color(.systemGray6).opacity(0.75))
+            .padding(14)
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color.orange.opacity(0.05),
+                        Color.pink.opacity(0.035)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
