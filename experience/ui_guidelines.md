@@ -1062,6 +1062,21 @@ Component types must not share identical visual styles.
 
 If two components look the same, users will assume they behave the same.
 
+## Light Card Rule
+
+Use LightCardStyle for secondary content cards that need separation without strong emphasis.
+
+Examples:
+- browse cards
+- secondary experiment cards
+- grouped detail cards
+- lightweight modal content
+
+Do not use LightCardStyle for:
+- hero insight cards
+- primary highlight cards
+- structural UI sections
+
 ---
 
 # Data Rules

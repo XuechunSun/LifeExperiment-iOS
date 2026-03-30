@@ -162,7 +162,7 @@ struct StorageBoxTile: View {
             )
             .cornerRadius(14)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableCardStyle())
         .sheet(isPresented: $showExperimentsList) {
             NavigationStack {
                 if box.isEmpty {
@@ -192,14 +192,16 @@ struct StorageBoxTile: View {
                     }
                 } else {
                     ScrollView {
-                        VStack(spacing: 0) {
-                            ForEach(Array(box.experiments.sorted { $0.updatedAt > $1.updatedAt }.enumerated()), id: \.element.id) { index, experiment in
+                        VStack(spacing: DSSpacing.md) {
+                            ForEach(box.experiments.sorted { $0.updatedAt > $1.updatedAt }) { experiment in
                                 NavigationLink(destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)) {
                                     HStack(spacing: DSSpacing.sm) {
                                         VStack(alignment: .leading, spacing: DSSpacing.xxs) {
                                             Text(experiment.title)
                                                 .font(DSText.rowTitle)
                                                 .foregroundColor(.primary)
+                                                .lineLimit(2)
+                                                .fixedSize(horizontal: false, vertical: true)
 
                                             Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
                                                 .lifeCaption()
@@ -211,17 +213,21 @@ struct StorageBoxTile: View {
                                             .font(DSText.caption)
                                             .foregroundColor(.secondary)
                                     }
-                                    .padding(.vertical, DSSpacing.sm)
+                                    .lightCardStyle(
+                                        cornerRadius: 14,
+                                        fillColor: Color(.secondarySystemBackground),
+                                        fillOpacity: 1.0,
+                                        borderOpacity: 0.04,
+                                        shadowOpacity: 0.03,
+                                        shadowRadius: 6,
+                                        shadowYOffset: 2,
+                                        contentPadding: DSSpacing.md
+                                    )
                                     .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
-
-                                if index < box.experiments.count - 1 {
-                                    Divider()
-                                }
+                                .buttonStyle(PressableCardStyle())
                             }
                         }
-                        .lifeCard()
                         .padding(DSSpacing.md)
                     }
                     .navigationTitle(box.category)
