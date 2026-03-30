@@ -18,8 +18,12 @@ struct DimensionChip: View {
                 .fontWeight(isPrimary ? .semibold : .regular)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(isPrimary ? Color.blue.opacity(0.15) : Color(.systemGray5))
+        .padding(.vertical, 7)
+        .background(isPrimary ? Color.blue.opacity(0.14) : Color(.systemGray6))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(isPrimary ? Color.blue.opacity(0.12) : Color.black.opacity(0.035), lineWidth: 1)
+        )
         .foregroundColor(isPrimary ? .blue : .primary)
         .cornerRadius(16)
     }
@@ -30,17 +34,24 @@ struct DefaultDimensionsCard: View {
     let onEdit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("This experiment usually helps with:")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Button(action: onEdit) {
-                    Text("Edit")
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
+            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("This experiment usually helps with")
                         .font(.subheadline)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button(action: onEdit) {
+                        Text("Edit")
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                    }
                 }
+
+                Text("Your primary dimension appears first, with supporting dimensions after it.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             LazyVGrid(columns: [
@@ -57,9 +68,7 @@ struct DefaultDimensionsCard: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .createSupportSurface(contentPadding: 16)
     }
 }
 
@@ -68,19 +77,26 @@ struct CustomDimensionSelectionCard: View {
     let onChoose: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
             if let impact = selectedImpact {
                 // Show selected dimensions with Edit button
-                HStack {
-                    Text("This experiment helps with:")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button(action: onChoose) {
-                        Text("Edit")
+                VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("This experiment helps with")
                             .font(.subheadline)
-                            .foregroundColor(.blue)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button(action: onChoose) {
+                            Text("Edit")
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
                     }
+
+                    Text("Choose the dimensions that feel most true right now. You can adjust them later.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 LazyVGrid(columns: [
@@ -98,10 +114,16 @@ struct CustomDimensionSelectionCard: View {
                 }
             } else {
                 // Show "Choose dimensions" prompt
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: DSSpacing.sm) {
                     Text("What does this experiment help with most? (required)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Start with the most relevant area first, then add any supporting ones.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     Button(action: onChoose) {
                         HStack {
@@ -110,8 +132,16 @@ struct CustomDimensionSelectionCard: View {
                                 .fontWeight(.medium)
                         }
                         .foregroundColor(.blue)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(Color.blue.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color.blue.opacity(0.12), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
+                    .buttonStyle(.plain)
 
                     Text("Don't overthink it — you can adjust later.")
                         .font(.caption)
@@ -119,9 +149,7 @@ struct CustomDimensionSelectionCard: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
+        .createSupportSurface(contentPadding: 16)
     }
 }
 

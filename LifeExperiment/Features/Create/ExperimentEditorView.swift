@@ -374,9 +374,7 @@ struct ExperimentEditorView: View {
     private func cardField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .createSectionLabelStyle()
 
             content()
         }
@@ -384,21 +382,23 @@ struct ExperimentEditorView: View {
 
     private func cardBackground<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
+            .createSupportSurface()
     }
 
     @ViewBuilder
     private var imageLoggingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Image Logging")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .createSectionLabelStyle()
 
             cardBackground {
-                Toggle("Allow images for this experiment", isOn: $allowsImageLogging)
+                VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                    Text("Let this experiment include photo notes when it helps.")
+                        .lifeSecondaryText()
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Toggle("Allow images for this experiment", isOn: $allowsImageLogging)
+                }
             }
         }
     }
@@ -782,12 +782,16 @@ struct ExperimentEditorView: View {
     @ViewBuilder
     private func promptSection(scrollProxy: ScrollViewProxy) -> some View {
         if !displayedPrompts.isEmpty && !shouldHideTitlePromptsForPrefill {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 HStack {
-                    Text("Suggested prompts")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .textCase(.uppercase)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Suggested prompts")
+                            .createSectionLabelStyle()
+
+                        Text("A few gentle starting points if you want help naming this experiment.")
+                            .lifeSecondaryText()
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
                     Spacer()
 
@@ -809,37 +813,26 @@ struct ExperimentEditorView: View {
                                 .background(Color(.systemGray5))
                                 .clipShape(Capsule())
                         }
+                        .buttonStyle(.plain)
                     }
                 }
 
                 cardBackground {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 8)], spacing: 8) {
+                    VStack(spacing: 10) {
                         ForEach(displayedPrompts, id: \.self) { prompt in
                             Button(action: {
                                 applyPrompt(prompt, scrollProxy: scrollProxy)
                             }) {
-                                Text(prompt)
-                                    .font(.subheadline)
-                                    .multilineTextAlignment(.leading)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [
-                                                Color.purple.opacity(0.08),
-                                                Color.blue.opacity(0.06)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .foregroundColor(.blue)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                SuggestionCard(
+                                    title: prompt,
+                                    subtitle: nil,
+                                    icon: nil,
+                                    style: .emphasized
+                                )
                             }
                             .buttonStyle(.plain)
                         }
-                    }
+                    } 
                 }
             }
         }

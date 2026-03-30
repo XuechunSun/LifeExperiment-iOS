@@ -7,16 +7,12 @@ struct TitleSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Title")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .createSectionLabelStyle()
 
             TextField("Experiment Title", text: $title)
                 .focused($focusedField, equals: .title)
                 .textFieldStyle(.plain)
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
+                .createInputSurface()
         }
     }
 }

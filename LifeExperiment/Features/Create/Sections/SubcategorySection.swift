@@ -32,9 +32,7 @@ struct SubcategorySection: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Subcategory")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .textCase(.uppercase)
+                    .createSectionLabelStyle()
                 Spacer()
                 if !savedCustomSubcategoriesForCurrentCategory.isEmpty {
                     Button("Manage") {
@@ -136,9 +134,7 @@ struct SubcategorySection: View {
                     }
                 }
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
+            .createInputSurface()
         }
     }
 

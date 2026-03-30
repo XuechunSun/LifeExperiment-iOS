@@ -16,9 +16,7 @@ struct CategorySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Category")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+                .createSectionLabelStyle()
 
             VStack(alignment: .leading, spacing: 0) {
                 Menu {
@@ -68,9 +66,7 @@ struct CategorySection: View {
                     })
                 }
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
+            .createInputSurface()
         }
     }
 }
