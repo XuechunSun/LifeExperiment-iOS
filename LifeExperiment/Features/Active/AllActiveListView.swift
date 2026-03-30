@@ -141,46 +141,22 @@ struct AllActiveListView: View {
         } else {
             VStack(spacing: DSSpacing.md) {
                 ForEach(experiments) { experiment in
-                    Button(action: {
-                        onSelectExperiment(experiment)
-                    }) {
-                        HStack(spacing: DSSpacing.sm) {
-                            VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                                Text(experiment.title)
-                                    .font(DSText.rowTitle)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(2)
-                                    .fixedSize(horizontal: false, vertical: true)
-
-                                Text("Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))")
-                                    .lifeCaption()
-                            }
-
-                            Spacer()
-
-                            ExperimentRowMenu(
-                                kind: .active,
-                                onRename: { onRename(experiment) },
-                                onDuplicate: { onDuplicate(experiment) },
-                                onDelete: { onDelete(experiment) }
-                            )
+                    ExperimentListCard(
+                        title: experiment.title,
+                        subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
+                        surfaceStyle: cardSurfaceStyle(for: style),
+                        contentPadding: DSSpacing.md,
+                        action: {
+                            onSelectExperiment(experiment)
                         }
-                        .padding(DSSpacing.md)
-                        .background(cardBackground(for: style))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(cardBorderColor(for: style), lineWidth: 1)
+                    ) {
+                        ExperimentRowMenu(
+                            kind: .active,
+                            onRename: { onRename(experiment) },
+                            onDuplicate: { onDuplicate(experiment) },
+                            onDelete: { onDelete(experiment) }
                         )
-                        .cornerRadius(12)
-                        .shadow(
-                            color: cardShadowColor(for: style),
-                            radius: 10,
-                            x: 0,
-                            y: 4
-                        )
-                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -192,30 +168,12 @@ struct AllActiveListView: View {
             .foregroundStyle(style == .primary ? .primary : Color.primary.opacity(0.72))
     }
 
-    private func cardBackground(for style: SectionSurfaceStyle) -> Color {
+    private func cardSurfaceStyle(for style: SectionSurfaceStyle) -> ExperimentListCardSurfaceStyle {
         switch style {
         case .primary:
-            return Color(.systemBackground)
+            return .activePrimary
         case .secondary:
-            return Color(.systemGray6).opacity(0.7)
-        }
-    }
-
-    private func cardBorderColor(for style: SectionSurfaceStyle) -> Color {
-        switch style {
-        case .primary:
-            return Color.black.opacity(0.05)
-        case .secondary:
-            return Color.black.opacity(0.03)
-        }
-    }
-
-    private func cardShadowColor(for style: SectionSurfaceStyle) -> Color {
-        switch style {
-        case .primary:
-            return Color.black.opacity(0.07)
-        case .secondary:
-            return Color.black.opacity(0.04)
+            return .activeSecondary
         }
     }
 

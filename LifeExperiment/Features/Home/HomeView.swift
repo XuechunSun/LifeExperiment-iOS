@@ -208,38 +208,22 @@ struct HomeView: View {
                         }
 
                         ForEach(continuePreview) { experiment in
-                            Button(action: {
-                                onSelectExperiment(experiment)
-                            }) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(experiment.title)
-                                            .font(.subheadline)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-
-                                        Text("Last updated \(experiment.updatedAt, style: .date)")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-
-                                    Spacer()
-
-                                    ExperimentRowMenu(
-                                        kind: .active,
-                                        onRename: { onRenameExperiment(experiment) },
-                                        onDuplicate: { onDuplicateExperiment(experiment) },
-                                        onDelete: { onDeleteExperiment(experiment) }
-                                    )
+                            ExperimentListCard(
+                                title: experiment.title,
+                                subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
+                                titleWeight: .semibold,
+                                surfaceStyle: .activePrimary,
+                                contentPadding: DSSpacing.md,
+                                action: {
+                                    onSelectExperiment(experiment)
                                 }
-                                .padding(DSSpacing.md)
-                                .background(Color(.systemBackground))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                            ) {
+                                ExperimentRowMenu(
+                                    kind: .active,
+                                    onRename: { onRenameExperiment(experiment) },
+                                    onDuplicate: { onDuplicateExperiment(experiment) },
+                                    onDelete: { onDeleteExperiment(experiment) }
                                 )
-                                .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 4)
                             }
                         }
                     }
@@ -285,35 +269,23 @@ struct HomeView: View {
                         }
 
                         ForEach(completedPreview) { experiment in
-                            Button(action: {
-                                onSelectExperiment(experiment)
-                            }) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(experiment.title)
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(.primary)
-
-                                        if let completedAt = experiment.completedAt {
-                                            Text("Completed \(completedAt, style: .date)")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                    }
-
-                                    Spacer()
-
-                                    ExperimentRowMenu(
-                                        kind: .completed,
-                                        onDuplicate: { onDuplicateExperiment(experiment) },
-                                        onDelete: { onDeleteExperiment(experiment) }
-                                    )
+                            ExperimentListCard(
+                                title: experiment.title,
+                                subtitle: experiment.completedAt.map {
+                                    "Completed \($0.formatted(date: .abbreviated, time: .omitted))"
+                                },
+                                titleWeight: .medium,
+                                surfaceStyle: .completed,
+                                contentPadding: DSSpacing.md,
+                                action: {
+                                    onSelectExperiment(experiment)
                                 }
-                                .padding(DSSpacing.md)
-                                .background(Color(.systemGray6).opacity(0.7))
-                                .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                            ) {
+                                ExperimentRowMenu(
+                                    kind: .completed,
+                                    onDuplicate: { onDuplicateExperiment(experiment) },
+                                    onDelete: { onDeleteExperiment(experiment) }
+                                )
                             }
                         }
                     }

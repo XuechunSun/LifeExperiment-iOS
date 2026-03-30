@@ -73,42 +73,28 @@ struct CompletedListView: View {
     }
 
     private func sectionCard(experiments: [Experiment]) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(experiments.enumerated()), id: \.element.id) { index, experiment in
-                Button(action: {
-                    onSelectExperiment(experiment)
-                }) {
-                    HStack(spacing: DSSpacing.sm) {
-                        VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                            Text(experiment.title)
-                                .font(DSText.rowTitle)
-                                .foregroundColor(.primary)
-
-                            if let completedAt = experiment.completedAt {
-                                Text("Completed \(completedAt.formatted(date: .abbreviated, time: .omitted))")
-                                    .lifeCaption()
-                            }
-                        }
-
-                        Spacer()
-
-                        ExperimentRowMenu(
-                            kind: .completed,
-                            onDuplicate: { onDuplicate(experiment) },
-                            onDelete: { onDelete(experiment) }
-                        )
+        VStack(spacing: DSSpacing.md) {
+            ForEach(experiments) { experiment in
+                ExperimentListCard(
+                    title: experiment.title,
+                    subtitle: experiment.completedAt.map {
+                        "Completed \($0.formatted(date: .abbreviated, time: .omitted))"
+                    },
+                    titleWeight: .medium,
+                    surfaceStyle: .completed,
+                    contentPadding: DSSpacing.md,
+                    action: {
+                        onSelectExperiment(experiment)
                     }
-                    .padding(.vertical, DSSpacing.sm)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                if index < experiments.count - 1 {
-                    Divider()
+                ) {
+                    ExperimentRowMenu(
+                        kind: .completed,
+                        onDuplicate: { onDuplicate(experiment) },
+                        onDelete: { onDelete(experiment) }
+                    )
                 }
             }
         }
-        .lifeCard()
     }
 }
 

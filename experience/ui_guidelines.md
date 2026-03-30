@@ -1077,6 +1077,22 @@ Do not use LightCardStyle for:
 - primary highlight cards
 - structural UI sections
 
+### Experiment List Card Rule
+
+Use `ExperimentListCard` for experiment rows shown in:
+- Home continue/completed
+- Active experiment lists
+- Storage box detail sheets
+- Completed experiment lists
+
+Do not hand-build experiment row cards with custom background/overlay/shadow unless the row is intentionally outside the shared system.
+
+Use surface presets:
+- `.activePrimary`
+- `.activeSecondary`
+- `.completed`
+- `.browse`
+
 ---
 
 # Data Rules
