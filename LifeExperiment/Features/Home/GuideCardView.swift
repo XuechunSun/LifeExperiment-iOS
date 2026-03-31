@@ -39,34 +39,13 @@ struct GuideSuggestionsSection: View {
                     Button {
                         onStartSuggestion(suggestion)
                     } label: {
-                        VStack(alignment: .leading, spacing: DSSpacing.xs) {
-                            Text("\(suggestionEmoji(for: suggestion)) \(suggestion.title)")
-                                .font(DSText.rowTitle)
-                                .foregroundColor(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
-
-                            Text(suggestionMetadata(for: suggestion))
-                                .font(DSText.caption)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                        SuggestionCard(
+                            title: suggestion.title,
+                            subtitle: suggestionMetadata(for: suggestion),
+                            icon: suggestionEmoji(for: suggestion),
+                            style: .homeSuggestion
+                        )
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(DSSpacing.md)
-                        .background(
-                            LinearGradient(
-                                colors: [
-                                    Color.purple.opacity(0.06),
-                                    Color.blue.opacity(0.04)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white.opacity(0.4), lineWidth: 1)
-                        )
-                        .cornerRadius(16)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

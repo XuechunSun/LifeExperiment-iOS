@@ -289,6 +289,49 @@ private var frameAlignment: Alignment {
 
 ---
 
+## L2.5: Surface Wrappers Must Explicitly Claim Full Width
+
+**Principle**: Any surface intended to align with sibling cards or fields must explicitly expand to the available width before its background, border, or card modifier is applied.
+
+**Rationale**: Containers like `HStack` and `VStack` often size to their intrinsic content. If a card-like surface wraps that content directly, the visible background can stop short of sibling surfaces even when page padding is correct.
+
+**Implementation**:
+```swift
+// ❌ Avoid: intrinsic-width content inside a card wrapper
+HStack(alignment: .top, spacing: DSSpacing.sm) {
+    icon
+    content
+}
+.createSupportSurface()
+
+// ✅ Correct: claim full width before applying the surface
+HStack(alignment: .top, spacing: DSSpacing.sm) {
+    icon
+    content
+}
+.frame(maxWidth: .infinity, alignment: .leading)
+.createSupportSurface()
+```
+
+**Apply this rule to**:
+- welcome / guidance cards
+- inline support cards
+- lightweight modal cards
+- any custom card wrapper meant to align with form fields or sibling cards
+
+**Do not assume**:
+- shared page padding will make widths match
+- card modifiers automatically expand layout width
+
+**Checklist**:
+- [ ] Surface right edge aligns with sibling cards/fields
+- [ ] `frame(maxWidth: .infinity, alignment: .leading)` is applied when needed
+- [ ] Width is fixed locally, not by changing shared global surface modifiers unless all call sites need it
+
+**Applied Example**: Create page guidance card originally wrapped an intrinsic-width `HStack`, which caused a visible trailing gap against the Category field. The fix was to add a full-width frame to the local guidance card before applying the support-surface style.
+
+---
+
 ## L3: Radial Layout Three-Layer Positioning
 
 **Principle**: Radial layouts (radar charts, circular menus) require three layers of collision prevention: margin separation, directional nudging, and quadrant-specific handling.

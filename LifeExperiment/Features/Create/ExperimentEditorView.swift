@@ -403,12 +403,37 @@ struct ExperimentEditorView: View {
         }
     }
 
+    @ViewBuilder
+    private var createGuidanceCard: some View {
+        HStack(alignment: .top, spacing: DSSpacing.sm) {
+            Text("🌱")
+                .font(.title3)
+
+            VStack(alignment: .leading, spacing: DSSpacing.xs) {
+                Text("Not sure where to start?")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+
+                Text("Choose a category and we’ll suggest a few gentle ideas to begin.")
+                    .lifeSecondaryText()
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .createSupportSurface(cornerRadius: 14)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         if isCreateMode {
+                            if !hasCategorySelected {
+                                createGuidanceCard
+                            }
+
                             categoryAndSubcategorySections
 
                             promptSection(scrollProxy: proxy)
@@ -827,7 +852,7 @@ struct ExperimentEditorView: View {
                                     title: prompt,
                                     subtitle: nil,
                                     icon: nil,
-                                    style: .emphasized
+                                    style: .createSuggestion
                                 )
                             }
                             .buttonStyle(.plain)
@@ -858,7 +883,7 @@ struct ExperimentEditorView: View {
         }
 
         isProgrammaticTitleChange = true
-        title = prompt
+        title = normalizedTitle(from: prompt)
         showRevertTitle = true
 
         DispatchQueue.main.async {

@@ -84,6 +84,51 @@ struct ExperimentDetailView: View {
         return nil
     }
 
+    private var hasTodayLog: Bool {
+        let today = Calendar.current.startOfDay(for: Date())
+        return localExperiment.logs.contains { Calendar.current.isDate($0.date, inSameDayAs: today) }
+    }
+
+    private var todaySuggestion: (title: String, subtitle: String, icon: String)? {
+        if draftMood == nil {
+            return (
+                "Start with a quick mood check-in",
+                "One tap is enough to mark how today has felt so far.",
+                "🌿"
+            )
+        }
+
+        if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return (
+                "Add one small note",
+                "A sentence is enough to remember what stood out today.",
+                "✍️"
+            )
+        }
+
+        if canShowImages && draftPhotoLocalPath == nil {
+            return (
+                "A photo is optional",
+                "If an image helps capture today more clearly, you can add one.",
+                "📷"
+            )
+        }
+
+        if hasTodayLog {
+            return (
+                "You already have a start",
+                "Save again anytime if you want to refine today’s check-in.",
+                "✨"
+            )
+        }
+
+        return (
+            "Keep today simple",
+            "A quick check-in is enough to keep this experiment in motion.",
+            "🌱"
+        )
+    }
+
     var body: some View {
         detailContent
             .overlay(alignment: .top) { toastOverlay }
@@ -139,17 +184,30 @@ struct ExperimentDetailView: View {
 
     @ViewBuilder
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .center, spacing: 0) {
-                Text(localExperiment.title)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+        VStack(alignment: .leading, spacing: DSSpacing.sm) {
+            Text(localExperiment.title)
+                .font(.title2)
+                .fontWeight(.semibold)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if localExperiment.category != nil || localExperiment.subcategory != nil {
+                HStack(spacing: 8) {
+                    if let category = localExperiment.category {
+                        detailTag(category)
+                    }
+                    if let subcategory = localExperiment.subcategory {
+                        detailTag(subcategory)
+                    }
+                }
             }
 
-            if isCompleted {
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Created \(localExperiment.createdAt, style: .date)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                if isCompleted {
                     Text("This experiment is completed. Logging is disabled.")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -160,152 +218,168 @@ struct ExperimentDetailView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-
-                    Text("Completed ✓")
-                        .font(.caption)
-                        .foregroundColor(.green)
                 }
             }
-
-            if localExperiment.category != nil || localExperiment.subcategory != nil {
-                HStack(spacing: 8) {
-                    if let category = localExperiment.category {
-                        Text(category)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color(.systemGray6))
-                            .clipShape(Capsule())
-                    }
-                    if let subcategory = localExperiment.subcategory {
-                        Text(subcategory)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color(.systemGray6))
-                            .clipShape(Capsule())
-                    }
-                }
-            }
-
-            Text("Created \(localExperiment.createdAt, style: .date)")
-                .font(.caption)
-                .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .lightCardStyle(
+            cornerRadius: 16,
+            fillColor: Color(.systemBackground),
+            fillOpacity: 1.0,
+            borderOpacity: 0.04,
+            shadowOpacity: 0.03,
+            shadowRadius: 8,
+            shadowYOffset: 2,
+            contentPadding: preferences.uiStyle.cardPadding
+        )
     }
 
     @ViewBuilder
     private var todaySection: some View {
         if !isCompleted {
-            if !insightLines.isEmpty {
-                ExperimentInsightSnapshotSection(lines: insightLines)
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("How did you feel today?")
-                        .font(.headline)
-                    MoodSelectorView(selectedMood: $draftMood)
+            VStack(alignment: .leading, spacing: DSSpacing.md) {
+                if !insightLines.isEmpty {
+                    ExperimentInsightSnapshotSection(lines: insightLines)
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Notes:")
+                if let suggestion = todaySuggestion {
+                    SuggestionCard(
+                        title: suggestion.title,
+                        subtitle: suggestion.subtitle,
+                        icon: suggestion.icon,
+                        style: .createSuggestion
+                    )
+                }
+            }
+
+            VStack(alignment: .leading, spacing: DSSpacing.md) {
+                // VStack(alignment: .leading, spacing: DSSpacing.xs) {
+                //     Text("Today’s check-in")
+                //         .font(DSText.section)
+                //         .foregroundColor(.primary)
+
+                    // Text("A small reflection is enough to keep this experiment in motion.")
+                    //     .lifeSecondaryText()
+                //}
+
+                VStack(alignment: .leading, spacing: DSSpacing.md) {
+                    VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                        Text("How do you feel today?")
                             .font(.headline)
-
-                        Spacer()
-
-                        if canShowImages {
-                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "camera")
-                                    Text("Add photo")
-                                        .underline()
-                                }
-                                .font(.subheadline)
-                                .foregroundColor(.blue)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(isSavingPhoto)
-                            .accessibilityLabel("Add photo")
-                        }
+                        MoodSelectorView(selectedMood: $draftMood)
                     }
-                    .frame(minHeight: 24)
 
-                    TextEditor(text: $draftNote)
-                        .frame(minHeight: 80, maxHeight: 96)
-                        .padding(6)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(preferences.uiStyle.cardCornerRadius)
-                        .focused($noteFocused)
+                    VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Notes")
+                                .font(.headline)
 
-                    if canShowImages,
-                       let path = draftPhotoLocalPath,
-                       !photoMarkedForRemoval,
-                       let image = LocalPhotoStore.loadImage(fromRelativePath: path) {
-                        HStack(spacing: 10) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 44, height: 44)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            Spacer()
 
-                            Text("Photo attached")
+                            if canShowImages {
+                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "camera")
+                                        Text("Add photo")
+                                            .underline()
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundColor(.blue)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(isSavingPhoto)
+                                .accessibilityLabel("Add photo")
+                            }
+                        }
+                        .frame(minHeight: 24)
+
+                        TextEditor(text: $draftNote)
+                            .frame(minHeight: 80, maxHeight: 96)
+                            .padding(6)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(preferences.uiStyle.cardCornerRadius)
+                            .focused($noteFocused)
+
+                        if canShowImages,
+                           let path = draftPhotoLocalPath,
+                           !photoMarkedForRemoval,
+                           let image = LocalPhotoStore.loadImage(fromRelativePath: path) {
+                            HStack(spacing: 10) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 44, height: 44)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                                Text("Photo attached")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                Button("Remove") {
+                                    draftPhotoLocalPath = nil
+                                    photoMarkedForRemoval = true
+                                }
                                 .font(.caption)
                                 .foregroundColor(.secondary)
 
-                            Button("Remove") {
-                                draftPhotoLocalPath = nil
-                                photoMarkedForRemoval = true
+                                Spacer()
                             }
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                            Spacer()
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                         }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
+
+                        if let helperText = photoDraftHelperText {
+                            Text(helperText)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 2)
+                        }
                     }
 
-                    if let helperText = photoDraftHelperText {
-                        Text(helperText)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 2)
-                    }
-                }
+                    HStack {
+                        // Button("Complete Experiment") {
+                        //     showCompleteConfirm = true
+                        // }
+                        // .buttonStyle(.bordered)
+                        // .tint(.secondary)
 
-                HStack {
-                    Button("Complete Experiment") {
+                        Spacer()
+
+                        Button("Save") {
+                            if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                showEmptyNoteAlert = true
+                            } else if draftMood == nil {
+                                showMoodRequiredAlert = true
+                            } else {
+                                saveTodayLog()
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+
+                    Button {
                         showCompleteConfirm = true
+                    } label: {
+                        Text("Complete Experiment")
+                            .underline()
                     }
-                    .buttonStyle(.bordered)
-                    .tint(.secondary)
-
-                    Spacer()
-
-                    Button("Save") {
-                        if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            showEmptyNoteAlert = true
-                        } else if draftMood == nil {
-                            showMoodRequiredAlert = true
-                        } else {
-                            saveTodayLog()
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
                 }
             }
-
-            Divider()
+            .lightCardStyle(
+                cornerRadius: 16,
+                fillColor: Color(.systemBackground),
+                fillOpacity: 0.98,
+                borderOpacity: 0.04,
+                shadowOpacity: 0.02,
+                shadowRadius: 6,
+                shadowYOffset: 2,
+                contentPadding: preferences.uiStyle.cardPadding
+            )
         }
     }
 
@@ -395,32 +469,7 @@ struct ExperimentDetailView: View {
                     .italic()
             } else {
                 ForEach(visibleLogs) { log in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(log.date, style: .date)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-
-                            Text(log.mood?.emoji ?? " ")
-                                .frame(width: 24, alignment: .leading)
-
-                            if log.photoLocalPath != nil {
-                                Image(systemName: "photo")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-
-                            Spacer()
-                        }
-
-                        if !log.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Text(log.note)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                    }
-                    .padding(.vertical, 4)
+                    HistoryLogRow(log: log)
                 }
 
                 if sortedLogs.count > 10 {
@@ -434,6 +483,16 @@ struct ExperimentDetailView: View {
                 }
             }
         }
+    }
+
+    private func detailTag(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color(.systemGray6))
+            .clipShape(Capsule())
     }
 
     @ViewBuilder
@@ -657,6 +716,48 @@ fileprivate struct ExperimentInsightSnapshotSection: View {
         case .rhythm:
             return "🗓️"
         }
+    }
+}
+
+private struct HistoryLogRow: View {
+    let log: DailyLog
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(log.date, style: .date)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                Text(log.mood?.emoji ?? " ")
+                    .frame(width: 24, alignment: .leading)
+
+                if log.photoLocalPath != nil {
+                    Image(systemName: "photo")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+
+            if !log.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text(log.note)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .lightCardStyle(
+            cornerRadius: 12,
+            fillColor: Color(.secondarySystemBackground),
+            fillOpacity: 1.0,
+            borderOpacity: 0.025,
+            shadowOpacity: 0.015,
+            shadowRadius: 4,
+            shadowYOffset: 1,
+            contentPadding: 12
+        )
     }
 }
 

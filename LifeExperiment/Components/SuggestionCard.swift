@@ -1,8 +1,8 @@
 import SwiftUI
 
 enum SuggestionCardStyle {
-    case subtle
-    case emphasized
+    case homeSuggestion
+    case createSuggestion
 }
 
 struct SuggestionCard: View {
@@ -18,29 +18,34 @@ struct SuggestionCard: View {
 
             if let icon {
                 Text(icon)
+                    .font(iconFont)
+                    .foregroundColor(iconColor)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline)
-                    .fontWeight(.regular)
-                    .foregroundColor(.primary.opacity(0.85))
+                    .fontWeight(titleFontWeight)
+                    .foregroundColor(titleColor)
                     .lineSpacing(2)
 
                 if let subtitle {
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(subtitleColor)
                 }
             }
 
             Spacer()
         }
-        .padding(14)
+        //.padding(14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 16)
         .background(backgroundView)
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius)
-                .stroke(Color.white.opacity(0.6), lineWidth: 1)
+                //.stroke(Color.white.opacity(0.6), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
@@ -48,18 +53,70 @@ struct SuggestionCard: View {
     @ViewBuilder
     private var backgroundView: some View {
         switch style {
-        case .subtle:
-            Color(.systemGray6)
-
-        case .emphasized:
+        case .createSuggestion:
             LinearGradient(
                 colors: [
-                    Color.purple.opacity(0.08),
-                    Color.blue.opacity(0.05)
+                    Color.purple.opacity(0.05),
+                    Color.blue.opacity(0.03)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+
+        case .homeSuggestion:
+            LinearGradient(
+                colors: [
+                    Color.purple.opacity(0.1),
+                    Color.blue.opacity(0.07)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    private var titleFontWeight: Font.Weight {
+        switch style {
+        case .homeSuggestion:
+            return .medium
+        case .createSuggestion:
+            return .regular
+        }
+    }
+
+    private var titleColor: Color {
+        switch style {
+        case .homeSuggestion:
+            return .primary.opacity(0.92)
+        case .createSuggestion:
+            return .primary.opacity(0.82)
+        }
+    }
+
+    private var subtitleColor: Color {
+        switch style {
+        case .homeSuggestion:
+            return .secondary
+        case .createSuggestion:
+            return .secondary.opacity(0.9)
+        }
+    }
+
+    private var iconFont: Font {
+        switch style {
+        case .homeSuggestion:
+            return .subheadline
+        case .createSuggestion:
+            return .caption
+        }
+    }
+
+    private var iconColor: Color {
+        switch style {
+        case .homeSuggestion:
+            return .primary.opacity(0.92)
+        case .createSuggestion:
+            return .primary.opacity(0.72)
         }
     }
 }
