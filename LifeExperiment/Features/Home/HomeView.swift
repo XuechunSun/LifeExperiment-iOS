@@ -106,6 +106,15 @@ struct HomeView: View {
         suggestions(for: homeGuideState)
     }
 
+    private var personalizedSignal: PersonalizedSuggestionSignal? {
+        PersonalizedSuggestionEngine.personalizedSignal(from: experiments)
+    }
+
+    private var personalizedSuggestion: ExperimentSuggestion? {
+        guard let personalizedSignal else { return nil }
+        return PersonalizedSuggestionEngine.personalizedSuggestion(from: personalizedSignal)
+    }
+
     // MARK: - Continue Recording Logic
 
     // Candidates: active experiments NOT updated today
@@ -170,6 +179,17 @@ struct HomeView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     GuideCardView(copy: guideCopy)
+
+                    if let personalizedSuggestion,
+                       let personalizedSignal {
+                        HomePersonalizedSuggestionSection(
+                            signal: personalizedSignal,
+                            suggestion: personalizedSuggestion,
+                            onTapSuggestion: {
+                                onTrySuggestion(personalizedSuggestion)
+                            }
+                        )
+                    }
 
                     GuideSuggestionsSection(
                         suggestions: guideSuggestions,

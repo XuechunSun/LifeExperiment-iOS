@@ -386,71 +386,109 @@ struct ExperimentDetailView: View {
     @ViewBuilder
     private var reviewSection: some View {
         if isCompleted {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Review")
-                    .font(.title2)
-                    .fontWeight(.bold)
+            VStack(alignment: .leading, spacing: DSSpacing.md) {
+                Text("A small reflection")
+                    .font(DSText.section)
+                    .foregroundColor(.primary)
 
-                if let review = localExperiment.review, review.locked {
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("What did I try?")
-                                .font(.headline)
-                            Text(review.whatDidITry)
-                                .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: DSSpacing.md) {
+                    if let review = localExperiment.review, review.locked {
+                        VStack(alignment: .leading, spacing: DSSpacing.md) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("What did I try?")
+                                    .font(.headline)
+                                Text(review.whatDidITry)
+                                    .foregroundColor(.secondary)
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("What happened?")
+                                    .font(.headline)
+                                Text(review.whatHappened)
+                                    .foregroundColor(.secondary)
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("What will I do differently next time?")
+                                    .font(.headline)
+                                Text(review.whatWillIDoDifferently)
+                                    .foregroundColor(.secondary)
+                            }
                         }
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("What happened?")
-                                .font(.headline)
-                            Text(review.whatHappened)
-                                .foregroundColor(.secondary)
-                        }
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("What will I do differently next time?")
-                                .font(.headline)
-                            Text(review.whatWillIDoDifferently)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("What did I try? (Optional)")
-                                .font(.headline)
-                            TextEditor(text: $draftWhatDidITry)
-                                .frame(minHeight: 80)
-                                .padding(8)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: DSSpacing.md) {
+                            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("What did I try?")
+                                        .font(.headline)
+                                    Text("Optional")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .italic()
+                                }
+                                TextEditor(text: $draftWhatDidITry)
+                                    .frame(minHeight: 80)
+                                    .padding(8)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                            }
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("What happened? (Optional)")
-                                .font(.headline)
-                            TextEditor(text: $draftWhatHappened)
-                                .frame(minHeight: 80)
-                                .padding(8)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                        }
+                            VStack(alignment: .leading, spacing: DSSpacing.sm) {
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("What will I do differently next time? (Optional)")
-                                .font(.headline)
-                            TextEditor(text: $draftWhatWillIDoDifferently)
-                                .frame(minHeight: 80)
-                                .padding(8)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(8)
-                        }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("What happened?")
+                                        .font(.headline)
 
-                        Button("Save Review") { saveReview() }
-                            .buttonStyle(.borderedProminent)
+                                    Text("Optional")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .italic()
+                                }
+
+                                TextEditor(text: $draftWhatHappened)
+                                    .frame(minHeight: 80)
+                                    .padding(8)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                            }
+
+                            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("What will I do differently next time?")
+                                        .font(.headline)
+
+                                    Text("Optional")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .italic()
+                                }
+
+                                TextEditor(text: $draftWhatWillIDoDifferently)
+                                    .frame(minHeight: 80)
+                                    .padding(8)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                            }
+
+                            HStack {
+                                Spacer()
+
+                                Button("Save Review") { saveReview() }
+                                    .buttonStyle(.borderedProminent)
+                            }
+                        }
                     }
                 }
+                .lightCardStyle(
+                    cornerRadius: 16,
+                    fillColor: Color(.systemBackground),
+                    fillOpacity: 0.98,
+                    borderOpacity: 0.04,
+                    shadowOpacity: 0.02,
+                    shadowRadius: 6,
+                    shadowYOffset: 2,
+                    contentPadding: preferences.uiStyle.cardPadding
+                )
             }
-
-            Divider()
         }
     }
 
@@ -458,10 +496,10 @@ struct ExperimentDetailView: View {
     private var historySection: some View {
         let visibleLogs = showFullHistory ? sortedLogs : Array(sortedLogs.prefix(6))
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
             Text("History")
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(DSText.section)
+                .foregroundColor(.primary)
 
             if sortedLogs.isEmpty {
                 Text("No logs yet. Start logging today!")
@@ -684,9 +722,10 @@ fileprivate struct ExperimentInsightSnapshotSection: View {
     fileprivate var preferences = AppPreferences()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DSSpacing.sm) {
             Text("Insight Snapshot")
                 .font(.headline)
+                .foregroundColor(.primary)
 
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(lines) { line in
@@ -696,15 +735,29 @@ fileprivate struct ExperimentInsightSnapshotSection: View {
 
                         Text(line.text)
                             .font(.subheadline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(.primary.opacity(0.78))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(preferences.uiStyle.cardPadding)
-        .background(Color(.systemGray6))
-        .cornerRadius(preferences.uiStyle.cardCornerRadius)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color.purple.opacity(0.07),
+                    Color.blue.opacity(0.045)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: preferences.uiStyle.cardCornerRadius)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: preferences.uiStyle.cardCornerRadius))
     }
 
     private func emoji(for kind: InsightKind) -> String {

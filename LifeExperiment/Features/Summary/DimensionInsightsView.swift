@@ -590,7 +590,7 @@ struct DimensionInsightsView: View {
         VStack(alignment: .leading, spacing: DSSpacing.xl) {
             SectionBlock(
                 title: "Your Strength",
-                subtitle: "A gentle view of how you tend to show up across completed experiments.",
+                subtitle: "How you tend to show up across completed experiments.",
                 style: .strength
             ) {
                 VStack(alignment: .leading, spacing: DSSpacing.md) {
@@ -678,13 +678,16 @@ struct DimensionInsightsView: View {
             if hasEligibleExperiments && !sortedDimensionsByDays.isEmpty {
                 SectionBlock(
                     title: "Your Growth",
-                    subtitle: "A gentle view of where your time and attention have been landing.",
+                    subtitle: "Where your time and attention have been landing.",
                     style: .growth
                 ) {
                     VStack(alignment: .leading, spacing: DSSpacing.md) {
-                        Text("Where your attention has been landing")
-                            .font(DSText.caption)
-                            .foregroundColor(.secondary.opacity(0.85))
+                        if let growthSummaryText {
+                            Text(growthSummaryText)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary.opacity(0.85))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
 
                         // Bar list (sorted by count, descending)
                         VStack(alignment: .leading, spacing: DSSpacing.sm) {
@@ -725,6 +728,17 @@ struct DimensionInsightsView: View {
         return strengthInsightDimensions(axes: axes, percentages: percentages)
     }
 
+    private var growthSummaryText: String? {
+        guard let primary = sortedDimensionsByDays.first?.0 else { return nil }
+        let labels = Array(sortedDimensionsByDays.prefix(2).map { growthSummaryLabel(for: $0.0) })
+
+        if labels.count >= 2 {
+            return "You've been focusing mostly on \(labels[0]) and \(labels[1])."
+        }
+
+        return "You've been focusing mostly on \(growthSummaryLabel(for: primary))."
+    }
+
     private func shortLabel(for dimension: Dimension) -> String {
         switch dimension {
         case .emotion_awareness:
@@ -761,6 +775,10 @@ struct DimensionInsightsView: View {
         case .self_understanding:
             return "understand yourself"
         }
+    }
+
+    private func growthSummaryLabel(for dimension: Dimension) -> String {
+        dimension.title.lowercased()
     }
 
     private func strengthInsightDimensions(

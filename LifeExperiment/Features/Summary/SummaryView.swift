@@ -192,7 +192,7 @@ struct SummaryView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "sparkles")
                                 .foregroundColor(.white.opacity(0.9))
-                            Text("This might be helping you")
+                            Text("A small pattern I'm noticing")
                                 .font(.subheadline)
                                 .foregroundColor(.white.opacity(0.9))
                         }
@@ -204,11 +204,11 @@ struct SummaryView: View {
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)
 
-                            Text("Based on \(insight.experimentDayCount) days you showed up")
+                            Text("You've shown up for this on \(insight.experimentDayCount) days.")
                                 .font(.subheadline)
                                 .foregroundColor(.white.opacity(0.8))
                         } else {
-                            Text("Patterns will appear as you keep showing up")
+                            Text("Patterns can start to show up as you keep showing up")
                                 .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.white)
                                 .lineLimit(3)

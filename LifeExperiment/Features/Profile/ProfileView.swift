@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ProfileView: View {
+    let loadExperiments: () -> [Experiment]
+
     // Placeholder-only until cloud sync is implemented.
     @AppStorage("pref_cloud_sync_enabled") private var cloudSyncEnabled: Bool = false
     @AppStorage("auth_is_signed_in") private var isSignedIn: Bool = false
@@ -18,101 +20,184 @@ struct ProfileView: View {
 
     private var preferences = AppPreferences()
 
+    init(loadExperiments: @escaping () -> [Experiment]) {
+        self.loadExperiments = loadExperiments
+    }
+
+    private var experiments: [Experiment] {
+        loadExperiments()
+    }
+
+    private var shownUpCount: Int {
+        experiments.reduce(0) { partial, experiment in
+            partial + experiment.logs.filter { log in
+                let trimmedNote = log.note.trimmingCharacters(in: .whitespacesAndNewlines)
+                return !trimmedNote.isEmpty || log.mood != nil
+            }.count
+        }
+    }
+
+    private var headerSubtitle: String {
+        shownUpCount > 0 ? "You've shown up \(shownUpCount) times" : "Still exploring"
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                VStack(spacing: 10) {
+                VStack(spacing: 12) {
                     Image(systemName: "person.circle.fill")
                         .font(.system(size: 72))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.tint)
 
-                    if isSignedIn {
+                    VStack(spacing: 6) {
                         Text(authDisplayName)
                             .font(.title2)
                             .fontWeight(.semibold)
                             .multilineTextAlignment(.center)
 
-                        Text("Signed in")
+                        Text(headerSubtitle)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                    } else {
-                        Text("Using LifeExperiment locally")
-                            .font(.title3)
-                            .fontWeight(.semibold)
                             .multilineTextAlignment(.center)
 
-                        Text("Sign in to back up and sync across devices.")
-                            .font(.subheadline)
+                        Text(isSignedIn ? "Signed in" : "Using this device only")
+                            .font(.caption)
                             .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 20)
+                .lightCardStyle(
+                    cornerRadius: 16,
+                    fillColor: Color(.systemBackground),
+                    fillOpacity: 1.0,
+                    borderOpacity: 0.04,
+                    shadowOpacity: 0.02,
+                    shadowRadius: 6,
+                    shadowYOffset: 2,
+                    contentPadding: preferences.uiStyle.cardPadding
+                )
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Preferences")
+                    Text("Your experience")
                         .font(.headline)
 
-                    VStack(spacing: 0) {
-                        HStack {
-                            Text("UI Style")
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(alignment: .top, spacing: DSSpacing.md) {
+                            VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                                Text("UI Style")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+
+                                Text("Choose how the app feels")
+                                    .lifeCaption()
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
                             Spacer()
+
                             Picker("UI Style", selection: preferences.uiStyleBinding) {
                                 ForEach(UIStyle.allCases) { style in
                                     Text(style.title).tag(style)
                                 }
                             }
                             .pickerStyle(.menu)
+                            .labelsHidden()
                         }
                         .padding(.vertical, 12)
 
                         Divider()
 
-                        Toggle("Image logging", isOn: preferences.imageLoggingEnabledBinding)
+                        HStack(alignment: .top, spacing: DSSpacing.md) {
+                            VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                                Text("Image logging")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+
+                                Text("Add photos to your daily logs")
+                                    .lifeCaption()
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            Spacer()
+
+                            Toggle("", isOn: preferences.imageLoggingEnabledBinding)
+                                .labelsHidden()
+                        }
                             .padding(.vertical, 12)
                     }
-                    .padding(.horizontal, preferences.uiStyle.cardPadding)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(preferences.uiStyle.cardCornerRadius)
-
-                    Text("UI style updates will roll out gradually.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
+                    .lightCardStyle(
+                        cornerRadius: preferences.uiStyle.cardCornerRadius,
+                        fillColor: Color(.systemBackground),
+                        fillOpacity: 1.0,
+                        borderOpacity: 0.04,
+                        shadowOpacity: 0.02,
+                        shadowRadius: 6,
+                        shadowYOffset: 2,
+                        contentPadding: preferences.uiStyle.cardPadding
+                    )
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Data & System")
                         .font(.headline)
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Toggle("Cloud sync", isOn: $cloudSyncEnabled)
-                            .padding(.vertical, 6)
-                            .disabled(true)
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(alignment: .top, spacing: DSSpacing.md) {
+                            VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                                Text("Cloud sync")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
 
-                        Text("Coming soon")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
+                                Text("Coming soon")
+                                    .lifeCaption()
+
+                                Text("Your data is currently stored on this device")
+                                    .lifeCaption()
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            Spacer() 
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading) 
+                        .padding(.vertical, 12) 
                     }
-                    .padding(.horizontal, preferences.uiStyle.cardPadding)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(preferences.uiStyle.cardCornerRadius)
+                    .frame(maxWidth: .infinity)
+                    .lightCardStyle(
+                        cornerRadius: preferences.uiStyle.cardCornerRadius,
+                        fillColor: Color(.systemBackground),
+                        fillOpacity: 1.0,
+                        borderOpacity: 0.04,
+                        shadowOpacity: 0.02,
+                        shadowRadius: 6,
+                        shadowYOffset: 2,
+                        contentPadding: preferences.uiStyle.cardPadding
+                    )
                 }
 
-                Button {
-                    if isSignedIn {
+                if isSignedIn {
+                    Button {
                         showSignOutConfirm = true
-                    } else {
-                        showSignInSheet = true
+                    } label: {
+                        Text("Sign out")
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.bordered)
+                    .padding(.top, 4)
+                } else {
+                    Button {
+                        showSignInSheet = true
+                    } label: {
+                        Text("Sign in")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 4)
                 }
-                label: {
-                    Text(isSignedIn ? "Sign out" : "Sign in")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.top, 4)
+
+                Text("Built for curiosity")
+                    .lifeCaption()
+                    .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 24)

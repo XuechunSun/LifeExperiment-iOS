@@ -343,7 +343,7 @@ struct ContentView: View {
             
             // Tab 5: Profile
             NavigationStack(path: $profilePath) {
-                ProfileView()
+                ProfileView(loadExperiments: getExperiments)
                     .navigationDestination(for: Route.self) { route in
                         routeDestination(route: route, path: $profilePath)
                     }
@@ -586,6 +586,8 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
 }

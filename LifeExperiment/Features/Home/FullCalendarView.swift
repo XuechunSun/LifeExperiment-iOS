@@ -142,7 +142,11 @@ private struct MonthGrid: View {
         let weekdayOfMonthStart = calendar.component(.weekday, from: monthStart)
         let leading = (weekdayOfMonthStart - calendar.firstWeekday + 7) % 7
         let gridStart = calendar.date(byAdding: .day, value: -leading, to: monthStart) ?? monthStart
-        return (0..<42).compactMap { offset in
+        let daysInMonth = calendar.range(of: .day, in: .month, for: monthStart)?.count ?? 30
+        let totalSpan = leading + daysInMonth
+        let weeksNeeded = max(1, (totalSpan + 6) / 7)
+        let cellCount = weeksNeeded * 7
+        return (0..<cellCount).compactMap { offset in
             calendar.date(byAdding: .day, value: offset, to: gridStart)
         }
     }

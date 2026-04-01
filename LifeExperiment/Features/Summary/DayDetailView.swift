@@ -7,6 +7,8 @@ struct DayDetailView: View {
     let experiments: [Experiment]
     let onUpdate: (Experiment) -> Void
 
+    private let rowSpacing: CGFloat = DSSpacing.md
+
     private var dayLabel: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMM d"
@@ -48,6 +50,17 @@ struct DayDetailView: View {
         }
     }
 
+    private func activeSubtitle(for experiment: Experiment) -> String {
+        "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))"
+    }
+
+    private func completedSubtitle(for experiment: Experiment) -> String {
+        if let completedAt = experiment.completedAt {
+            return "Completed \(completedAt.formatted(date: .abbreviated, time: .omitted))"
+        }
+        return "Completed"
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -66,9 +79,19 @@ struct DayDetailView: View {
                             .foregroundColor(.secondary)
                             .italic()
                     } else {
-                        ForEach(activeUpdateExperiments) { experiment in
-                            NavigationLink(destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)) {
-                                ExperimentCardRow(experiment: experiment)
+                        VStack(spacing: rowSpacing) {
+                            ForEach(activeUpdateExperiments) { experiment in
+                                ExperimentListCard(
+                                    title: experiment.title,
+                                    subtitle: activeSubtitle(for: experiment),
+                                    surfaceStyle: .activePrimary,
+                                    contentPadding: DSSpacing.md,
+                                    destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)
+                                ) {
+                                    Image(systemName: "chevron.right")
+                                        .font(DSText.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
                     }
@@ -91,9 +114,19 @@ struct DayDetailView: View {
                             .foregroundColor(.secondary)
                             .italic()
                     } else {
-                        ForEach(completedExperiments) { experiment in
-                            NavigationLink(destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)) {
-                                ExperimentCardRow(experiment: experiment)
+                        VStack(spacing: rowSpacing) {
+                            ForEach(completedExperiments) { experiment in
+                                ExperimentListCard(
+                                    title: experiment.title,
+                                    subtitle: completedSubtitle(for: experiment),
+                                    surfaceStyle: .completed,
+                                    contentPadding: DSSpacing.md,
+                                    destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)
+                                ) {
+                                    Image(systemName: "chevron.right")
+                                        .font(DSText.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
                     }
