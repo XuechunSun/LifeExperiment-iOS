@@ -7,7 +7,7 @@ struct HomePersonalizedSuggestionSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
-            Text("From what I’m noticing")
+            Text("Worth noticing")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary.opacity(0.82))
@@ -35,6 +35,7 @@ struct HomePersonalizedSuggestionSection: View {
             }
             .buttonStyle(.plain)
         }
+        .padding(.vertical, DSSpacing.xs)
     }
 }
 

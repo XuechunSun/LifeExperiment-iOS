@@ -3,6 +3,9 @@ import SwiftUI
 let cardBackground = Color(red: 0.96, green: 0.97, blue: 0.98)
 let highlightCard = Color.blue.opacity(0.06)
 let secondaryCard = Color(.systemGray6)
+let highlightCardStart = Color(red: 0.65, green: 0.72, blue: 0.95)
+let highlightCardEnd = Color(red: 0.72, green: 0.65, blue: 0.95)
+let primaryLavenderButton = Color(red: 0.69, green: 0.68, blue: 0.93)
 
 enum DSInset {
     static let pageHorizontal: CGFloat = 16
@@ -29,8 +32,8 @@ struct HighlightCard<Content: View>: View {
             .background(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.65, green: 0.72, blue: 0.95),
-                        Color(red: 0.72, green: 0.65, blue: 0.95)
+                        highlightCardStart,
+                        highlightCardEnd
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -51,6 +54,7 @@ struct SummaryCard<Content: View>: View {
 
     var body: some View {
         content
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(DSSpacing.md)
             .background(backgroundView)
             .overlay(

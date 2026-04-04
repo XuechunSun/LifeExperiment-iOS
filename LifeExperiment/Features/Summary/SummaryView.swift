@@ -192,7 +192,7 @@ struct SummaryView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "sparkles")
                                 .foregroundColor(.white.opacity(0.9))
-                            Text("A small pattern I'm noticing")
+                            Text("A small pattern")
                                 .font(.subheadline)
                                 .foregroundColor(.white.opacity(0.9))
                         }

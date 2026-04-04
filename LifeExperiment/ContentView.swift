@@ -46,6 +46,7 @@ struct ContentView: View {
     @State private var activePath: [Route] = []
     @State private var summaryPath: [Route] = []
     @State private var profilePath: [Route] = []
+    @State private var rootRefreshID = UUID()
     
     @State private var selectedDay: DayRecord?
     @State private var showCreateExperimentSheet: Bool = false
@@ -102,6 +103,37 @@ struct ContentView: View {
     private func sortedExperiments() -> [Experiment] {
         let experiments = getExperiments()
         return experiments.filter { $0.status == .active }.sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    private func resetAllLocalData() {
+        if let bundleIdentifier = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleIdentifier)
+        }
+
+        let fileManager = FileManager.default
+        if let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let logPhotosURL = documentsURL.appendingPathComponent("LogPhotos", isDirectory: true)
+            if fileManager.fileExists(atPath: logPhotosURL.path) {
+                try? fileManager.removeItem(at: logPhotosURL)
+            }
+        }
+
+        dayCount = 1
+        statusRaw = LoggingStatus.idle.rawValue
+        historyData = .init()
+        experimentsData = .init()
+
+        selectedTab = .home
+        homePath = []
+        activePath = []
+        summaryPath = []
+        profilePath = []
+        selectedDay = nil
+        showCreateExperimentSheet = false
+        experimentToDelete = nil
+        activeSheet = nil
+        createPrefill = nil
+        rootRefreshID = UUID()
     }
     
     func updateExperiment(_ updated: Experiment) {
@@ -343,7 +375,10 @@ struct ContentView: View {
             
             // Tab 5: Profile
             NavigationStack(path: $profilePath) {
-                ProfileView(loadExperiments: getExperiments)
+                ProfileView(
+                    loadExperiments: getExperiments,
+                    onResetAllData: resetAllLocalData
+                )
                     .navigationDestination(for: Route.self) { route in
                         routeDestination(route: route, path: $profilePath)
                     }
@@ -353,6 +388,7 @@ struct ContentView: View {
             }
             .tag(Tab.profile)
         }
+        .id(rootRefreshID)
         .onChange(of: selectedTab) { oldValue, newValue in
             // When user switches to Create tab, present the create sheet
             if newValue == .create {
@@ -455,7 +491,7 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(Color.blue)
+                        .background(primaryLavenderButton)
                         .cornerRadius(10)
                     }
                     .padding(.top, 8)

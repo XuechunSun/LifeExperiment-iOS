@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ProfileView: View {
     let loadExperiments: () -> [Experiment]
+    let onResetAllData: () -> Void
 
     // Placeholder-only until cloud sync is implemented.
     @AppStorage("pref_cloud_sync_enabled") private var cloudSyncEnabled: Bool = false
@@ -17,11 +18,16 @@ struct ProfileView: View {
 
     @State private var showSignInSheet = false
     @State private var showSignOutConfirm = false
+    @State private var showResetAllDataConfirm = false
 
     private var preferences = AppPreferences()
 
-    init(loadExperiments: @escaping () -> [Experiment]) {
+    init(
+        loadExperiments: @escaping () -> [Experiment],
+        onResetAllData: @escaping () -> Void = {}
+    ) {
         self.loadExperiments = loadExperiments
+        self.onResetAllData = onResetAllData
     }
 
     private var experiments: [Experiment] {
@@ -192,12 +198,41 @@ struct ProfileView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(primaryLavenderButton)
                     .padding(.top, 4)
                 }
 
                 Text("Built for curiosity")
                     .lifeCaption()
                     .frame(maxWidth: .infinity)
+
+#if DEBUG
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Debug")
+                        .font(.headline)
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        Button(role: .destructive) {
+                            showResetAllDataConfirm = true
+                        } label: {
+                            Text("Reset All Data")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.vertical, 12)
+                    }
+                    .lightCardStyle(
+                        cornerRadius: preferences.uiStyle.cardCornerRadius,
+                        fillColor: Color(.systemBackground),
+                        fillOpacity: 1.0,
+                        borderOpacity: 0.04,
+                        shadowOpacity: 0.02,
+                        shadowRadius: 6,
+                        shadowYOffset: 2,
+                        contentPadding: preferences.uiStyle.cardPadding
+                    )
+                }
+#endif
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
@@ -217,6 +252,14 @@ struct ProfileView: View {
             }
         } message: {
             Text("You can continue using the app locally.")
+        }
+        .alert("Reset all app data?", isPresented: $showResetAllDataConfirm) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reset", role: .destructive) {
+                onResetAllData()
+            }
+        } message: {
+            Text("This will permanently delete all experiments, logs, saved custom subcategories, and locally stored images on this device.")
         }
     }
 }

@@ -7,20 +7,10 @@ struct StorageBoxesView: View {
     let seedCatalog: SeedCatalog?
     let onUpdate: (Experiment) -> Void
 
-    private var uncategorizedExperiments: [Experiment] {
-        experiments.filter { exp in
-            let category = exp.category?.trimmingCharacters(in: .whitespacesAndNewlines)
-            return category == nil || category?.isEmpty == true
-        }
-    }
-
     private var otherExperiments: [Experiment] {
         experiments.filter { exp in
-            guard let category = exp.category?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !category.isEmpty else {
-                return false
-            }
-            return category == "Other"
+            let category = exp.category?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return category == nil || category?.isEmpty == true || category == "Other"
         }
     }
 
@@ -35,9 +25,6 @@ struct StorageBoxesView: View {
         // Add "Other"
         categories.append("Other")
 
-        // Add "Uncategorized"
-        categories.append("Uncategorized")
-
         return categories
     }
 
@@ -50,9 +37,6 @@ struct StorageBoxesView: View {
 
             if category == "Other" {
                 exps = otherExperiments
-                customNames = []
-            } else if category == "Uncategorized" {
-                exps = uncategorizedExperiments
                 customNames = []
             } else {
                 // Seed category
@@ -67,13 +51,12 @@ struct StorageBoxesView: View {
         }
 
         let coreBoxes = boxes
-            .filter { $0.category != "Other" && $0.category != "Uncategorized" }
+            .filter { $0.category != "Other" }
             .sorted {
                 $0.category.localizedCaseInsensitiveCompare($1.category) == .orderedAscending
             }
         let otherBox = boxes.first { $0.category == "Other" }
-        let uncategorizedBox = boxes.first { $0.category == "Uncategorized" }
-        return coreBoxes + [otherBox, uncategorizedBox].compactMap { $0 }
+        return coreBoxes + [otherBox].compactMap { $0 }
     }
 
     var body: some View {
@@ -131,7 +114,7 @@ struct StorageBoxTile: View {
                 // Box icon
                 Image(systemName: box.isEmpty ? "shippingbox" : "shippingbox.fill")
                     .font(.title2)
-                    .foregroundColor(box.isEmpty ? Color.gray.opacity(0.24) : Color.blue.opacity(0.62))
+                    .foregroundColor(box.isEmpty ? Color.gray.opacity(0.24) : primaryLavenderButton.opacity(0.7))
                     .frame(maxWidth: .infinity, alignment: .center)
 
                 // Category name
