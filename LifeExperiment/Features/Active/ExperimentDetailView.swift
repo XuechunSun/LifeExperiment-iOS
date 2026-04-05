@@ -789,6 +789,12 @@ fileprivate struct ExperimentInsightSnapshotSection: View {
 
 private struct HistoryLogRow: View {
     let log: DailyLog
+    @State private var showPhotoPreview = false
+
+    private var historyImage: UIImage? {
+        guard let path = log.photoLocalPath else { return nil }
+        return LocalPhotoStore.loadImage(fromRelativePath: path)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -814,6 +820,47 @@ private struct HistoryLogRow: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
+            }
+
+            if let image = historyImage {
+                Button {
+                    showPhotoPreview = true
+                } label: {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 56, height: 56)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showPhotoPreview) {
+                    NavigationStack {
+                        Color.black.opacity(0.98)
+                            .ignoresSafeArea()
+                            .overlay {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(20)
+                            }
+                            .toolbar {
+                                ToolbarItem(placement: .cancellationAction) {
+                                    Button("Done") {
+                                        showPhotoPreview = false
+                                    }
+                                    .foregroundColor(.white)
+                                }
+                            }
+                    }
+                }
+            } else if log.photoLocalPath != nil {
+                HStack(spacing: 8) {
+                    Image(systemName: "photo.slash")
+                        .font(.caption)
+                    Text("Photo unavailable")
+                        .font(.caption)
+                }
+                .foregroundColor(.secondary)
             }
         }
         .lightCardStyle(

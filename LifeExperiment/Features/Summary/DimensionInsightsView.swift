@@ -519,6 +519,14 @@ struct DimensionInsightsView: View {
         }
     }
 
+    private var hasGrowthEligibleExperiments: Bool {
+        experiments.contains { exp in
+            (exp.status == .active || exp.status == .completed) &&
+            exp.impact != nil &&
+            !validLogDays(for: exp).isEmpty
+        }
+    }
+
     // MARK: - Growth Calculation (Accumulated Days)
 
     private var dimensionDays: [Dimension: Int] {
@@ -577,7 +585,18 @@ struct DimensionInsightsView: View {
     }
 
     private var totalLoggedDays: Int {
-        sortedDimensionsByDays.reduce(0) { $0 + $1.1 }
+        uniqueGrowthLoggedDays.count
+    }
+
+    private var uniqueGrowthLoggedDays: Set<Date> {
+        experiments.reduce(into: Set<Date>()) { result, experiment in
+            guard (experiment.status == .active || experiment.status == .completed),
+                  experiment.impact != nil,
+                  !validLogDays(for: experiment).isEmpty else {
+                return
+            }
+            result.formUnion(validLogDays(for: experiment))
+        }
     }
 
     private var maxDaysInGrowth: Int {
@@ -675,7 +694,7 @@ struct DimensionInsightsView: View {
                 Text(selectedDimensionForInfo?.subtitle ?? selectedDimensionForInfo?.blurb ?? "")
             }
 
-            if hasEligibleExperiments && !sortedDimensionsByDays.isEmpty {
+            if hasGrowthEligibleExperiments && !sortedDimensionsByDays.isEmpty {
                 SectionBlock(
                     title: "Your Growth",
                     subtitle: "Where your time and attention have been landing.",
