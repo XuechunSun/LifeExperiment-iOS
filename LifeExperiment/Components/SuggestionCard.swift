@@ -37,6 +37,13 @@ struct SuggestionCard: View {
             }
 
             Spacer()
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary.opacity(0.72))
+                    .padding(.top, 2)
+            }
         }
         //.padding(14)
         .padding(.horizontal, 14)
@@ -118,5 +125,9 @@ struct SuggestionCard: View {
         case .createSuggestion:
             return .primary.opacity(0.72)
         }
+    }
+
+    private var showsChevron: Bool {
+        style == .homeSuggestion
     }
 }

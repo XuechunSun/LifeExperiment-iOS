@@ -7,6 +7,10 @@ struct StorageBoxesView: View {
     let seedCatalog: SeedCatalog?
     let onUpdate: (Experiment) -> Void
 
+    private var isNewUser: Bool {
+        ExperimentDetailView.shouldShowFirstLogGuidance(for: experiments)
+    }
+
     private var otherExperiments: [Experiment] {
         experiments.filter { exp in
             let category = exp.category?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -62,7 +66,7 @@ struct StorageBoxesView: View {
     var body: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: DSSpacing.md)], spacing: DSSpacing.md) {
             ForEach(categoryBoxes) { box in
-                StorageBoxTile(box: box, onUpdate: onUpdate)
+                StorageBoxTile(box: box, isNewUser: isNewUser, onUpdate: onUpdate)
             }
         }
     }
@@ -94,6 +98,7 @@ struct CategoryBox: Identifiable {
 
 struct StorageBoxTile: View {
     let box: CategoryBox
+    let isNewUser: Bool
     let onUpdate: (Experiment) -> Void
     @State private var showExperimentsList: Bool = false
 
@@ -182,7 +187,11 @@ struct StorageBoxTile: View {
                                     subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
                                     surfaceStyle: .browse,
                                     contentPadding: DSSpacing.md,
-                                    destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)
+                                    destination: ExperimentDetailView(
+                                        experiment: experiment,
+                                        isNewUser: isNewUser,
+                                        onUpdate: onUpdate
+                                    )
                                 ) {
                                     Image(systemName: "chevron.right")
                                         .font(DSText.caption)

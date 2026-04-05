@@ -3,6 +3,7 @@ import PhotosUI
 import UIKit
 
 struct ExperimentDetailView: View {
+    let isNewUser: Bool
     let onUpdate: (Experiment) -> Void
 
     @State private var localExperiment: Experiment
@@ -28,7 +29,8 @@ struct ExperimentDetailView: View {
     @State private var draftWhatHappened: String = ""
     @State private var draftWhatWillIDoDifferently: String = ""
 
-    init(experiment: Experiment, onUpdate: @escaping (Experiment) -> Void) {
+    init(experiment: Experiment, isNewUser: Bool = false, onUpdate: @escaping (Experiment) -> Void) {
+        self.isNewUser = isNewUser
         self.onUpdate = onUpdate
         _localExperiment = State(initialValue: experiment)
 
@@ -91,9 +93,16 @@ struct ExperimentDetailView: View {
 
     private var todaySuggestion: (title: String, subtitle: String, icon: String)? {
         if draftMood == nil {
+            if isNewUser {
+                return (
+                    "Start with how today felt.",
+                    "Your first note can be simple.",
+                    "🌿"
+                )
+            }
             return (
-                "Start with a quick mood check-in",
-                "One tap is enough to mark how today has felt so far.",
+                "Start with a quick check-in",
+                "A simple mood check can be enough to mark how today feels.",
                 "🌿"
             )
         }
@@ -127,6 +136,12 @@ struct ExperimentDetailView: View {
             "A quick check-in is enough to keep this experiment in motion.",
             "🌱"
         )
+    }
+
+    static func shouldShowFirstLogGuidance(for experiments: [Experiment]) -> Bool {
+        !experiments.contains { experiment in
+            !experiment.logs.isEmpty || experiment.review != nil || experiment.completedAt != nil
+        }
     }
 
     var body: some View {

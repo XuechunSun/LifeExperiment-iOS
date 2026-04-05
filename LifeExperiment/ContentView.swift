@@ -543,8 +543,13 @@ struct ContentView: View {
     private func routeDestination(route: Route, path: Binding<[Route]>) -> some View {
         switch route {
         case .experiment(let id):
-            if let experiment = getExperiments().first(where: { $0.id == id }) {
-                ExperimentDetailView(experiment: experiment, onUpdate: updateExperiment)
+            let experiments = getExperiments()
+            if let experiment = experiments.first(where: { $0.id == id }) {
+                ExperimentDetailView(
+                    experiment: experiment,
+                    isNewUser: ExperimentDetailView.shouldShowFirstLogGuidance(for: experiments),
+                    onUpdate: updateExperiment
+                )
             } else {
                 Text("Experiment not found")
                     .foregroundColor(.secondary)

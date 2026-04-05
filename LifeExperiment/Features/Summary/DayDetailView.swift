@@ -8,6 +8,9 @@ struct DayDetailView: View {
     let onUpdate: (Experiment) -> Void
 
     private let rowSpacing: CGFloat = DSSpacing.md
+    private var isNewUser: Bool {
+        ExperimentDetailView.shouldShowFirstLogGuidance(for: experiments)
+    }
 
     private var dayLabel: String {
         let formatter = DateFormatter()
@@ -86,7 +89,11 @@ struct DayDetailView: View {
                                     subtitle: activeSubtitle(for: experiment),
                                     surfaceStyle: .activePrimary,
                                     contentPadding: DSSpacing.md,
-                                    destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)
+                                    destination: ExperimentDetailView(
+                                        experiment: experiment,
+                                        isNewUser: isNewUser,
+                                        onUpdate: onUpdate
+                                    )
                                 ) {
                                     Image(systemName: "chevron.right")
                                         .font(DSText.caption)
@@ -121,7 +128,11 @@ struct DayDetailView: View {
                                     subtitle: completedSubtitle(for: experiment),
                                     surfaceStyle: .completed,
                                     contentPadding: DSSpacing.md,
-                                    destination: ExperimentDetailView(experiment: experiment, onUpdate: onUpdate)
+                                    destination: ExperimentDetailView(
+                                        experiment: experiment,
+                                        isNewUser: isNewUser,
+                                        onUpdate: onUpdate
+                                    )
                                 ) {
                                     Image(systemName: "chevron.right")
                                         .font(DSText.caption)
