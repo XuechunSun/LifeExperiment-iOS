@@ -727,6 +727,13 @@ struct ExperimentEditorView: View {
         guard let createPrefill else { return }
 
         title = createPrefill.title
+        if let impact = createPrefill.impact {
+            selectedImpact = impact
+            hasManuallyEditedImpact = true
+        } else {
+            selectedImpact = nil
+            hasManuallyEditedImpact = false
+        }
 
         // If the prefill category matches an existing seed category title, reuse it.
         // Otherwise leave category unset for the user to choose safely.

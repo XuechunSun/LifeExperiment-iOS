@@ -14,9 +14,11 @@ struct DimensionChip: View {
                     .foregroundColor(.yellow)
             }
             Text(dimension.title)
-                .font(.subheadline)
-                .fontWeight(isPrimary ? .semibold : .regular)
+                .font(.system(size: 14, weight: .medium))
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
         .background(isPrimary ? Color.blue.opacity(0.14) : Color(.systemGray6))
@@ -26,6 +28,39 @@ struct DimensionChip: View {
         )
         .foregroundColor(isPrimary ? .blue : .primary)
         .cornerRadius(16)
+    }
+}
+
+private struct ImpactChipGroupView: View {
+    let impact: ExperimentImpact
+
+    private var chips: [(dimension: Dimension, isPrimary: Bool)] {
+        var values: [(Dimension, Bool)] = [(impact.primary, true)]
+        if let secondary = impact.secondary {
+            values.append((secondary, false))
+        }
+        if let tertiary = impact.tertiary {
+            values.append((tertiary, false))
+        }
+        return values
+    }
+
+    var body: some View {
+        if chips.count <= 2 {
+            HStack(spacing: 8) {
+                ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
+                    DimensionChip(dimension: chip.dimension, isPrimary: chip.isPrimary)
+                }
+            }
+        } else {
+            LazyVGrid(columns: [
+                GridItem(.adaptive(minimum: 100), spacing: 8)
+            ], alignment: .leading, spacing: 8) {
+                ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
+                    DimensionChip(dimension: chip.dimension, isPrimary: chip.isPrimary)
+                }
+            }
+        }
     }
 }
 
@@ -54,19 +89,7 @@ struct DefaultDimensionsCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            LazyVGrid(columns: [
-                GridItem(.adaptive(minimum: 100), spacing: 8)
-            ], alignment: .leading, spacing: 8) {
-                DimensionChip(dimension: impact.primary, isPrimary: true)
-
-                if let secondary = impact.secondary {
-                    DimensionChip(dimension: secondary, isPrimary: false)
-                }
-
-                if let tertiary = impact.tertiary {
-                    DimensionChip(dimension: tertiary, isPrimary: false)
-                }
-            }
+            ImpactChipGroupView(impact: impact)
         }
         .createSupportSurface(contentPadding: 16)
     }
@@ -99,19 +122,7 @@ struct CustomDimensionSelectionCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                LazyVGrid(columns: [
-                    GridItem(.adaptive(minimum: 100), spacing: 8)
-                ], alignment: .leading, spacing: 8) {
-                    DimensionChip(dimension: impact.primary, isPrimary: true)
-
-                    if let secondary = impact.secondary {
-                        DimensionChip(dimension: secondary, isPrimary: false)
-                    }
-
-                    if let tertiary = impact.tertiary {
-                        DimensionChip(dimension: tertiary, isPrimary: false)
-                    }
-                }
+                ImpactChipGroupView(impact: impact)
             } else {
                 // Show "Choose dimensions" prompt
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {

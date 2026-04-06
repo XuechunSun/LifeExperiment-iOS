@@ -36,6 +36,7 @@ enum PersonalizedSuggestionEngine {
                 category: "Connection",
                 prefillCategoryTitle: "Life List",
                 prefillSubcategoryTitle: "New Experiences",
+                impact: ExperimentImpact(primary: .connection),
                 effort: .low,
                 mode: .social,
                 tags: ["personalized", "connection"]
@@ -47,6 +48,7 @@ enum PersonalizedSuggestionEngine {
                 category: "Self-Understanding",
                 prefillCategoryTitle: "Life Reset",
                 prefillSubcategoryTitle: "Self Reflection",
+                impact: ExperimentImpact(primary: .self_understanding),
                 effort: .low,
                 mode: .reflective,
                 tags: ["personalized", "self"]
@@ -58,6 +60,7 @@ enum PersonalizedSuggestionEngine {
                 category: "Emotional Awareness",
                 prefillCategoryTitle: "Emotional Care",
                 prefillSubcategoryTitle: "Emotional Awareness",
+                impact: ExperimentImpact(primary: .emotion_awareness),
                 effort: .low,
                 mode: .reflective,
                 tags: ["personalized", "emotional"]
@@ -69,6 +72,7 @@ enum PersonalizedSuggestionEngine {
                 category: "Expression & Creativity",
                 prefillCategoryTitle: "Life List",
                 prefillSubcategoryTitle: "Creative Expression",
+                impact: ExperimentImpact(primary: .expression_creativity),
                 effort: .low,
                 mode: .reflective,
                 tags: ["personalized", "expression"]
@@ -80,6 +84,7 @@ enum PersonalizedSuggestionEngine {
                 category: "Body & Energy",
                 prefillCategoryTitle: "Well-being Habits",
                 prefillSubcategoryTitle: "Movement",
+                impact: ExperimentImpact(primary: .body_energy),
                 effort: .low,
                 mode: .starter,
                 tags: ["personalized", "body"]
@@ -91,6 +96,7 @@ enum PersonalizedSuggestionEngine {
                 category: "Execution",
                 prefillCategoryTitle: "30-Day Challenge",
                 prefillSubcategoryTitle: "Daily Discipline",
+                impact: ExperimentImpact(primary: .execution),
                 effort: .low,
                 mode: .starter,
                 tags: ["personalized", "execution"]
@@ -102,6 +108,7 @@ enum PersonalizedSuggestionEngine {
                 category: "Focus & Flow",
                 prefillCategoryTitle: "30-Day Challenge",
                 prefillSubcategoryTitle: "Skill Sprint",
+                impact: ExperimentImpact(primary: .focus_flow),
                 effort: .low,
                 mode: .reset,
                 tags: ["personalized", "focus"]

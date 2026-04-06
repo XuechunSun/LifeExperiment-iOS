@@ -5,4 +5,5 @@ struct ExperimentEditorPrefill: Identifiable {
     let title: String
     let categoryTitle: String?
     let subcategoryTitle: String?
+    let impact: ExperimentImpact?
 }

@@ -41,7 +41,7 @@ struct GuideSuggestionsSection: View {
                     } label: {
                         SuggestionCard(
                             title: suggestion.title,
-                            subtitle: suggestionMetadata(for: suggestion),
+                            subtitle: suggestion.impactDisplayText,
                             icon: suggestionEmoji(for: suggestion),
                             style: .homeSuggestion
                         )
@@ -59,23 +59,6 @@ struct GuideSuggestionsSection: View {
             .foregroundColor(.blue)
             .buttonStyle(.plain)
             .padding(.top, DSSpacing.xxs)
-        }
-    }
-
-    private func suggestionMetadata(for suggestion: ExperimentSuggestion) -> String {
-        "\(suggestion.category) · \(modeLabel(for: suggestion.mode))"
-    }
-
-    private func modeLabel(for mode: SuggestionMode) -> String {
-        switch mode {
-        case .starter:
-            return "Light"
-        case .reflective:
-            return "Reflective"
-        case .social:
-            return "Social"
-        case .reset:
-            return "Reset"
         }
     }
 

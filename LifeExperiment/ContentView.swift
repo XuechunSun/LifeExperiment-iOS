@@ -300,7 +300,8 @@ struct ContentView: View {
                         createPrefill = ExperimentEditorPrefill(
                             title: suggestion.title,
                             categoryTitle: suggestion.prefillCategoryTitle,
-                            subcategoryTitle: suggestion.prefillSubcategoryTitle
+                            subcategoryTitle: suggestion.prefillSubcategoryTitle,
+                            impact: suggestion.impact
                         )
                     },
                     onSelectExperiment: { experiment in

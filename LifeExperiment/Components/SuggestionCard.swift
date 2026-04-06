@@ -33,6 +33,9 @@ struct SuggestionCard: View {
                     Text(subtitle)
                         .font(.caption)
                         .foregroundColor(subtitleColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .allowsTightening(true)
                 }
             }
 

@@ -26,7 +26,7 @@ struct HomePersonalizedSuggestionSection: View {
             } label: {
                 SuggestionCard(
                     title: suggestion.title,
-                    subtitle: suggestion.category,
+                    subtitle: suggestion.impactDisplayText,
                     icon: PersonalizedSuggestionFormatter.emoji(for: signal.weakestDimension),
                     style: .homeSuggestion
                 )

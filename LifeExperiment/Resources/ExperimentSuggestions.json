@@ -5,6 +5,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Movement",
+      "impact": { "primary": "body_energy", "secondary": "focus_flow" },
       "effort": "low",
       "mode": "reset",
       "tags": ["offline", "mental_space", "starter"]
@@ -15,6 +16,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Nutrition Awareness",
+      "impact": { "primary": "body_energy", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "starter",
       "tags": ["body", "small_step"]
@@ -25,6 +27,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Sleep & Rest",
+      "impact": { "primary": "body_energy", "secondary": "execution" },
       "effort": "low",
       "mode": "reset",
       "tags": ["rest", "energy"]
@@ -35,6 +38,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Movement",
+      "impact": { "primary": "body_energy", "secondary": "execution" },
       "effort": "low",
       "mode": "starter",
       "tags": ["movement", "energy"]
@@ -45,6 +49,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Movement",
+      "impact": { "primary": "body_energy", "secondary": "self_understanding" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["energy", "pattern"]
@@ -55,6 +60,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Nutrition Awareness",
+      "impact": { "primary": "body_energy", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "starter",
       "tags": ["body", "awareness"]
@@ -65,6 +71,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Movement",
+      "impact": { "primary": "body_energy", "secondary": "execution" },
       "effort": "low",
       "mode": "reset",
       "tags": ["morning", "light", "starter"]
@@ -75,6 +82,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Sleep & Rest",
+      "impact": { "primary": "body_energy", "secondary": "focus_flow" },
       "effort": "low",
       "mode": "reset",
       "tags": ["rest", "offline"]
@@ -85,6 +93,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Movement",
+      "impact": { "primary": "body_energy", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["body", "check_in"]
@@ -95,6 +104,7 @@
       "category": "Body & Energy",
       "prefillCategoryTitle": "Well-being Habits",
       "prefillSubcategoryTitle": "Movement",
+      "impact": { "primary": "body_energy", "secondary": "execution" },
       "effort": "low",
       "mode": "reset",
       "tags": ["movement", "reset"]
@@ -106,6 +116,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "execution" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["awareness", "reflection"]
@@ -116,6 +127,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["needs", "awareness"]
@@ -126,6 +138,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "execution" },
       "effort": "medium",
       "mode": "starter",
       "tags": ["pattern", "exploration"]
@@ -136,6 +149,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "connection" },
       "effort": "medium",
       "mode": "reflective",
       "tags": ["boundary", "agency"]
@@ -146,6 +160,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "emotion_awareness" },
       "effort": "medium",
       "mode": "starter",
       "tags": ["novelty", "exploration"]
@@ -156,6 +171,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "body_energy" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["honesty", "reflection"]
@@ -166,6 +182,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "body_energy" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["energy", "pattern"]
@@ -176,6 +193,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "execution" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["pattern", "lightness"]
@@ -186,6 +204,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding", "secondary": "emotion_awareness" },
       "effort": "medium",
       "mode": "starter",
       "tags": ["identity", "exploration"]
@@ -196,6 +215,7 @@
       "category": "Self Understanding",
       "prefillCategoryTitle": "Life Reset",
       "prefillSubcategoryTitle": "Self Reflection",
+      "impact": { "primary": "self_understanding" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["resistance", "awareness"]
@@ -207,6 +227,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "social",
       "tags": ["connection", "outreach"]
@@ -217,6 +238,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "social",
       "tags": ["gratitude", "connection"]
@@ -227,6 +249,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "self_understanding" },
       "effort": "medium",
       "mode": "social",
       "tags": ["conversation", "closeness"]
@@ -237,6 +260,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "execution" },
       "effort": "medium",
       "mode": "social",
       "tags": ["connection", "initiative"]
@@ -247,6 +271,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "social",
       "tags": ["presence", "conversation"]
@@ -257,6 +282,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "social",
       "tags": ["family", "connection"]
@@ -267,6 +293,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "social",
       "tags": ["sharing", "closeness"]
@@ -277,6 +304,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "social",
       "tags": ["gratitude", "warmth"]
@@ -287,6 +315,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "emotion_awareness" },
       "effort": "medium",
       "mode": "social",
       "tags": ["presence", "time"]
@@ -297,6 +326,7 @@
       "category": "Connection",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "New Experiences",
+      "impact": { "primary": "connection", "secondary": "execution" },
       "effort": "medium",
       "mode": "social",
       "tags": ["initiative", "agency"]
@@ -308,6 +338,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "self_understanding" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["writing", "expression"]
@@ -318,6 +349,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "starter",
       "tags": ["creative", "noticing"]
@@ -328,6 +360,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["music", "mood"]
@@ -338,6 +371,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "starter",
       "tags": ["play", "creative"]
@@ -348,6 +382,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "self_understanding" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["words", "reflection"]
@@ -358,6 +393,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["voice", "expression"]
@@ -368,6 +404,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "starter",
       "tags": ["mood", "visual"]
@@ -378,6 +415,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "self_understanding" },
       "effort": "low",
       "mode": "starter",
       "tags": ["play", "writing"]
@@ -388,6 +426,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "emotion_awareness" },
       "effort": "low",
       "mode": "reflective",
       "tags": ["color", "mood"]
@@ -398,6 +437,7 @@
       "category": "Expression & Creativity",
       "prefillCategoryTitle": "Life List",
       "prefillSubcategoryTitle": "Creative Expression",
+      "impact": { "primary": "expression_creativity", "secondary": "focus_flow" },
       "effort": "medium",
       "mode": "starter",
       "tags": ["creative", "self_expression"]
