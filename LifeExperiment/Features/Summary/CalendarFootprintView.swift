@@ -57,7 +57,7 @@ struct CalendarFootprintView: View {
 
     // Find the most recent activity date across all experiments (for reference)
     private var referenceDate: Date {
-        activityDateRange.latest
+        max(activityDateRange.latest, Date())
     }
 
     // Calculate the Monday of the week for a given date
@@ -81,11 +81,8 @@ struct CalendarFootprintView: View {
         let referenceMonday = monday(for: referenceDate)
         let earliestMonday = monday(for: activityDateRange.earliest)
         let today = Date()
-        let latestActivityMonday = monday(for: activityDateRange.latest)
         let todayMonday = monday(for: today)
-
-        // Do not allow beyond today's week
-        let latestMonday = latestActivityMonday < todayMonday ? latestActivityMonday : todayMonday
+        let latestMonday = todayMonday
 
         let minWeekOffset = weeksBetween(from: referenceMonday, to: earliestMonday)
         let maxWeekOffset = weeksBetween(from: referenceMonday, to: latestMonday)
@@ -220,6 +217,7 @@ struct CalendarFootprintView: View {
 struct CalendarDayCell: View {
     let day: Date
     let experiments: [Experiment]
+    private let calendar = Calendar.current
 
     private var weekdayLabel: String {
         let formatter = DateFormatter()
@@ -275,6 +273,10 @@ struct CalendarDayCell: View {
         return activeIDs.union(completedIDs).count
     }
 
+    private var isToday: Bool {
+        calendar.isDateInToday(day)
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             // Weekday
@@ -286,6 +288,7 @@ struct CalendarDayCell: View {
             Text(dateNumber)
                 .font(.caption)
                 .fontWeight(.medium)
+                .foregroundColor(.primary)
 
             // Status icons row
             HStack(spacing: 2) {
@@ -322,7 +325,11 @@ struct CalendarDayCell: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .background(Color(.systemGray6))
+        .background(isToday ? Color.indigo.opacity(0.08) : Color(.systemGray6))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isToday ? Color.indigo.opacity(0.7) : Color.clear, lineWidth: 1.8)
+        )
         .cornerRadius(8)
     }
 }

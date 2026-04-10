@@ -621,6 +621,7 @@ struct ExperimentEditorView: View {
                         dismiss()
                     }
                     .disabled(isCreateActionDisabled)
+                    .tint(primaryLavenderButton)
                 }
             }
             .onAppear {

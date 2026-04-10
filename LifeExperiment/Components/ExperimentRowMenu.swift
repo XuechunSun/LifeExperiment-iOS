@@ -38,8 +38,9 @@ struct ExperimentRowMenu: View {
         } label: {
             Image(systemName: "ellipsis")
                 .foregroundStyle(.secondary)
+                .frame(width: 44, height: 44, alignment: .center)
                 .contentShape(Rectangle())
-                .padding(.leading, 8)
+                .padding(.leading, 4)
         }
     }
 }

@@ -130,7 +130,32 @@ struct ProfileView: View {
                             Toggle("", isOn: preferences.imageLoggingEnabledBinding)
                                 .labelsHidden()
                         }
+                        .padding(.vertical, 12)
+
+                        Divider()
+
+                        NavigationLink(value: Route.completedMore) {
+                            HStack(alignment: .top, spacing: DSSpacing.md) {
+                                VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                                    Text("Completed Experiments")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+
+                                    Text("Browse experiments you’ve already finished")
+                                        .lifeCaption()
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 2)
+                            }
                             .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .lightCardStyle(
                         cornerRadius: preferences.uiStyle.cardCornerRadius,

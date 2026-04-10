@@ -8,7 +8,12 @@ struct RecentEventBuilder {
 
         var events: [RecentEvent] = []
 
-        // 1. Consistency
+        // 1. Milestones
+        if let milestoneEvent = milestoneEvent(experiments: experiments, today: todayStart) {
+            events.append(milestoneEvent)
+        }
+
+        // 2. Consistency
         let streak = calculateLogStreak(experiments: experiments, today: todayStart)
         if streak >= 2 {
             events.append(
@@ -20,7 +25,7 @@ struct RecentEventBuilder {
             )
         }
 
-        // 2. Exploration
+        // 3. Exploration
         if events.count < 2 {
             if let category = firstTimeCategoryLoggedToday(experiments: experiments, today: todayStart) {
                 events.append(
@@ -33,7 +38,7 @@ struct RecentEventBuilder {
             }
         }
 
-        // 3. Growth
+        // 4. Growth
         if events.count < 2 {
             let yesterday = calendar.date(byAdding: .day, value: -1, to: todayStart)!
             if hasLog(on: todayStart, experiments: experiments) && !hasLog(on: yesterday, experiments: experiments) {
@@ -47,7 +52,7 @@ struct RecentEventBuilder {
             }
         }
 
-        // 4. Awareness
+        // 5. Awareness
         if events.count < 2 {
             let moodLogCount = moodLogCountThisWeek(experiments: experiments, today: todayStart)
             if moodLogCount >= 3 {
@@ -73,6 +78,62 @@ struct RecentEventBuilder {
                 calendar.isDate(log.date, inSameDayAs: day)
             }
         }
+    }
+
+    private static func milestoneEvent(experiments: [Experiment], today: Date) -> RecentEvent? {
+        let calendar = Calendar.current
+
+        guard let anchorDate = milestoneAnchorDate(experiments: experiments, calendar: calendar) else {
+            return nil
+        }
+
+        let daysSinceAnchor = calendar.dateComponents([.day], from: anchorDate, to: today).day ?? -1
+
+        switch daysSinceAnchor {
+        case 0:
+            return RecentEvent(
+                iconSystemName: "heart.fill",
+                title: "Your first day in Life Experiment",
+                subtitle: "A small beginning counts"
+            )
+        case 6:
+            return RecentEvent(
+                iconSystemName: "sparkles",
+                title: "7 days with Life Experiment",
+                subtitle: "You’ve stayed with it"
+            )
+        case 29:
+            return RecentEvent(
+                iconSystemName: "sparkles",
+                title: "30 days with Life Experiment",
+                subtitle: "Small steps add up"
+            )
+        default:
+            return nil
+        }
+    }
+
+    private static func milestoneAnchorDate(experiments: [Experiment], calendar: Calendar) -> Date? {
+        let earliestValidLogDate = experiments
+            .flatMap(\.logs)
+            .compactMap { log -> Date? in
+                guard isValidMilestoneLog(log) else { return nil }
+                return calendar.startOfDay(for: log.date)
+            }
+            .min()
+
+        if let earliestValidLogDate {
+            return earliestValidLogDate
+        }
+
+        return experiments
+            .map { calendar.startOfDay(for: $0.createdAt) }
+            .min()
+    }
+
+    private static func isValidMilestoneLog(_ log: DailyLog) -> Bool {
+        let trimmedNote = log.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedNote.isEmpty || log.mood != nil
     }
 
     private static func calculateLogStreak(experiments: [Experiment], today: Date) -> Int {

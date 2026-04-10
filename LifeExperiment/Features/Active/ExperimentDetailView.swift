@@ -223,6 +223,14 @@ struct ExperimentDetailView: View {
                     .foregroundColor(.secondary)
 
                 if isCompleted {
+                    Label("Completed", systemImage: "checkmark.seal.fill")
+                        .font(.caption)
+                        .foregroundColor(primaryLavenderButton)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(primaryLavenderButton.opacity(0.12))
+                        .clipShape(Capsule())
+
                     Text("This experiment is completed. Logging is disabled.")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -373,6 +381,7 @@ struct ExperimentDetailView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
+                        .tint(primaryLavenderButton)
                     }
 
                     Button {
@@ -489,6 +498,7 @@ struct ExperimentDetailView: View {
 
                                 Button("Save Review") { saveReview() }
                                     .buttonStyle(.borderedProminent)
+                                    .tint(primaryLavenderButton)
                             }
                         }
                     }
@@ -578,6 +588,7 @@ struct ExperimentDetailView: View {
         if isCompleted {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Reopen") { showReopenConfirm = true }
+                    .tint(primaryLavenderButton)
             }
         }
     }

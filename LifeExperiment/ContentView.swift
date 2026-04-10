@@ -53,6 +53,8 @@ struct ContentView: View {
     @State private var experimentToDelete: Experiment?
     @State private var activeSheet: ActiveSheet?
     @State private var createPrefill: ExperimentEditorPrefill?
+    @State private var actionToastMessage: String?
+    @State private var isHandlingActiveSheetCommit = false
     
     // Seed catalog
     @State private var seedCatalog: SeedCatalog?
@@ -167,6 +169,40 @@ struct ContentView: View {
         selectedTab = .active
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             activePath.append(.experiment(experiment.id))
+        }
+    }
+
+    private func showActionToast(_ message: String) {
+        Haptics.success()
+        actionToastMessage = message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if actionToastMessage == message {
+                actionToastMessage = nil
+            }
+        }
+    }
+
+    private func handleRenameCommit(_ updated: Experiment) {
+        guard !isHandlingActiveSheetCommit else { return }
+        isHandlingActiveSheetCommit = true
+        updateExperiment(updated)
+        activeSheet = nil
+        showActionToast("Renamed")
+        DispatchQueue.main.async {
+            isHandlingActiveSheetCommit = false
+        }
+    }
+
+    private func handleDuplicateCommit(_ created: Experiment) {
+        guard !isHandlingActiveSheetCommit else { return }
+        isHandlingActiveSheetCommit = true
+        addExperiment(created)
+        activeSheet = nil
+        showActionToast("Duplicated")
+        selectedTab = .active
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            activePath = [.experiment(created.id)]
+            isHandlingActiveSheetCommit = false
         }
     }
 
@@ -423,13 +459,11 @@ struct ContentView: View {
             switch sheet {
             case .rename(let experiment):
                 ExperimentEditorView(seedCatalog: seedCatalog, mode: .rename(existing: experiment)) { updated in
-                    updateExperiment(updated)
-                    activeSheet = nil
+                    handleRenameCommit(updated)
                 }
             case .duplicate(let experiment):
                 ExperimentEditorView(seedCatalog: seedCatalog, mode: .duplicate(from: experiment)) { created in
-                    addExperiment(created)
-                    activeSheet = nil
+                    handleDuplicateCommit(created)
                 }
             }
         }
@@ -452,6 +486,18 @@ struct ContentView: View {
             }
         } message: { experiment in
             Text("All logs and data for \"\(experiment.title)\" " + S.experimentDeleteMessage)
+        }
+        .overlay(alignment: .top) {
+            if let actionToastMessage {
+                Text(actionToastMessage)
+                    .font(.caption)
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.top, 8)
+            }
         }
     }
     
@@ -551,6 +597,7 @@ struct ContentView: View {
                     isNewUser: ExperimentDetailView.shouldShowFirstLogGuidance(for: experiments),
                     onUpdate: updateExperiment
                 )
+                .id("\(experiment.id.uuidString)-\(experiment.updatedAt.timeIntervalSinceReferenceDate)")
             } else {
                 Text("Experiment not found")
                     .foregroundColor(.secondary)
