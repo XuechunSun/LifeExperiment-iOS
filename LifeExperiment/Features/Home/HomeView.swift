@@ -17,6 +17,8 @@ struct HomeView: View {
     let onDuplicateExperiment: (Experiment) -> Void
     let onDeleteExperiment: (Experiment) -> Void
 
+    @AppStorage("guideCopySession") private var guideCopySession: Int = 0
+
     private static let cachedSuggestions: [ExperimentSuggestion] = ExperimentSuggestionsLoader.load()
 
     // MARK: - State Determination
@@ -99,7 +101,7 @@ struct HomeView: View {
     }
 
     private var guideCopy: GuideCopy {
-        GuideCopyProvider.copy(for: homeGuideState)
+        GuideCopyProvider.copy(for: homeGuideState, sessionIndex: guideCopySession)
     }
 
     private var guideSuggestions: [ExperimentSuggestion] {
@@ -312,6 +314,9 @@ struct HomeView: View {
                 }
             }
             .padding()
+        }
+        .onAppear {
+            guideCopySession += 1
         }
     }
 
