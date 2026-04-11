@@ -57,7 +57,7 @@ struct CategorySection: View {
                             .foregroundColor(categoryDisplayText == "Select..." ? .secondary : .primary)
                         Spacer()
                         Image(systemName: "chevron.down")
-                            .font(.caption)
+                            .font(DSText.caption)
                             .foregroundColor(.secondary)
                     }
                     .contentShape(Rectangle())

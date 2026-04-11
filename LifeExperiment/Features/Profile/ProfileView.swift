@@ -57,17 +57,17 @@ struct ProfileView: View {
 
                     VStack(spacing: 6) {
                         Text(authDisplayName)
-                            .font(.title2)
+                            .font(DSText.title2)
                             .fontWeight(.semibold)
                             .multilineTextAlignment(.center)
 
                         Text(headerSubtitle)
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
 
                         Text(isSignedIn ? "Signed in" : "Using this device only")
-                            .font(.caption)
+                            .font(DSText.caption)
                             .foregroundColor(.secondary)
                     }
                 }
@@ -86,13 +86,13 @@ struct ProfileView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Your experience")
-                        .font(.headline)
+                        .font(DSText.headline)
 
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .top, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: DSSpacing.xxs) {
                                 Text("UI Style")
-                                    .font(.subheadline)
+                                    .font(DSText.subheadline)
                                     .fontWeight(.medium)
 
                                 Text("Choose how the app feels")
@@ -117,7 +117,7 @@ struct ProfileView: View {
                         HStack(alignment: .top, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: DSSpacing.xxs) {
                                 Text("Image logging")
-                                    .font(.subheadline)
+                                    .font(DSText.subheadline)
                                     .fontWeight(.medium)
 
                                 Text("Add photos to your daily logs")
@@ -138,7 +138,7 @@ struct ProfileView: View {
                             HStack(alignment: .top, spacing: DSSpacing.md) {
                                 VStack(alignment: .leading, spacing: DSSpacing.xxs) {
                                     Text("Completed Experiments")
-                                        .font(.subheadline)
+                                        .font(DSText.subheadline)
                                         .fontWeight(.medium)
 
                                     Text("Browse experiments you’ve already finished")
@@ -149,7 +149,7 @@ struct ProfileView: View {
                                 Spacer()
 
                                 Image(systemName: "chevron.right")
-                                    .font(.caption)
+                                    .font(DSText.caption)
                                     .foregroundColor(.secondary)
                                     .padding(.top, 2)
                             }
@@ -171,13 +171,13 @@ struct ProfileView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Data & System")
-                        .font(.headline)
+                        .font(DSText.headline)
 
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .top, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: DSSpacing.xxs) {
                                 Text("Cloud sync")
-                                    .font(.subheadline)
+                                    .font(DSText.subheadline)
                                     .fontWeight(.medium)
 
                                 Text("Coming soon")
@@ -234,7 +234,7 @@ struct ProfileView: View {
 #if DEBUG
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Debug")
-                        .font(.headline)
+                        .font(DSText.headline)
 
                     VStack(alignment: .leading, spacing: 0) {
                         Button(role: .destructive) {

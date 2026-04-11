@@ -118,7 +118,7 @@ struct StorageBoxTile: View {
             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 // Box icon
                 Image(systemName: box.isEmpty ? "shippingbox" : "shippingbox.fill")
-                    .font(.title2)
+                    .font(DSText.title2)
                     .foregroundColor(box.isEmpty ? Color.gray.opacity(0.24) : primaryLavenderButton.opacity(0.7))
                     .frame(maxWidth: .infinity, alignment: .center)
 
@@ -160,11 +160,11 @@ struct StorageBoxTile: View {
                             .foregroundColor(.gray.opacity(0.3))
 
                         Text("Empty Category")
-                            .font(.title2)
+                            .font(DSText.title2)
                             .fontWeight(.semibold)
 
                         Text("No experiments in \"\(box.category)\" yet.")
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     }

@@ -10,7 +10,7 @@ struct DimensionChip: View {
         HStack(spacing: 4) {
             if isPrimary {
                 Image(systemName: "star.fill")
-                    .font(.caption2)
+                    .font(DSText.caption2)
                     .foregroundColor(.yellow)
             }
             Text(dimension.title)
@@ -73,18 +73,18 @@ struct DefaultDimensionsCard: View {
             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("This experiment usually helps with")
-                        .font(.subheadline)
+                        .font(DSText.subheadline)
                         .foregroundColor(.secondary)
                     Spacer()
                     Button(action: onEdit) {
                         Text("Edit")
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.blue)
                     }
                 }
 
                 Text("Your primary dimension appears first, with supporting dimensions after it.")
-                    .font(.caption)
+                    .font(DSText.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -106,18 +106,18 @@ struct CustomDimensionSelectionCard: View {
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
                     HStack(alignment: .firstTextBaseline) {
                         Text("This experiment helps with")
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                         Spacer()
                         Button(action: onChoose) {
                             Text("Edit")
-                                .font(.subheadline)
+                                .font(DSText.subheadline)
                                 .foregroundColor(.blue)
                         }
                     }
 
                     Text("Choose the dimensions that feel most true right now. You can adjust them later.")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -127,12 +127,12 @@ struct CustomDimensionSelectionCard: View {
                 // Show "Choose dimensions" prompt
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
                     Text("What does this experiment help with most? (required)")
-                        .font(.subheadline)
+                        .font(DSText.subheadline)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Text("Start with the most relevant area first, then add any supporting ones.")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -155,7 +155,7 @@ struct CustomDimensionSelectionCard: View {
                     .buttonStyle(.plain)
 
                     Text("Don't overthink it — you can adjust later.")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
                 }
             }

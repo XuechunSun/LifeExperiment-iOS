@@ -33,7 +33,7 @@ struct CompletedListView: View {
                         .frame(height: 60)
 
                     Text(S.emptyNoCompletedExperiments)
-                        .font(.title2)
+                        .font(DSText.title2)
                         .fontWeight(.semibold)
 
                     Text(S.emptyNoCompletedSubtitle)

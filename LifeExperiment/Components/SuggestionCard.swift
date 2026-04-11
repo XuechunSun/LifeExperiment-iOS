@@ -24,14 +24,14 @@ struct SuggestionCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     .fontWeight(titleFontWeight)
                     .foregroundColor(titleColor)
                     .lineSpacing(2)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(subtitleColor)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
@@ -43,7 +43,7 @@ struct SuggestionCard: View {
 
             if showsChevron {
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(DSText.caption).fontWeight(.semibold)
                     .foregroundColor(.secondary.opacity(0.72))
                     .padding(.top, 2)
             }
@@ -115,9 +115,9 @@ struct SuggestionCard: View {
     private var iconFont: Font {
         switch style {
         case .homeSuggestion:
-            return .subheadline
+            return DSText.subheadline
         case .createSuggestion:
-            return .caption
+            return DSText.caption
         }
     }
 

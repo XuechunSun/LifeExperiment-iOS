@@ -43,7 +43,7 @@ struct ExperimentCardRow: View {
         HStack(spacing: DSSpacing.sm) {
             if let icon = leadingIcon {
                 Image(systemName: icon)
-                    .font(.title3)
+                    .font(DSText.title3)
                     .foregroundColor(.blue)
             }
 

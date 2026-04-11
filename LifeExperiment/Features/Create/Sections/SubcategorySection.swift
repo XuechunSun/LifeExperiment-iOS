@@ -40,7 +40,7 @@ struct SubcategorySection: View {
                     }
                     .buttonStyle(.plain)
                     .contentShape(Rectangle())
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     .foregroundStyle(.blue)
                 }
             }
@@ -128,7 +128,7 @@ struct SubcategorySection: View {
                                 .italic()
                             Spacer()
                             Image(systemName: "chevron.up.chevron.down")
-                                .font(.caption)
+                                .font(DSText.caption)
                                 .opacity(0.0)
                         }
                     }
@@ -144,7 +144,7 @@ struct SubcategorySection: View {
                 .foregroundColor(subcategoryDisplayText == "Select..." || subcategoryDisplayText == "Enter..." ? .secondary : .primary)
             Spacer()
             Image(systemName: "chevron.up.chevron.down")
-                .font(.subheadline)
+                .font(DSText.subheadline)
                 .foregroundColor(.primary)
         }
         .contentShape(Rectangle())
@@ -156,13 +156,13 @@ struct SubcategorySection: View {
     private var saveToggleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
             Toggle("Save to this category’s list", isOn: $saveCustomSubcategoryToList)
-                .font(.subheadline)
+                .font(DSText.subheadline)
             Text("Up to 5 saved")
-                .font(.caption2)
+                .font(DSText.caption2)
                 .foregroundColor(.secondary)
             if willReplaceOldestSavedIfAdded {
                 Text("Max 5 saved — saving this will replace the oldest.")
-                    .font(.caption2)
+                    .font(DSText.caption2)
                     .foregroundStyle(.secondary)
             }
         }
@@ -173,7 +173,7 @@ struct SubcategorySection: View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
             Text(hint)
-                .font(.caption)
+                .font(DSText.caption)
                 .foregroundColor(.secondary)
             TextField(placeholder, text: text)
                 .textFieldStyle(.plain)

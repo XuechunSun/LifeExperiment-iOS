@@ -407,11 +407,11 @@ struct ExperimentEditorView: View {
     private var createGuidanceCard: some View {
         HStack(alignment: .top, spacing: DSSpacing.sm) {
             Text("🌱")
-                .font(.title3)
+                .font(DSText.title3)
 
             VStack(alignment: .leading, spacing: DSSpacing.xs) {
                 Text("Not sure where to start?")
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
 
@@ -510,13 +510,13 @@ struct ExperimentEditorView: View {
                                     showDeleteSavedConfirm = true
                                 }
                                 .buttonStyle(.borderless)
-                                .font(.subheadline)
+                                .font(DSText.subheadline)
                             }
                         }
 
                         Section {
                             Text("Saved subcategories (max 5). Newest kept.")
-                                .font(.caption)
+                                .font(DSText.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -799,13 +799,13 @@ struct ExperimentEditorView: View {
 
         if !hasCategorySelected {
             Text("Please select a category.")
-                .font(.caption)
+                .font(DSText.caption)
                 .foregroundColor(.red)
                 .padding(.horizontal, 4)
                 .padding(.top, -8)
         } else if !hasRequiredSubcategorySelection {
             Text(isOtherCategory ? "Please enter a subcategory." : "Please select a subcategory.")
-                .font(.caption)
+                .font(DSText.caption)
                 .foregroundColor(.red)
                 .padding(.horizontal, 4)
                 .padding(.top, -8)
@@ -840,7 +840,7 @@ struct ExperimentEditorView: View {
                             }
                         }) {
                             Label("Revert", systemImage: "arrow.uturn.backward")
-                                .font(.caption)
+                                .font(DSText.caption)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
                                 .background(Color(.systemGray5))

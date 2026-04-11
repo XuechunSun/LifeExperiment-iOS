@@ -250,11 +250,11 @@ struct ContentView: View {
     var headerSection: some View {
         VStack(spacing: 8) {
             Text("Day \(dayCount)")
-                .font(.headline)
+                .font(DSText.headline)
                 .foregroundColor(.secondary)
 
             Text(message)
-                .font(.title)
+                .font(DSText.title)
         }
     }
 
@@ -264,7 +264,7 @@ struct ContentView: View {
             if !h.isEmpty {
                 VStack(spacing: 8) {
                     Text("Completed Days:")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
 
                     VStack(spacing: 4) {
@@ -272,7 +272,7 @@ struct ContentView: View {
                             Button(historyLabel(for: record)) {
                                 selectedDay = record
                             }
-                            .font(.caption)
+                            .font(DSText.caption)
                             .foregroundColor(.secondary)
                         }
                     }
@@ -490,7 +490,7 @@ struct ContentView: View {
         .overlay(alignment: .top) {
             if let actionToastMessage {
                 Text(actionToastMessage)
-                    .font(.caption)
+                    .font(DSText.caption)
                     .foregroundColor(.green)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
@@ -518,11 +518,11 @@ struct ContentView: View {
                         .foregroundColor(.secondary)
                     
                     Text(S.emptyNoActiveExperiments)
-                        .font(.title2)
+                        .font(DSText.title2)
                         .fontWeight(.semibold)
                     
                     Text(S.emptyNoActiveSubtitle)
-                        .font(.subheadline)
+                        .font(DSText.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)

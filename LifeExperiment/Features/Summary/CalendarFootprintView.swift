@@ -145,7 +145,7 @@ struct CalendarFootprintView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("This Week")
-                .font(.headline)
+                .font(DSText.headline)
 
             // Week navigation header
             HStack {
@@ -155,7 +155,7 @@ struct CalendarFootprintView: View {
                     weekOffset = max(weekOffset - 1, bounds.min)
                 }) {
                     Image(systemName: "chevron.left")
-                        .font(.subheadline)
+                        .font(DSText.subheadline)
                         .foregroundColor(weekOffset <= weekBounds.min ? .gray : .blue)
                         .frame(width: 30, height: 30)
                 }
@@ -165,7 +165,7 @@ struct CalendarFootprintView: View {
 
                 // Week label
                 Text(weekHeaderText)
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     .fontWeight(.medium)
 
                 Spacer()
@@ -174,7 +174,7 @@ struct CalendarFootprintView: View {
                 Button("Today") {
                     jumpToToday()
                 }
-                .font(.caption)
+                .font(DSText.caption)
                 .foregroundColor(.blue)
 
                 // Next week button
@@ -183,7 +183,7 @@ struct CalendarFootprintView: View {
                     weekOffset = min(weekOffset + 1, bounds.max)
                 }) {
                     Image(systemName: "chevron.right")
-                        .font(.subheadline)
+                        .font(DSText.subheadline)
                         .foregroundColor(weekOffset >= weekBounds.max ? .gray : .blue)
                         .frame(width: 30, height: 30)
                 }
@@ -204,9 +204,9 @@ struct CalendarFootprintView: View {
             NavigationLink(destination: FullCalendarView(loggedDates: loggedDates, experiments: experiments, onUpdate: onUpdate)) {
                 HStack {
                     Text("See full calendar")
-                        .font(.subheadline)
+                        .font(DSText.subheadline)
                     Image(systemName: "chevron.right")
-                        .font(.caption)
+                        .font(DSText.caption)
                 }
                 .foregroundColor(.blue)
             }
@@ -281,12 +281,12 @@ struct CalendarDayCell: View {
         VStack(spacing: 4) {
             // Weekday
             Text(weekdayLabel)
-                .font(.caption2)
+                .font(DSText.caption2)
                 .foregroundColor(.secondary)
 
             // Date number
             Text(dateNumber)
-                .font(.caption)
+                .font(DSText.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.primary)
 
@@ -294,12 +294,12 @@ struct CalendarDayCell: View {
             HStack(spacing: 2) {
                 if activeCount > 0 {
                     Image(systemName: "pencil.circle")
-                        .font(.caption2)
+                        .font(DSText.caption2)
                         .foregroundColor(.blue)
                 }
                 if completedCount > 0 {
                     Image(systemName: "checkmark.seal")
-                        .font(.caption2)
+                        .font(DSText.caption2)
                         .foregroundColor(.green)
                 }
             }

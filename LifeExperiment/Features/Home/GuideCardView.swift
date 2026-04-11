@@ -8,8 +8,7 @@ struct GuideCardView: View {
             VStack(alignment: .leading, spacing: DSSpacing.md) {
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
                     Text(copy.headline)
-                        .font(.title3)
-                        .fontWeight(.medium)
+                        .font(DSFont.accent(size: 24, relativeTo: .title3))
                         .foregroundColor(.white)
 
                     Text(copy.subheadline)
@@ -30,7 +29,7 @@ struct GuideSuggestionsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
             Text("Try something new today")
-                .font(.subheadline)
+                .font(DSText.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary.opacity(0.82))
 
@@ -55,7 +54,7 @@ struct GuideSuggestionsSection: View {
             Button("Explore more") {
                 onExploreMore()
             }
-            .font(.subheadline)
+            .font(DSText.subheadline)
             .foregroundColor(.blue)
             .buttonStyle(.plain)
             .padding(.top, DSSpacing.xxs)

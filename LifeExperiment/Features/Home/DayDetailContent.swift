@@ -20,17 +20,17 @@ struct DayDetailContent: View {
     var body: some View {
         VStack(spacing: 20) {
             Text("Day \(record.day)")
-                .font(.largeTitle)
+                .font(DSText.largeTitle)
                 .fontWeight(.bold)
 
             Text("You completed your experiment on this day! 🎉")
-                .font(.body)
+                .font(DSText.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("How did you feel today? (Optional)")
-                    .font(.headline)
+                    .font(DSText.headline)
 
                 MoodSelectorView(selectedMood: $draftMood)
             }
@@ -38,7 +38,7 @@ struct DayDetailContent: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Notes:")
-                    .font(.headline)
+                    .font(DSText.headline)
 
                 TextEditor(text: $draftNote)
                     .frame(minHeight: 150)
@@ -68,7 +68,7 @@ struct DayDetailContent: View {
 
             if showSavedToast {
                 Text("Saved ✓")
-                    .font(.caption)
+                    .font(DSText.caption)
                     .foregroundColor(.green)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)

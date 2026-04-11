@@ -201,7 +201,7 @@ struct ExperimentDetailView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
             Text(localExperiment.title)
-                .font(.title2)
+                .font(DSText.title2)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -219,12 +219,12 @@ struct ExperimentDetailView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Created \(localExperiment.createdAt, style: .date)")
-                    .font(.caption)
+                    .font(DSText.caption)
                     .foregroundColor(.secondary)
 
                 if isCompleted {
                     Label("Completed", systemImage: "checkmark.seal.fill")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(primaryLavenderButton)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
@@ -232,13 +232,13 @@ struct ExperimentDetailView: View {
                         .clipShape(Capsule())
 
                     Text("This experiment is completed. Logging is disabled.")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
                         .italic()
 
                     if let completedAt = localExperiment.completedAt {
                         Text("Completed on \(completedAt, style: .date)")
-                            .font(.caption)
+                            .font(DSText.caption)
                             .foregroundColor(.secondary)
                     }
                 }
@@ -288,14 +288,14 @@ struct ExperimentDetailView: View {
                 VStack(alignment: .leading, spacing: DSSpacing.md) {
                     VStack(alignment: .leading, spacing: DSSpacing.sm) {
                         Text("How do you feel today?")
-                            .font(.headline)
+                            .font(DSText.headline)
                         MoodSelectorView(selectedMood: $draftMood)
                     }
 
                     VStack(alignment: .leading, spacing: DSSpacing.sm) {
                         HStack(alignment: .firstTextBaseline) {
                             Text("Notes")
-                                .font(.headline)
+                                .font(DSText.headline)
 
                             Spacer()
 
@@ -306,7 +306,7 @@ struct ExperimentDetailView: View {
                                         Text("Add photo")
                                             .underline()
                                     }
-                                    .font(.subheadline)
+                                    .font(DSText.subheadline)
                                     .foregroundColor(.blue)
                                     .contentShape(Rectangle())
                                 }
@@ -336,14 +336,14 @@ struct ExperimentDetailView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                                 Text("Photo attached")
-                                    .font(.caption)
+                                    .font(DSText.caption)
                                     .foregroundColor(.secondary)
 
                                 Button("Remove") {
                                     draftPhotoLocalPath = nil
                                     photoMarkedForRemoval = true
                                 }
-                                .font(.caption)
+                                .font(DSText.caption)
                                 .foregroundColor(.secondary)
 
                                 Spacer()
@@ -356,7 +356,7 @@ struct ExperimentDetailView: View {
 
                         if let helperText = photoDraftHelperText {
                             Text(helperText)
-                                .font(.caption)
+                                .font(DSText.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.top, 2)
                         }
@@ -420,19 +420,19 @@ struct ExperimentDetailView: View {
                         VStack(alignment: .leading, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("What did I try?")
-                                    .font(.headline)
+                                    .font(DSText.headline)
                                 Text(review.whatDidITry)
                                     .foregroundColor(.secondary)
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("What happened?")
-                                    .font(.headline)
+                                    .font(DSText.headline)
                                 Text(review.whatHappened)
                                     .foregroundColor(.secondary)
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("What will I do differently next time?")
-                                    .font(.headline)
+                                    .font(DSText.headline)
                                 Text(review.whatWillIDoDifferently)
                                     .foregroundColor(.secondary)
                             }
@@ -442,9 +442,9 @@ struct ExperimentDetailView: View {
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("What did I try?")
-                                        .font(.headline)
+                                        .font(DSText.headline)
                                     Text("Optional")
-                                        .font(.caption)
+                                        .font(DSText.caption)
                                         .foregroundColor(.secondary)
                                         .italic()
                                 }
@@ -459,10 +459,10 @@ struct ExperimentDetailView: View {
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("What happened?")
-                                        .font(.headline)
+                                        .font(DSText.headline)
 
                                     Text("Optional")
-                                        .font(.caption)
+                                        .font(DSText.caption)
                                         .foregroundColor(.secondary)
                                         .italic()
                                 }
@@ -478,10 +478,10 @@ struct ExperimentDetailView: View {
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("What will I do differently next time?")
-                                        .font(.headline)
+                                        .font(DSText.headline)
 
                                     Text("Optional")
-                                        .font(.caption)
+                                        .font(DSText.caption)
                                         .foregroundColor(.secondary)
                                         .italic()
                                 }
@@ -539,7 +539,7 @@ struct ExperimentDetailView: View {
                     Button(showFullHistory ? "Show less" : "See earlier entries") {
                         showFullHistory.toggle()
                     }
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     .buttonStyle(.borderless)
                     .foregroundColor(.blue)
                     .padding(.top, 4)
@@ -550,7 +550,7 @@ struct ExperimentDetailView: View {
 
     private func detailTag(_ text: String) -> some View {
         Text(text)
-            .font(.caption)
+            .font(DSText.caption)
             .foregroundColor(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -562,7 +562,7 @@ struct ExperimentDetailView: View {
     private var toastOverlay: some View {
         if showSavedToast {
             Text("Saved ✓")
-                .font(.subheadline)
+                .font(DSText.subheadline)
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -572,7 +572,7 @@ struct ExperimentDetailView: View {
                 .padding(.top, 8)
         } else if showBlankReviewToast {
             Text("Saved. Review left blank.")
-                .font(.subheadline)
+                .font(DSText.subheadline)
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -750,17 +750,17 @@ fileprivate struct ExperimentInsightSnapshotSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
             Text("Insight Snapshot")
-                .font(.headline)
+                .font(DSText.headline)
                 .foregroundColor(.primary)
 
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(lines) { line in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(emoji(for: line.kind))
-                            .font(.caption)
+                            .font(DSText.caption)
 
                         Text(line.text)
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.primary.opacity(0.78))
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -811,7 +811,7 @@ private struct HistoryLogRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(log.date, style: .date)
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     .foregroundColor(.secondary)
 
                 Text(log.mood?.emoji ?? " ")
@@ -819,7 +819,7 @@ private struct HistoryLogRow: View {
 
                 if log.photoLocalPath != nil {
                     Image(systemName: "photo")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
                 }
 
@@ -828,7 +828,7 @@ private struct HistoryLogRow: View {
 
             if !log.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(log.note)
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
             }
@@ -867,9 +867,9 @@ private struct HistoryLogRow: View {
             } else if log.photoLocalPath != nil {
                 HStack(spacing: 8) {
                     Image(systemName: "photo.slash")
-                        .font(.caption)
+                        .font(DSText.caption)
                     Text("Photo unavailable")
-                        .font(.caption)
+                        .font(DSText.caption)
                 }
                 .foregroundColor(.secondary)
             }

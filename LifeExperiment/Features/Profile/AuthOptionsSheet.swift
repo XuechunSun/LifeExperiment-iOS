@@ -9,7 +9,7 @@ struct AuthOptionsSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Sign in (Coming soon)")
-                    .font(.title3)
+                    .font(DSText.title3)
                     .fontWeight(.semibold)
 
                 Text("Sign in will enable backup and sync across devices.")
@@ -26,7 +26,7 @@ struct AuthOptionsSheet: View {
                     Text("Sign in with Apple (Coming soon)")
                     Spacer()
                 }
-                .font(.subheadline)
+                .font(DSText.subheadline)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 10)
                 .padding(.horizontal, 12)

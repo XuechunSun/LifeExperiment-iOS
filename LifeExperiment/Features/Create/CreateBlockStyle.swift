@@ -3,7 +3,7 @@ import SwiftUI
 extension View {
     func createSectionLabelStyle() -> some View {
         self
-            .font(.caption)
+            .font(DSText.caption)
             .fontWeight(.semibold)
             .foregroundColor(.secondary.opacity(0.88))
             .kerning(0.3)

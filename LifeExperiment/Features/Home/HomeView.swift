@@ -211,7 +211,7 @@ struct HomeView: View {
 
                         HStack {
                             Text(continueRecordingTitle)
-                                .font(.headline)
+                                .font(DSText.headline)
                                 .foregroundColor(.primary)
 
                             Spacer()
@@ -221,7 +221,7 @@ struct HomeView: View {
                                     onShowActiveMore()
                                 }) {
                                     Text(S.actionMore)
-                                        .font(.subheadline)
+                                        .font(DSText.subheadline)
                                         .foregroundColor(.blue)
                                 }
                             }
@@ -255,7 +255,7 @@ struct HomeView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(S.sectionRecentEvents)
-                            .font(.headline)
+                            .font(DSText.headline)
                             .foregroundColor(.primary.opacity(0.72))
 
                         let eventsToShow = Array(recentEvents.prefix(2))
@@ -272,7 +272,7 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text(S.sectionCompleted)
-                                .font(.headline)
+                                .font(DSText.headline)
                                 .foregroundColor(.primary)
 
                             Spacer()
@@ -282,7 +282,7 @@ struct HomeView: View {
                                     onShowCompletedMore()
                                 }) {
                                     Text(S.actionMore)
-                                        .font(.subheadline)
+                                        .font(DSText.subheadline)
                                         .foregroundColor(.blue)
                                 }
                             }
@@ -328,19 +328,19 @@ struct HomeView: View {
         var body: some View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: event.iconSystemName)
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     .foregroundColor(.orange.opacity(0.8))
                     .padding(.top, 1)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(event.title)
-                        .font(.subheadline)
+                        .font(DSText.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
 
                     if let subtitle = event.subtitle {
                         Text(subtitle)
-                            .font(.caption)
+                            .font(DSText.caption)
                             .foregroundColor(.secondary)
                     }
                 }

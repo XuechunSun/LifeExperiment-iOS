@@ -86,7 +86,7 @@ struct FullCalendarView: View {
                             proxy.scrollTo(todayMonthStart, anchor: .top)
                         }
                     }
-                    .font(.subheadline)
+                    .font(DSText.subheadline)
                     Spacer()
                 }
                 .padding(.horizontal)
@@ -154,13 +154,13 @@ private struct MonthGrid: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(monthTitle)
-                .font(.subheadline)
+                .font(DSText.subheadline)
                 .fontWeight(.semibold)
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 8) {
                 ForEach(weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
-                        .font(.caption2)
+                        .font(DSText.caption2)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity)
                 }
@@ -178,7 +178,7 @@ private struct MonthGrid: View {
                     }) {
                         VStack(spacing: 4) {
                             Text("\(day)")
-                                .font(.subheadline)
+                                .font(DSText.subheadline)
                                 .fontWeight((isToday || isSelected) ? .semibold : .regular)
                                 .foregroundColor(isInDisplayedMonth ? .primary : .secondary.opacity(0.5))
 

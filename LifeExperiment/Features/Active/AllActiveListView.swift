@@ -74,7 +74,7 @@ struct AllActiveListView: View {
                         }
                     } label: {
                         Label("Sort", systemImage: "arrow.up.arrow.down")
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.blue)
                             .padding(.horizontal, DSSpacing.sm)
                             .padding(.vertical, DSSpacing.xs)
@@ -112,7 +112,7 @@ struct AllActiveListView: View {
                         }
                     } label: {
                         Text(isNotUpdatedExpanded ? "Show less" : "See more")
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.blue)
                     }
                     .buttonStyle(.plain)
@@ -164,7 +164,7 @@ struct AllActiveListView: View {
 
     private func sectionHeader(_ title: String, style: SectionSurfaceStyle) -> some View {
         Text(title)
-            .font(style == .primary ? DSText.section : .headline)
+            .font(style == .primary ? DSText.section : DSText.headline)
             .foregroundStyle(style == .primary ? .primary : Color.primary.opacity(0.72))
     }
 

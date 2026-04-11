@@ -193,23 +193,23 @@ struct SummaryView: View {
                             Image(systemName: "sparkles")
                                 .foregroundColor(.white.opacity(0.9))
                             Text("A small pattern")
-                                .font(.subheadline)
+                                .font(DSText.subheadline)
                                 .foregroundColor(.white.opacity(0.9))
                         }
 
                         if let insight = primaryHelpfulInsight {
                             Text("You felt better on days you did \(insight.title)")
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(DSFont.accent(size: 22, relativeTo: .title3))
                                 .foregroundColor(.white)
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)
 
                             Text("You've shown up for this on \(insight.experimentDayCount) days.")
-                                .font(.subheadline)
+                                .font(DSText.subheadline)
                                 .foregroundColor(.white.opacity(0.8))
                         } else {
                             Text("Patterns can start to show up as you keep showing up")
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(DSFont.accent(size: 22, relativeTo: .title3))
                                 .foregroundColor(.white)
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)

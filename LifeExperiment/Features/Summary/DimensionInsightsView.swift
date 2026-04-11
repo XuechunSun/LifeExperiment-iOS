@@ -346,7 +346,7 @@ struct GrowthBarRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Text(title)
-                .font(.subheadline)
+                .font(DSText.subheadline)
                 .foregroundColor(.primary)
                 .frame(width: 112, alignment: .leading)
 
@@ -629,7 +629,7 @@ struct DimensionInsightsView: View {
                                             .padding(.top, 2)
 
                                         Text("You tend to \(strengthPhrase(for: insight.top1)) and \(strengthPhrase(for: insight.top2))")
-                                            .font(.subheadline)
+                                            .font(DSText.subheadline)
                                             .foregroundStyle(.primary.opacity(0.75))
                                             .fixedSize(horizontal: false, vertical: true)
                                     }
@@ -641,7 +641,7 @@ struct DimensionInsightsView: View {
                                             .padding(.top, 2)
 
                                         Text("You might explore more around \(insight.bottom.title.lowercased())")
-                                            .font(.subheadline)
+                                            .font(DSText.subheadline)
                                             .foregroundStyle(.secondary)
                                             .fixedSize(horizontal: false, vertical: true)
                                     }
@@ -673,7 +673,7 @@ struct DimensionInsightsView: View {
                             .padding(.top, DSSpacing.xxs)
                     } else {
                         Text("Complete an experiment to see insights here.")
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .italic()
                             .padding(.vertical, DSSpacing.md)
@@ -703,7 +703,7 @@ struct DimensionInsightsView: View {
                     VStack(alignment: .leading, spacing: DSSpacing.md) {
                         if let growthSummaryText {
                             Text(growthSummaryText)
-                                .font(.subheadline)
+                                .font(DSText.subheadline)
                                 .foregroundStyle(.secondary.opacity(0.85))
                                 .fixedSize(horizontal: false, vertical: true)
                         }

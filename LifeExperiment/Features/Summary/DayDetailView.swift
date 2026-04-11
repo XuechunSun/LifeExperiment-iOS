@@ -73,12 +73,12 @@ struct DayDetailView: View {
                         Image(systemName: "pencil.circle")
                             .foregroundColor(.blue)
                         Text("Active Updates")
-                            .font(.headline)
+                            .font(DSText.headline)
                     }
 
                     if activeUpdateExperiments.isEmpty {
                         Text("No active updates on this day")
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .italic()
                     } else {
@@ -112,12 +112,12 @@ struct DayDetailView: View {
                         Image(systemName: "checkmark.seal")
                             .foregroundColor(.green)
                         Text("Completed")
-                            .font(.headline)
+                            .font(DSText.headline)
                     }
 
                     if completedExperiments.isEmpty {
                         Text("No experiments completed on this day")
-                            .font(.subheadline)
+                            .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .italic()
                     } else {

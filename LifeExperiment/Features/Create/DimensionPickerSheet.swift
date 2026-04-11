@@ -37,7 +37,7 @@ struct DimensionPickerSheet: View {
             Form {
                 Section {
                     Text("Select the primary dimension this experiment focuses on.")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
 
                     ForEach(Dimension.allCases) { dimension in
@@ -49,11 +49,11 @@ struct DimensionPickerSheet: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(dimension.title)
-                                        .font(.body)
+                                        .font(DSText.body)
                                         .foregroundColor(.primary)
                                     if let subtitle = dimension.subtitle {
                                         Text(subtitle)
-                                            .font(.caption)
+                                            .font(DSText.caption)
                                             .foregroundColor(.secondary)
                                     }
                                 }
@@ -72,7 +72,7 @@ struct DimensionPickerSheet: View {
 
                 Section {
                     Text("Optionally select up to 2 additional dimensions.")
-                        .font(.caption)
+                        .font(DSText.caption)
                         .foregroundColor(.secondary)
 
                     ForEach(availableAdditional) { dimension in
@@ -88,11 +88,11 @@ struct DimensionPickerSheet: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(dimension.title)
-                                        .font(.body)
+                                        .font(DSText.body)
                                         .foregroundColor(.primary)
                                     if let subtitle = dimension.subtitle {
                                         Text(subtitle)
-                                            .font(.caption)
+                                            .font(DSText.caption)
                                             .foregroundColor(.secondary)
                                     }
                                 }
@@ -102,7 +102,7 @@ struct DimensionPickerSheet: View {
                                 if let index = selectedAdditional.firstIndex(of: dimension) {
                                     HStack(spacing: 4) {
                                         Text("\(index + 1)")
-                                            .font(.caption2)
+                                            .font(DSText.caption2)
                                             .fontWeight(.semibold)
                                             .foregroundColor(.white)
                                             .frame(width: 16, height: 16)
@@ -127,7 +127,7 @@ struct DimensionPickerSheet: View {
                 } footer: {
                     if selectedAdditional.count >= 2 {
                         Text("Maximum of 2 additional dimensions reached")
-                            .font(.caption)
+                            .font(DSText.caption)
                             .foregroundColor(.orange)
                     }
                 }
