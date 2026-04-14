@@ -12,12 +12,6 @@ struct ProfileView: View {
     var lowEnergyLogs: [LowEnergyLog] = []
     let onResetAllData: () -> Void
 
-    @AppStorage("pref_cloud_sync_enabled") private var cloudSyncEnabled: Bool = false
-    @AppStorage("auth_is_signed_in") private var isSignedIn: Bool = false
-    @AppStorage("auth_display_name") private var authDisplayName: String = "Life Experimenter"
-
-    @State private var showSignInSheet = false
-    @State private var showSignOutConfirm = false
     @State private var showResetAllDataConfirm = false
 
     private var preferences = AppPreferences()
@@ -73,14 +67,36 @@ struct ProfileView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: 28) {
                 VStack(spacing: 12) {
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: 72))
-                        .foregroundStyle(.tint)
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        highlightCardStart,
+                                        primaryLavenderButton.opacity(0.88),
+                                        highlightCardEnd
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
+                            )
+                            .frame(width: 72, height: 72)
+                            .shadow(color: primaryLavenderButton.opacity(0.18), radius: 10, x: 0, y: 4)
+
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 30, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.95))
+                            .symbolRenderingMode(.hierarchical)
+                    }
 
                     VStack(spacing: 6) {
-                        Text(authDisplayName)
+                        Text("Life Experimenter")
                             .font(DSText.title2)
                             .fontWeight(.semibold)
                             .multilineTextAlignment(.center)
@@ -91,13 +107,13 @@ struct ProfileView: View {
                             .multilineTextAlignment(.center)
 
                         if gentleDayCount > 0 {
-                            Text("\(gentleDayCount) of those were gentle days")
+                            Text("\(gentleDayCount) were gentle days")
                                 .font(DSText.caption)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                         }
 
-                        Text(isSignedIn ? "Signed in" : "Using this device only")
+                        Text("Using this device only")
                             .font(DSText.caption)
                             .foregroundColor(.secondary)
                     }
@@ -120,31 +136,6 @@ struct ProfileView: View {
                         .font(DSText.headline)
 
                     VStack(alignment: .leading, spacing: 0) {
-                        HStack(alignment: .top, spacing: DSSpacing.md) {
-                            VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                                Text("UI Style")
-                                    .font(DSText.subheadline)
-                                    .fontWeight(.medium)
-
-                                Text("Choose how the app feels")
-                                    .lifeCaption()
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-
-                            Spacer()
-
-                            Picker("UI Style", selection: preferences.uiStyleBinding) {
-                                ForEach(UIStyle.allCases) { style in
-                                    Text(style.title).tag(style)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .labelsHidden()
-                        }
-                        .padding(.vertical, 12)
-
-                        Divider()
-
                         HStack(alignment: .top, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: DSSpacing.xxs) {
                                 Text("Image logging")
@@ -205,24 +196,17 @@ struct ProfileView: View {
                         .font(DSText.headline)
 
                     VStack(alignment: .leading, spacing: 0) {
-                        HStack(alignment: .top, spacing: DSSpacing.md) {
-                            VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                                Text("Cloud sync")
-                                    .font(DSText.subheadline)
-                                    .fontWeight(.medium)
+                        VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                            Text("Data storage")
+                                .font(DSText.subheadline)
+                                .fontWeight(.medium)
 
-                                Text("Coming soon")
-                                    .lifeCaption()
-
-                                Text("Your data is currently stored on this device")
-                                    .lifeCaption()
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-
-                            Spacer() 
+                            Text("Your data is stored on this device only.")
+                                .lifeCaption()
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading) 
-                        .padding(.vertical, 12) 
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 12)
                     }
                     .frame(maxWidth: .infinity)
                     .lightCardStyle(
@@ -236,31 +220,6 @@ struct ProfileView: View {
                         contentPadding: preferences.uiStyle.cardPadding
                     )
                 }
-
-                if isSignedIn {
-                    Button {
-                        showSignOutConfirm = true
-                    } label: {
-                        Text("Sign out")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .padding(.top, 4)
-                } else {
-                    Button {
-                        showSignInSheet = true
-                    } label: {
-                        Text("Sign in")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(primaryLavenderButton)
-                    .padding(.top, 4)
-                }
-
-                Text("Built for curiosity")
-                    .lifeCaption()
-                    .frame(maxWidth: .infinity)
 
 #if DEBUG
                 VStack(alignment: .leading, spacing: 8) {
@@ -289,27 +248,21 @@ struct ProfileView: View {
                     )
                 }
 #endif
+
+                Text("Built for curiosity")
+                    .font(DSText.caption2)
+                    .foregroundColor(.secondary.opacity(0.85))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 24)
+            .padding(.bottom, 28)
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
-        .sheet(isPresented: Binding(
-            get: { showSignInSheet && !isSignedIn },
-            set: { showSignInSheet = $0 }
-        )) {
-            AuthOptionsSheet()
-        }
-        .alert("Sign out?", isPresented: $showSignOutConfirm) {
-            Button("Cancel", role: .cancel) { }
-            Button("Sign out", role: .destructive) {
-                isSignedIn = false
-            }
-        } message: {
-            Text("You can continue using the app locally.")
-        }
         .alert("Reset all app data?", isPresented: $showResetAllDataConfirm) {
             Button("Cancel", role: .cancel) { }
             Button("Reset", role: .destructive) {

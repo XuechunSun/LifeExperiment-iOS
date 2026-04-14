@@ -50,13 +50,6 @@ struct AppPreferences: DynamicProperty {
         nonmutating set { uiStyleRaw = newValue.rawValue }
     }
 
-    var uiStyleBinding: Binding<UIStyle> {
-        Binding(
-            get: { uiStyle },
-            set: { uiStyle = $0 }
-        )
-    }
-
     var imageLoggingEnabledBinding: Binding<Bool> {
         Binding(
             get: { imageLoggingEnabled },
