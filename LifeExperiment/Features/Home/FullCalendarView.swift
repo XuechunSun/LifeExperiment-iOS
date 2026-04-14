@@ -14,17 +14,12 @@ struct FullCalendarView: View {
 
     let loggedDates: Set<Date>
     let experiments: [Experiment]
+    var lowEnergyLogs: [LowEnergyLog] = []
     let onUpdate: (Experiment) -> Void
 
     @State private var selectedDay: DaySelection?
     @State private var hasAutoScrolledToToday: Bool = false
     private let calendar = Calendar.current
-
-    init(loggedDates: Set<Date>, experiments: [Experiment], onUpdate: @escaping (Experiment) -> Void) {
-        self.loggedDates = loggedDates
-        self.experiments = experiments
-        self.onUpdate = onUpdate
-    }
 
     private var normalizedLoggedDates: Set<Date> {
         Set(loggedDates.map { calendar.startOfDay(for: $0) })
@@ -99,6 +94,7 @@ struct FullCalendarView: View {
                                 monthTitle: monthTitle(for: monthStart),
                                 monthStart: monthStart,
                                 normalizedLoggedDates: normalizedLoggedDates,
+                                lowEnergyLogs: lowEnergyLogs,
                                 calendar: calendar,
                                 weekdaySymbols: weekdaySymbols,
                                 selectedDate: selectedDay?.date,
@@ -124,7 +120,7 @@ struct FullCalendarView: View {
         .navigationTitle("Full Calendar")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $selectedDay) { selection in
-            DayDetailView(day: selection.date, experiments: experiments, onUpdate: onUpdate)
+            DayDetailView(day: selection.date, experiments: experiments, lowEnergyLogs: lowEnergyLogs, onUpdate: onUpdate)
         }
     }
 }
@@ -133,6 +129,7 @@ private struct MonthGrid: View {
     let monthTitle: String
     let monthStart: Date
     let normalizedLoggedDates: Set<Date>
+    var lowEnergyLogs: [LowEnergyLog] = []
     let calendar: Calendar
     let weekdaySymbols: [String]
     let selectedDate: Date?
@@ -171,6 +168,7 @@ private struct MonthGrid: View {
                     let isToday = calendar.isDateInToday(date)
                     let normalized = calendar.startOfDay(for: date)
                     let isLogged = normalizedLoggedDates.contains(normalized)
+                    let hasLowEnergy = lowEnergyLogs.contains { calendar.isDate($0.date, inSameDayAs: normalized) }
                     let isSelected = selectedDate.map { calendar.isDate($0, inSameDayAs: normalized) } ?? false
 
                     Button(action: {
@@ -182,9 +180,16 @@ private struct MonthGrid: View {
                                 .fontWeight((isToday || isSelected) ? .semibold : .regular)
                                 .foregroundColor(isInDisplayedMonth ? .primary : .secondary.opacity(0.5))
 
-                            Circle()
-                                .fill(isLogged ? Color.blue : Color.clear)
-                                .frame(width: 5, height: 5)
+                            HStack(spacing: 2) {
+                                Circle()
+                                    .fill(isLogged ? Color.blue : Color.clear)
+                                    .frame(width: 5, height: 5)
+                                if hasLowEnergy {
+                                    Image(systemName: "leaf.fill")
+                                        .font(.system(size: 7))
+                                        .foregroundColor(.green.opacity(0.7))
+                                }
+                            }
                         }
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(

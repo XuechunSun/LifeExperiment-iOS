@@ -7,7 +7,7 @@ struct HomePersonalizedSuggestionSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
-            Text("Worth noticing")
+            Text("Something worth noticing")
                 .font(DSText.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary.opacity(0.82))

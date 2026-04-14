@@ -4,6 +4,7 @@ import SwiftUI
 
 struct CalendarFootprintView: View {
     let experiments: [Experiment]
+    var lowEnergyLogs: [LowEnergyLog] = []
     let onUpdate: (Experiment) -> Void
     let onSelectDay: (Date) -> Void
     @State private var weekOffset: Int = 0
@@ -193,7 +194,7 @@ struct CalendarFootprintView: View {
             // Weekly row (Mon-Sun)
             HStack(spacing: 4) {
                 ForEach(currentWeekDays, id: \.self) { day in
-                    CalendarDayCell(day: day, experiments: experiments)
+                    CalendarDayCell(day: day, experiments: experiments, lowEnergyLogs: lowEnergyLogs)
                         .onTapGesture {
                             onSelectDay(day)
                         }
@@ -201,7 +202,7 @@ struct CalendarFootprintView: View {
             }
 
             // See full calendar link
-            NavigationLink(destination: FullCalendarView(loggedDates: loggedDates, experiments: experiments, onUpdate: onUpdate)) {
+            NavigationLink(destination: FullCalendarView(loggedDates: loggedDates, experiments: experiments, lowEnergyLogs: lowEnergyLogs, onUpdate: onUpdate)) {
                 HStack {
                     Text("See full calendar")
                         .font(DSText.subheadline)
@@ -217,6 +218,7 @@ struct CalendarFootprintView: View {
 struct CalendarDayCell: View {
     let day: Date
     let experiments: [Experiment]
+    var lowEnergyLogs: [LowEnergyLog] = []
     private let calendar = Calendar.current
 
     private var weekdayLabel: String {
@@ -277,20 +279,22 @@ struct CalendarDayCell: View {
         calendar.isDateInToday(day)
     }
 
+    private var hasLowEnergyLog: Bool {
+        lowEnergyLogs.contains { calendar.isDate($0.date, inSameDayAs: day) }
+    }
+
     var body: some View {
         VStack(spacing: 4) {
-            // Weekday
             Text(weekdayLabel)
                 .font(DSText.caption2)
                 .foregroundColor(.secondary)
 
-            // Date number
             Text(dateNumber)
                 .font(DSText.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.primary)
 
-            // Status icons row
+            // RF#3: Only show leaf when no experiment indicators exist
             HStack(spacing: 2) {
                 if activeCount > 0 {
                     Image(systemName: "pencil.circle")
@@ -301,6 +305,11 @@ struct CalendarDayCell: View {
                     Image(systemName: "checkmark.seal")
                         .font(DSText.caption2)
                         .foregroundColor(.green)
+                }
+                if hasLowEnergyLog {
+                    Image(systemName: "leaf.fill")
+                        .font(DSText.caption2)
+                        .foregroundColor(.green.opacity(0.7))
                 }
             }
             .frame(height: 12)

@@ -5,16 +5,14 @@ struct GuideCardView: View {
 
     var body: some View {
         HighlightCard {
-            VStack(alignment: .leading, spacing: DSSpacing.md) {
-                VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text(copy.headline)
-                        .font(DSFont.accent(size: 24, relativeTo: .title3))
-                        .foregroundColor(.white)
+            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                Text(copy.headline)
+                    .font(DSFont.accent(size: 24, relativeTo: .title3))
+                    .foregroundColor(.white)
 
-                    Text(copy.subheadline)
-                        .font(DSText.secondary)
-                        .foregroundColor(.white.opacity(0.88))
-                }
+                Text(copy.subheadline)
+                    .font(DSText.secondary)
+                    .foregroundColor(.white.opacity(0.88))
             }
             .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
         }
@@ -25,13 +23,33 @@ struct GuideSuggestionsSection: View {
     let suggestions: [ExperimentSuggestion]
     let onStartSuggestion: (ExperimentSuggestion) -> Void
     let onExploreMore: () -> Void
+    var onTakeItEasy: (() -> Void)?
+    var hasLoggedLowEnergyToday: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
-            Text("Try something new today")
-                .font(DSText.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary.opacity(0.82))
+            HStack(alignment: .firstTextBaseline) {
+                Text("Explore something new")
+                    .font(DSText.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary.opacity(0.82))
+
+                Spacer()
+
+                if let onTakeItEasy {
+                    Button(action: onTakeItEasy) {
+                        Text(hasLoggedLowEnergyToday
+                            ? "or take it easy again"
+                            : "or take it easy today")
+                            .font(DSText.subheadline)
+                            .italic()
+                            .underline()
+                            .foregroundColor(.primary.opacity(0.6))
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                }
+            }
 
             VStack(spacing: DSSpacing.sm) {
                 ForEach(suggestions) { suggestion in

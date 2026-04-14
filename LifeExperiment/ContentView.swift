@@ -37,6 +37,7 @@ struct ContentView: View {
     @AppStorage("statusRaw") private var statusRaw: String = LoggingStatus.idle.rawValue
     @AppStorage("historyData") private var historyData: Data = .init()
     @AppStorage("experimentsData") private var experimentsData: Data = .init()
+    @AppStorage("lowEnergyLogsData") private var lowEnergyLogsData: Data = .init()
     
     // Tab state
     @State private var selectedTab: Tab = .home
@@ -50,6 +51,7 @@ struct ContentView: View {
     
     @State private var selectedDay: DayRecord?
     @State private var showCreateExperimentSheet: Bool = false
+    @State private var showLowEnergyFlow: Bool = false
     @State private var experimentToDelete: Experiment?
     @State private var activeSheet: ActiveSheet?
     @State private var createPrefill: ExperimentEditorPrefill?
@@ -89,6 +91,30 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Low Energy Log persistence (CL#1: one per day, CL#5: decode safety)
+
+    private func getLowEnergyLogs() -> [LowEnergyLog] {
+        (try? JSONDecoder().decode([LowEnergyLog].self, from: lowEnergyLogsData)) ?? []
+    }
+
+    private func setLowEnergyLogs(_ logs: [LowEnergyLog]) {
+        let sorted = logs.sorted { $0.date > $1.date }
+        if let encoded = try? JSONEncoder().encode(sorted) {
+            lowEnergyLogsData = encoded
+        }
+    }
+
+    func addLowEnergyLog(_ log: LowEnergyLog) {
+        var logs = getLowEnergyLogs()
+        let calendar = Calendar.current
+        if let existingIndex = logs.firstIndex(where: { calendar.isDate($0.date, inSameDayAs: log.date) }) {
+            logs[existingIndex] = log
+        } else {
+            logs.append(log)
+        }
+        setLowEnergyLogs(logs)
+    }
+
     private func seedExperimentsIfNeeded() {
         if getExperiments().isEmpty {
             let now = Date()
@@ -124,6 +150,7 @@ struct ContentView: View {
         statusRaw = LoggingStatus.idle.rawValue
         historyData = .init()
         experimentsData = .init()
+        lowEnergyLogsData = .init()
 
         selectedTab = .home
         homePath = []
@@ -132,6 +159,7 @@ struct ContentView: View {
         profilePath = []
         selectedDay = nil
         showCreateExperimentSheet = false
+        showLowEnergyFlow = false
         experimentToDelete = nil
         activeSheet = nil
         createPrefill = nil
@@ -327,10 +355,14 @@ struct ContentView: View {
             NavigationStack(path: $homePath) {
                 HomeView(
                     loadExperiments: getExperiments,
+                    lowEnergyLogs: getLowEnergyLogs(),
                     seedCatalog: seedCatalog,
                     onCreateExperiment: {
                         createPrefill = nil
                         showCreateExperimentSheet = true
+                    },
+                    onStartLowEnergy: {
+                        showLowEnergyFlow = true
                     },
                     onTrySuggestion: { suggestion in
                         createPrefill = ExperimentEditorPrefill(
@@ -367,7 +399,9 @@ struct ContentView: View {
                         experimentToDelete = experiment
                     }
                 )
-                .navigationTitle("Life Experiment")
+                .navigationTitle("MiniLab")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(.visible, for: .navigationBar)
                 .navigationDestination(for: Route.self) { route in
                     routeDestination(route: route, path: $homePath)
                 }
@@ -380,8 +414,8 @@ struct ContentView: View {
             // Tab 2: Active Experiments
             NavigationStack(path: $activePath) {
                 activeExperimentsView
-                    .navigationTitle(S.sectionActiveExperiments)
-                    .navigationBarTitleDisplayMode(.large)
+                    .navigationTitle(S.tabActive)
+                    .navigationBarTitleDisplayMode(.inline)
                     .navigationDestination(for: Route.self) { route in
                         routeDestination(route: route, path: $activePath)
                     }
@@ -400,7 +434,7 @@ struct ContentView: View {
             
             // Tab 4: Summary
             NavigationStack(path: $summaryPath) {
-                SummaryView(loadExperiments: getExperiments, onUpdate: updateExperiment, seedCatalog: seedCatalog)
+                SummaryView(loadExperiments: getExperiments, lowEnergyLogs: getLowEnergyLogs(), onUpdate: updateExperiment, seedCatalog: seedCatalog)
                     .navigationDestination(for: Route.self) { route in
                         routeDestination(route: route, path: $summaryPath)
                     }
@@ -414,6 +448,7 @@ struct ContentView: View {
             NavigationStack(path: $profilePath) {
                 ProfileView(
                     loadExperiments: getExperiments,
+                    lowEnergyLogs: getLowEnergyLogs(),
                     onResetAllData: resetAllLocalData
                 )
                     .navigationDestination(for: Route.self) { route in
@@ -465,6 +500,14 @@ struct ContentView: View {
                 ExperimentEditorView(seedCatalog: seedCatalog, mode: .duplicate(from: experiment)) { created in
                     handleDuplicateCommit(created)
                 }
+            }
+        }
+        .sheet(isPresented: $showLowEnergyFlow) {
+            LowEnergyFlowView { log in
+                addLowEnergyLog(log)
+                showLowEnergyFlow = false
+            } onDismiss: {
+                showLowEnergyFlow = false
             }
         }
         .onAppear {
@@ -663,10 +706,10 @@ struct ContentView: View {
             )
             
         case .summary:
-            SummaryView(loadExperiments: getExperiments, onUpdate: updateExperiment, seedCatalog: seedCatalog)
+            SummaryView(loadExperiments: getExperiments, lowEnergyLogs: getLowEnergyLogs(), onUpdate: updateExperiment, seedCatalog: seedCatalog)
             
         case .day(let date):
-            DayDetailView(day: date, experiments: getExperiments(), onUpdate: updateExperiment)
+            DayDetailView(day: date, experiments: getExperiments(), lowEnergyLogs: getLowEnergyLogs(), onUpdate: updateExperiment)
         }
     }
     

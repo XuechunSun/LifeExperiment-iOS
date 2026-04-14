@@ -9,9 +9,9 @@ import SwiftUI
 
 struct ProfileView: View {
     let loadExperiments: () -> [Experiment]
+    var lowEnergyLogs: [LowEnergyLog] = []
     let onResetAllData: () -> Void
 
-    // Placeholder-only until cloud sync is implemented.
     @AppStorage("pref_cloud_sync_enabled") private var cloudSyncEnabled: Bool = false
     @AppStorage("auth_is_signed_in") private var isSignedIn: Bool = false
     @AppStorage("auth_display_name") private var authDisplayName: String = "Life Experimenter"
@@ -24,9 +24,11 @@ struct ProfileView: View {
 
     init(
         loadExperiments: @escaping () -> [Experiment],
+        lowEnergyLogs: [LowEnergyLog] = [],
         onResetAllData: @escaping () -> Void = {}
     ) {
         self.loadExperiments = loadExperiments
+        self.lowEnergyLogs = lowEnergyLogs
         self.onResetAllData = onResetAllData
     }
 
@@ -34,13 +36,35 @@ struct ProfileView: View {
         loadExperiments()
     }
 
+    // CL#2: Day-based shown-up count (distinct calendar days with any activity)
     private var shownUpCount: Int {
-        experiments.reduce(0) { partial, experiment in
-            partial + experiment.logs.filter { log in
+        let calendar = Calendar.current
+        var activeDays = Set<Date>()
+
+        for experiment in experiments {
+            activeDays.insert(calendar.startOfDay(for: experiment.createdAt))
+            if let completedAt = experiment.completedAt {
+                activeDays.insert(calendar.startOfDay(for: completedAt))
+            }
+            for log in experiment.logs {
                 let trimmedNote = log.note.trimmingCharacters(in: .whitespacesAndNewlines)
-                return !trimmedNote.isEmpty || log.mood != nil
-            }.count
+                if !trimmedNote.isEmpty || log.mood != nil {
+                    activeDays.insert(calendar.startOfDay(for: log.date))
+                }
+            }
         }
+
+        for leLog in lowEnergyLogs {
+            activeDays.insert(calendar.startOfDay(for: leLog.date))
+        }
+
+        return activeDays.count
+    }
+
+    private var gentleDayCount: Int {
+        let calendar = Calendar.current
+        let days = Set(lowEnergyLogs.map { calendar.startOfDay(for: $0.date) })
+        return days.count
     }
 
     private var headerSubtitle: String {
@@ -65,6 +89,13 @@ struct ProfileView: View {
                             .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
+
+                        if gentleDayCount > 0 {
+                            Text("\(gentleDayCount) of those were gentle days")
+                                .font(DSText.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
 
                         Text(isSignedIn ? "Signed in" : "Using this device only")
                             .font(DSText.caption)
@@ -263,7 +294,8 @@ struct ProfileView: View {
             .padding(.bottom, 24)
         }
         .navigationTitle("Profile")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
         .sheet(isPresented: Binding(
             get: { showSignInSheet && !isSignedIn },
             set: { showSignInSheet = $0 }

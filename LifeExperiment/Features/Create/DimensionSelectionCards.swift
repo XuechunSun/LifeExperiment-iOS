@@ -72,7 +72,7 @@ struct DefaultDimensionsCard: View {
         VStack(alignment: .leading, spacing: DSSpacing.md) {
             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("This experiment usually helps with")
+                    Text("This experiment might help you explore")
                         .font(DSText.subheadline)
                         .foregroundColor(.secondary)
                     Spacer()
@@ -83,7 +83,7 @@ struct DefaultDimensionsCard: View {
                     }
                 }
 
-                Text("Your primary dimension appears first, with supporting dimensions after it.")
+                Text("Your primary area appears first, with others following.")
                     .font(DSText.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

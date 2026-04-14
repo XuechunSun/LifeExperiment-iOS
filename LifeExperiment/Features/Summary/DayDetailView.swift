@@ -5,6 +5,7 @@ import SwiftUI
 struct DayDetailView: View {
     let day: Date
     let experiments: [Experiment]
+    var lowEnergyLogs: [LowEnergyLog] = []
     let onUpdate: (Experiment) -> Void
 
     private let rowSpacing: CGFloat = DSSpacing.md
@@ -31,26 +32,24 @@ struct DayDetailView: View {
     private var activeUpdateExperiments: [Experiment] {
         let calendar = Calendar.current
 
-        // Get IDs of experiments completed on this day
         let completedIDs = Set(completedExperiments.map(\.id))
 
         return experiments.filter { exp in
-            // Must be active status
             guard exp.status == .active else { return false }
-
-            // Exclude experiments completed on this day (they go to Completed section only)
             guard !completedIDs.contains(exp.id) else { return false }
 
-            // Check if has log on this day
             let hasLog = exp.logs.contains { log in
                 calendar.isDate(log.date, inSameDayAs: day)
             }
-
-            // Check if created on this day
             let createdOnDay = calendar.isDate(exp.createdAt, inSameDayAs: day)
 
             return hasLog || createdOnDay
         }
+    }
+
+    private var lowEnergyLogForDay: LowEnergyLog? {
+        let calendar = Calendar.current
+        return lowEnergyLogs.first { calendar.isDate($0.date, inSameDayAs: day) }
     }
 
     private func activeSubtitle(for experiment: Experiment) -> String {
@@ -142,6 +141,40 @@ struct DayDetailView: View {
                         }
                     }
                 }
+
+                // RF#4: Lightweight inline block for low energy log (CL#3 display rules)
+                if let leLog = lowEnergyLogForDay {
+                    Divider()
+
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "leaf.fill")
+                            .font(DSText.subheadline)
+                            .foregroundColor(.green.opacity(0.7))
+                            .padding(.top, 1)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Took it easy today")
+                                .font(DSText.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+
+                            Text(leLog.detailLine)
+                                .font(DSText.caption)
+                                .foregroundColor(.secondary)
+
+                            if let note = leLog.note,
+                               !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Text(note)
+                                    .font(DSText.caption)
+                                    .foregroundColor(.secondary)
+                                    .italic()
+                            }
+                        }
+
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.vertical, 4)
+                }
             }
             .padding()
         }
@@ -149,4 +182,3 @@ struct DayDetailView: View {
         .navigationBarTitleDisplayMode(.large)
     }
 }
-

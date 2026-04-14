@@ -10,3 +10,4 @@ DerivedData/
 .build/
 
 .Rhistory
+screenshot*.png

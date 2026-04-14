@@ -121,8 +121,9 @@ struct AllActiveListView: View {
             }
             .padding(DSSpacing.md)
         }
-        .navigationTitle(S.sectionActiveExperiments)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle(S.tabActive)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
         .searchable(text: $searchText, prompt: "Search experiments")
     }
 

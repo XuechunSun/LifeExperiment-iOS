@@ -4,8 +4,10 @@ import SwiftUI
 
 struct HomeView: View {
     let loadExperiments: () -> [Experiment]
+    let lowEnergyLogs: [LowEnergyLog]
     let seedCatalog: SeedCatalog?
     let onCreateExperiment: () -> Void
+    let onStartLowEnergy: () -> Void
     let onTrySuggestion: (ExperimentSuggestion) -> Void
     let onSelectExperiment: (Experiment) -> Void
     let onUpdate: (Experiment) -> Void
@@ -104,6 +106,12 @@ struct HomeView: View {
         GuideCopyProvider.copy(for: homeGuideState, sessionIndex: guideCopySession)
     }
 
+    private var hasLoggedLowEnergyToday: Bool {
+        let calendar = Calendar.current
+        let today = Date()
+        return lowEnergyLogs.contains { calendar.isDate($0.date, inSameDayAs: today) }
+    }
+
     private var guideSuggestions: [ExperimentSuggestion] {
         suggestions(for: homeGuideState)
     }
@@ -175,7 +183,7 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 // 1. Calendar Footprint - Always visible
-                CalendarFootprintView(experiments: experiments, onUpdate: onUpdate, onSelectDay: onSelectDay)
+                CalendarFootprintView(experiments: experiments, lowEnergyLogs: lowEnergyLogs, onUpdate: onUpdate, onSelectDay: onSelectDay)
 
                 sectionDivider
 
@@ -200,7 +208,9 @@ struct HomeView: View {
                         },
                         onExploreMore: {
                             onCreateExperiment()
-                        }
+                        },
+                        onTakeItEasy: { onStartLowEnergy() },
+                        hasLoggedLowEnergyToday: hasLoggedLowEnergyToday
                     )
                 }
 

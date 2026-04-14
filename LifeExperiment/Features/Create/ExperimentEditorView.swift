@@ -393,7 +393,7 @@ struct ExperimentEditorView: View {
 
             cardBackground {
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text("Let this experiment include photo notes when it helps.")
+                    Text("Add photos if it helps you remember")
                         .lifeSecondaryText()
                         .fixedSize(horizontal: false, vertical: true)
 
