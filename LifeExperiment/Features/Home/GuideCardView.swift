@@ -26,10 +26,13 @@ struct GuideSuggestionsSection: View {
     var onTakeItEasy: (() -> Void)?
     var hasLoggedLowEnergyToday: Bool = false
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Explore something new")
+                Text(L.exploreSomethingNew(lang))
                     .font(DSText.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary.opacity(0.82))
@@ -39,8 +42,8 @@ struct GuideSuggestionsSection: View {
                 if let onTakeItEasy {
                     Button(action: onTakeItEasy) {
                         Text(hasLoggedLowEnergyToday
-                            ? "or take it easy again"
-                            : "or take it easy today")
+                            ? L.exploreTakeItEasyAgain(lang)
+                            : L.exploreTakeItEasyToday(lang))
                             .font(DSText.subheadline)
                             .italic()
                             .underline()
@@ -69,7 +72,7 @@ struct GuideSuggestionsSection: View {
                 }
             }
 
-            Button("Explore more") {
+            Button(L.exploreMore(lang)) {
                 onExploreMore()
             }
             .font(DSText.subheadline)

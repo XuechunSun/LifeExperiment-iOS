@@ -8,6 +8,9 @@ struct DayDetailView: View {
     var lowEnergyLogs: [LowEnergyLog] = []
     let onUpdate: (Experiment) -> Void
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
     private let rowSpacing: CGFloat = DSSpacing.md
     private var isNewUser: Bool {
         ExperimentDetailView.shouldShowFirstLogGuidance(for: experiments)
@@ -15,6 +18,7 @@ struct DayDetailView: View {
 
     private var dayLabel: String {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: lang == .chinese ? "zh_CN" : "en_US")
         formatter.dateFormat = "EEEE, MMM d"
         return formatter.string(from: day)
     }
@@ -53,14 +57,20 @@ struct DayDetailView: View {
     }
 
     private func activeSubtitle(for experiment: Experiment) -> String {
-        "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))"
+        L.lastUpdated(
+            lang,
+            dateString: experiment.updatedAt.formatted(date: .abbreviated, time: .omitted)
+        )
     }
 
     private func completedSubtitle(for experiment: Experiment) -> String {
         if let completedAt = experiment.completedAt {
-            return "Completed \(completedAt.formatted(date: .abbreviated, time: .omitted))"
+            return L.completedOnDate(
+                lang,
+                dateString: completedAt.formatted(date: .abbreviated, time: .omitted)
+            )
         }
-        return "Completed"
+        return L.sectionCompleted(lang)
     }
 
     var body: some View {
@@ -71,12 +81,12 @@ struct DayDetailView: View {
                     HStack {
                         Image(systemName: "pencil.circle")
                             .foregroundColor(.blue)
-                        Text("Active Updates")
+                        Text(L.dayDetailActiveUpdates(lang))
                             .font(DSText.headline)
                     }
 
                     if activeUpdateExperiments.isEmpty {
-                        Text("No active updates on this day")
+                        Text(L.dayDetailNoActiveUpdates(lang))
                             .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .italic()
@@ -110,12 +120,12 @@ struct DayDetailView: View {
                     HStack {
                         Image(systemName: "checkmark.seal")
                             .foregroundColor(.green)
-                        Text("Completed")
+                        Text(L.sectionCompleted(lang))
                             .font(DSText.headline)
                     }
 
                     if completedExperiments.isEmpty {
-                        Text("No experiments completed on this day")
+                        Text(L.dayDetailNoExperimentsCompleted(lang))
                             .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .italic()
@@ -153,7 +163,7 @@ struct DayDetailView: View {
                             .padding(.top, 1)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Took it easy today")
+                            Text(L.dayDetailTookItEasy(lang))
                                 .font(DSText.subheadline)
                                 .fontWeight(.medium)
                                 .foregroundColor(.primary)

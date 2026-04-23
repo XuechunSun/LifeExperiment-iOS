@@ -7,10 +7,16 @@ struct DimensionPickerSheet: View {
     @State private var selectedAdditional: [Dimension]  // Ordered array instead of Set
 
     let initialImpact: ExperimentImpact?
+    let lang: AppLanguage
     let onSave: (ExperimentImpact) -> Void
 
-    init(initialImpact: ExperimentImpact?, onSave: @escaping (ExperimentImpact) -> Void) {
+    init(
+        initialImpact: ExperimentImpact?,
+        lang: AppLanguage,
+        onSave: @escaping (ExperimentImpact) -> Void
+    ) {
         self.initialImpact = initialImpact
+        self.lang = lang
         self.onSave = onSave
 
         // Initialize state
@@ -36,7 +42,7 @@ struct DimensionPickerSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    Text("Select the primary dimension this experiment focuses on.")
+                    Text(L.createPrimaryDimensionIntro(lang))
                         .font(DSText.caption)
                         .foregroundColor(.secondary)
 
@@ -48,14 +54,12 @@ struct DimensionPickerSheet: View {
                         }) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(dimension.title)
+                                    Text(L.dimensionDisplayTitle(lang, dimension: dimension))
                                         .font(DSText.body)
                                         .foregroundColor(.primary)
-                                    if let subtitle = dimension.subtitle {
-                                        Text(subtitle)
-                                            .font(DSText.caption)
-                                            .foregroundColor(.secondary)
-                                    }
+                                    Text(L.dimensionPickerSubtitle(lang, dimension: dimension))
+                                        .font(DSText.caption)
+                                        .foregroundColor(.secondary)
                                 }
                                 Spacer()
                                 if selectedPrimary == dimension {
@@ -67,11 +71,11 @@ struct DimensionPickerSheet: View {
                         .buttonStyle(.plain)
                     }
                 } header: {
-                    Text("Primary Dimension (Required)")
+                    Text(L.createPrimaryDimensionSection(lang))
                 }
 
                 Section {
-                    Text("Optionally select up to 2 additional dimensions.")
+                    Text(L.createAdditionalDimensionsIntro(lang))
                         .font(DSText.caption)
                         .foregroundColor(.secondary)
 
@@ -87,14 +91,12 @@ struct DimensionPickerSheet: View {
                         }) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(dimension.title)
+                                    Text(L.dimensionDisplayTitle(lang, dimension: dimension))
                                         .font(DSText.body)
                                         .foregroundColor(.primary)
-                                    if let subtitle = dimension.subtitle {
-                                        Text(subtitle)
-                                            .font(DSText.caption)
-                                            .foregroundColor(.secondary)
-                                    }
+                                    Text(L.dimensionPickerSubtitle(lang, dimension: dimension))
+                                        .font(DSText.caption)
+                                        .foregroundColor(.secondary)
                                 }
                                 Spacer()
 
@@ -123,25 +125,25 @@ struct DimensionPickerSheet: View {
                         .opacity((selectedAdditional.count >= 2 && !selectedAdditional.contains(dimension)) ? 0.5 : 1.0)
                     }
                 } header: {
-                    Text("Additional Dimensions (Optional, max 2)")
+                    Text(L.createAdditionalDimensionsSection(lang))
                 } footer: {
                     if selectedAdditional.count >= 2 {
-                        Text("Maximum of 2 additional dimensions reached")
+                        Text(L.createAdditionalDimensionsMaxFooter(lang))
                             .font(DSText.caption)
                             .foregroundColor(.orange)
                     }
                 }
             }
-            .navigationTitle("Edit Dimensions")
+            .navigationTitle(L.createEditDimensions(lang))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(S.actionCancel) {
+                    Button(L.actionCancel(lang)) {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(S.actionSave) {
+                    Button(L.save(lang)) {
                         let impact = ExperimentImpact(
                             primary: selectedPrimary,
                             secondary: selectedAdditional.count > 0 ? selectedAdditional[0] : nil,

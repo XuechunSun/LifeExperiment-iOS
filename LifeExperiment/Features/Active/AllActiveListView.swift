@@ -11,20 +11,30 @@ struct AllActiveListView: View {
     let onDuplicate: (Experiment) -> Void
     let onDelete: (Experiment) -> Void
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
     @State private var searchText: String = ""
     @State private var sortOption: SortOption = .lastUpdated
     @State private var isNotUpdatedExpanded: Bool = false
+
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
     fileprivate enum SectionSurfaceStyle {
         case primary
         case secondary
     }
 
-    private enum SortOption: String, CaseIterable, Identifiable {
-        case lastUpdated = "Last Updated"
-        case createdDate = "Created Date"
+    private enum SortOption: Int, CaseIterable, Identifiable {
+        case lastUpdated = 0
+        case createdDate = 1
 
-        var id: String { rawValue }
+        var id: Int { rawValue }
+
+        func displayLabel(_ lang: AppLanguage) -> String {
+            switch self {
+            case .lastUpdated: return L.sortByLastUpdated(lang)
+            case .createdDate: return L.sortByCreatedDate(lang)
+            }
+        }
     }
 
     private var updatedToday: [Experiment] {
@@ -66,14 +76,14 @@ struct AllActiveListView: View {
                                 sortOption = option
                             } label: {
                                 if option == sortOption {
-                                    Label(option.rawValue, systemImage: "checkmark")
+                                    Label(option.displayLabel(lang), systemImage: "checkmark")
                                 } else {
-                                    Text(option.rawValue)
+                                    Text(option.displayLabel(lang))
                                 }
                             }
                         }
                     } label: {
-                        Label("Sort", systemImage: "arrow.up.arrow.down")
+                        Label(L.sort(lang), systemImage: "arrow.up.arrow.down")
                             .font(DSText.subheadline)
                             .foregroundColor(.blue)
                             .padding(.horizontal, DSSpacing.sm)
@@ -88,20 +98,20 @@ struct AllActiveListView: View {
                 }
                 .padding(.bottom, DSSpacing.sm)
 
-                sectionHeader(S.sectionUpdatedToday, style: .primary)
+                sectionHeader(L.sectionUpdatedToday(lang), style: .primary)
                     .padding(.bottom, DSSpacing.sm)
                 sectionCard(
                     experiments: updatedToday,
-                    emptyText: S.emptyNoUpdatesToday,
+                    emptyText: L.activeEmptyNoUpdatesToday(lang),
                     style: .primary
                 )
 
-                sectionHeader("Not Updated Today (\(notUpdatedToday.count))", style: .secondary)
+                sectionHeader(L.sectionNotUpdatedToday(lang, count: notUpdatedToday.count), style: .secondary)
                     .padding(.top, DSSpacing.lg)
                     .padding(.bottom, DSSpacing.sm)
                 sectionCard(
                     experiments: visibleNotUpdatedToday,
-                    emptyText: S.emptyAllUpdated,
+                    emptyText: L.activeEmptyAllUpdated(lang),
                     style: .secondary
                 )
 
@@ -111,7 +121,7 @@ struct AllActiveListView: View {
                             isNotUpdatedExpanded.toggle()
                         }
                     } label: {
-                        Text(isNotUpdatedExpanded ? "Show less" : "See more")
+                        Text(isNotUpdatedExpanded ? L.showLess(lang) : L.seeMore(lang))
                             .font(DSText.subheadline)
                             .foregroundColor(.blue)
                     }
@@ -121,10 +131,10 @@ struct AllActiveListView: View {
             }
             .padding(DSSpacing.md)
         }
-        .navigationTitle(S.tabActive)
+        .navigationTitle(L.active(lang))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
-        .searchable(text: $searchText, prompt: "Search experiments")
+        .searchable(text: $searchText, prompt: L.searchExperiments(lang))
     }
 
     @ViewBuilder
@@ -144,7 +154,10 @@ struct AllActiveListView: View {
                 ForEach(experiments) { experiment in
                     ExperimentListCard(
                         title: experiment.title,
-                        subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
+                        subtitle: L.lastUpdated(
+                            lang,
+                            dateString: experiment.updatedAt.formatted(date: .abbreviated, time: .omitted)
+                        ),
                         surfaceStyle: cardSurfaceStyle(for: style),
                         contentPadding: DSSpacing.md,
                         action: {

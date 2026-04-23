@@ -11,12 +11,16 @@ struct SummaryView: View {
     @State private var showFullCalendar: Bool = false
     @State private var selectedDay: Date?
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+
     // Toggle to show/hide Calendar Footprint (currently hidden for v1)
     private let showCalendarFootprint: Bool = false
 
     var experiments: [Experiment] {
         loadExperiments()
     }
+
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
     private var loggedDates: Set<Date> {
         let calendar = Calendar.current
@@ -304,25 +308,25 @@ struct SummaryView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "sparkles")
                                 .foregroundColor(.white.opacity(0.9))
-                            Text("A small pattern")
+                            Text(L.smallPattern(lang))
                                 .font(DSText.subheadline)
                                 .foregroundColor(.white.opacity(0.9))
                         }
 
                         if let insight = primaryHelpfulInsight {
-                            Text("You felt better on days you did \(insight.title)")
+                            Text(L.highlightFeltBetterOnDaysDid(lang, experimentTitle: insight.title))
                                 .font(DSFont.accent(size: 22, relativeTo: .title3))
                                 .foregroundColor(.white)
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)
 
                             Text(insight.limitedComparison
-                                ? "Based on \(insight.experimentDayCount) logged days (early signal)"
-                                : "You've shown up for this on \(insight.experimentDayCount) days.")
+                                ? L.basedOnLoggedDaysEarly(lang, days: insight.experimentDayCount)
+                                : L.basedOnLoggedDays(lang, days: insight.experimentDayCount))
                                 .font(DSText.subheadline)
                                 .foregroundColor(.white.opacity(0.8))
                         } else {
-                            Text("Patterns can start to show up as you keep showing up")
+                            Text(L.highlightEmptyEncouragement(lang))
                                 .font(DSFont.accent(size: 22, relativeTo: .title3))
                                 .foregroundColor(.white)
                                 .lineLimit(3)
@@ -330,7 +334,7 @@ struct SummaryView: View {
                         }
 
                         if gentleDayCount > 0 {
-                            Text("You also had \(gentleDayCount) gentle \(gentleDayCount == 1 ? "day" : "days") along the way")
+                            Text(L.highlightGentleDaysAlong(lang, count: gentleDayCount))
                                 .font(DSText.caption)
                                 .foregroundColor(.white.opacity(0.7))
                         }
@@ -344,8 +348,8 @@ struct SummaryView: View {
 
                 // Module 2: Storage boxes / context
                 SectionBlock(
-                    title: "Where you’ve been exploring",
-                    subtitle: "The life areas your experiments have touched so far.",
+                    title: L.whereExploring(lang),
+                    subtitle: L.whereExploringSubtitle(lang),
                     style: .storage
                 ) {
                     StorageBoxesView(experiments: experiments, seedCatalog: seedCatalog, onUpdate: onUpdate)
@@ -362,7 +366,7 @@ struct SummaryView: View {
             }
             .padding(.vertical, DSSpacing.md)
         }
-        .navigationTitle("Summary")
+        .navigationTitle(L.summary(lang))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
         .navigationDestination(isPresented: $showFullCalendar) {

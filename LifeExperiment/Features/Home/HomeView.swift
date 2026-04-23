@@ -19,9 +19,11 @@ struct HomeView: View {
     let onDuplicateExperiment: (Experiment) -> Void
     let onDeleteExperiment: (Experiment) -> Void
 
-    @AppStorage("guideCopySession") private var guideCopySession: Int = 0
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
 
     private static let cachedSuggestions: [ExperimentSuggestion] = ExperimentSuggestionsLoader.load()
+
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
     // MARK: - State Determination
 
@@ -103,7 +105,7 @@ struct HomeView: View {
     }
 
     private var guideCopy: GuideCopy {
-        GuideCopyProvider.copy(for: homeGuideState, sessionIndex: guideCopySession)
+        GuideCopyProvider.stableCopy(for: homeGuideState, lang: lang)
     }
 
     private var hasLoggedLowEnergyToday: Bool {
@@ -147,11 +149,6 @@ struct HomeView: View {
         currentState != .noActiveExperiments && !continuePreview.isEmpty
     }
 
-    // Title varies by state
-    private var continueRecordingTitle: String {
-        "Continue"
-    }
-
     // MARK: - Completed Logic
 
     private var completedExperiments: [Experiment] {
@@ -174,7 +171,7 @@ struct HomeView: View {
     // MARK: - Recent Events (Milestone-based, system-generated)
 
     private var recentEvents: [RecentEvent] {
-        RecentEventBuilder.build(experiments: experiments, today: Date())
+        RecentEventBuilder.build(experiments: experiments, today: Date(), lang: lang)
     }
 
     // MARK: - UI
@@ -222,7 +219,7 @@ struct HomeView: View {
                         //let isWeakened = hasLoggedToday
 
                         HStack {
-                            Text(continueRecordingTitle)
+                            Text(L.continueText(lang))
                                 .font(DSText.headline)
                                 .foregroundColor(.primary)
 
@@ -232,7 +229,7 @@ struct HomeView: View {
                                 Button(action: {
                                     onShowActiveMore()
                                 }) {
-                                    Text(S.actionMore)
+                                    Text(L.seeMore(lang))
                                         .font(DSText.subheadline)
                                         .foregroundColor(.blue)
                                 }
@@ -266,7 +263,7 @@ struct HomeView: View {
                     sectionDivider
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(S.sectionRecentEvents)
+                        Text(L.recentMoments(lang))
                             .font(DSText.headline)
                             .foregroundColor(.primary.opacity(0.72))
 
@@ -283,7 +280,7 @@ struct HomeView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text(S.sectionCompleted)
+                            Text(L.sectionCompleted(lang))
                                 .font(DSText.headline)
                                 .foregroundColor(.primary)
 
@@ -293,7 +290,7 @@ struct HomeView: View {
                                 Button(action: {
                                     onShowCompletedMore()
                                 }) {
-                                    Text(S.actionMore)
+                                    Text(L.seeMore(lang))
                                         .font(DSText.subheadline)
                                         .foregroundColor(.blue)
                                 }
@@ -324,9 +321,6 @@ struct HomeView: View {
                 }
             }
             .padding()
-        }
-        .onAppear {
-            guideCopySession += 1
         }
     }
 

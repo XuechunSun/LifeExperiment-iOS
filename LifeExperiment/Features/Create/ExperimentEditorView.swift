@@ -9,6 +9,8 @@ struct ExperimentEditorView: View {
     let onCommit: (Experiment) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
     // Draft state
     @State private var title: String = ""
@@ -182,10 +184,10 @@ struct ExperimentEditorView: View {
 
     private var categoryDisplayText: String {
         if isOtherCategory {
-            return "Other"
+            return L.createCategoryOther(lang)
         }
         if let c = selectedSeedCategory { return c.title }
-        return "Select..."
+        return L.createSelectPlaceholder(lang)
     }
 
     private var subcategoryDisplayText: String {
@@ -193,14 +195,14 @@ struct ExperimentEditorView: View {
             if let value = trimmedOrNil(customSubcategoryText) {
                 return value
             }
-            return "Enter..."
+            return L.createEnterSubcategoryPlaceholder(lang)
         }
 
         if useCustomSubcategory {
             if let value = trimmedOrNil(customSubcategoryText) {
                 return value
             }
-            return "Enter..."
+            return L.createEnterSubcategoryPlaceholder(lang)
         }
 
         if let category = selectedSeedCategory,
@@ -208,7 +210,7 @@ struct ExperimentEditorView: View {
            let sub = category.subcategories.first(where: { $0.id == subId }) {
             return sub.title
         }
-        return "Select..."
+        return L.createSelectPlaceholder(lang)
     }
 
     private var seedSubcategoryMenuItems: [SeedSubcategory] {
@@ -369,6 +371,21 @@ struct ExperimentEditorView: View {
         return false
     }
 
+    private var navigationTitleForMode: String {
+        switch mode {
+        case .create: return L.createNavNewExperiment(lang)
+        case .rename: return L.createNavEditExperiment(lang)
+        case .duplicate: return L.createNavDuplicateExperiment(lang)
+        }
+    }
+
+    private var primaryToolbarButtonTitle: String {
+        switch mode {
+        case .create, .duplicate: return L.createEditorPrimary(lang)
+        case .rename: return L.save(lang)
+        }
+    }
+
     // MARK: - UI building blocks (Card style)
 
     private func cardField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
@@ -388,16 +405,16 @@ struct ExperimentEditorView: View {
     @ViewBuilder
     private var imageLoggingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Image Logging")
+            Text(L.createImageLoggingSectionTitle(lang))
                 .createSectionLabelStyle()
 
             cardBackground {
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text("Add photos if it helps you remember")
+                    Text(L.createImageLoggingHelper(lang))
                         .lifeSecondaryText()
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Toggle("Allow images for this experiment", isOn: $allowsImageLogging)
+                    Toggle(L.createImageLoggingToggle(lang), isOn: $allowsImageLogging)
                 }
             }
         }
@@ -410,12 +427,12 @@ struct ExperimentEditorView: View {
                 .font(DSText.title3)
 
             VStack(alignment: .leading, spacing: DSSpacing.xs) {
-                Text("Not sure where to start?")
+                Text(L.createIntroUnsure(lang))
                     .font(DSText.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
 
-                Text("Choose a category and we’ll suggest a few gentle ideas to begin.")
+                Text(L.createIntroBody(lang))
                     .lifeSecondaryText()
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -438,11 +455,19 @@ struct ExperimentEditorView: View {
 
                             promptSection(scrollProxy: proxy)
 
-                            TitleSection(title: $title, focusedField: $focusedField)
-                                .id("title-section")
+                            TitleSection(
+                                title: $title,
+                                focusedField: $focusedField,
+                                lang: lang
+                            )
+                            .id("title-section")
                         } else {
-                            TitleSection(title: $title, focusedField: $focusedField)
-                                .id("title-section")
+                            TitleSection(
+                                title: $title,
+                                focusedField: $focusedField,
+                                lang: lang
+                            )
+                            .id("title-section")
 
                             promptSection(scrollProxy: proxy)
 
@@ -453,7 +478,8 @@ struct ExperimentEditorView: View {
                             isSeedBased: isSeedBased,
                             isCustomSubcategoryMode: isCustomSubcategoryMode,
                             displayedImpact: displayedImpact,
-                            showDimensionPicker: $showDimensionPicker
+                            showDimensionPicker: $showDimensionPicker,
+                            lang: lang
                         )
 
                         if preferences.imageLoggingEnabled {
@@ -505,7 +531,7 @@ struct ExperimentEditorView: View {
                             HStack {
                                 Text(name)
                                 Spacer()
-                                Button("Delete", role: .destructive) {
+                                Button(L.actionDelete(lang), role: .destructive) {
                                     pendingDeleteSavedName = name
                                     showDeleteSavedConfirm = true
                                 }
@@ -515,25 +541,29 @@ struct ExperimentEditorView: View {
                         }
 
                         Section {
-                            Text("Saved subcategories (max 5). Newest kept.")
+                            Text(L.createManageSavedFooter(lang))
                                 .font(DSText.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .navigationTitle("Manage Saved")
+                    .navigationTitle(L.createManageSavedTitle(lang))
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Done") {
+                            Button(L.actionDone(lang)) {
                                 showManageSheet = false
                             }
                         }
                     }
-                    .alert("Delete saved subcategory?", isPresented: $showDeleteSavedConfirm, presenting: pendingDeleteSavedName) { name in
-                        Button("Cancel", role: .cancel) {
+                    .alert(
+                        L.createDeleteSavedSubcategoryTitle(lang),
+                        isPresented: $showDeleteSavedConfirm,
+                        presenting: pendingDeleteSavedName
+                    ) { name in
+                        Button(L.actionCancel(lang), role: .cancel) {
                             pendingDeleteSavedName = nil
                         }
-                        Button("Delete", role: .destructive) {
+                        Button(L.actionDelete(lang), role: .destructive) {
                             if let key = customSubcategoryCategoryKey {
                                 removeCustomSubcategory(name, key: key)
                             }
@@ -545,7 +575,10 @@ struct ExperimentEditorView: View {
                 }
             }
             .sheet(isPresented: $showDimensionPicker) {
-                DimensionPickerSheet(initialImpact: displayedImpact) { newImpact in
+                DimensionPickerSheet(
+                    initialImpact: displayedImpact,
+                    lang: lang
+                ) { newImpact in
                     selectedImpact = newImpact
                     hasManuallyEditedImpact = true
                     if isCustomSubcategoryMode,
@@ -555,15 +588,15 @@ struct ExperimentEditorView: View {
                     }
                 }
             }
-            .navigationTitle(mode.navTitle)
+            .navigationTitle(navigationTitleForMode)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(S.actionCancel) { dismiss() }
+                    Button(L.actionCancel(lang)) { dismiss() }
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(mode.primaryButtonTitle) {
+                    Button(primaryToolbarButtonTitle) {
                         let now = Date()
                         let finalTitle = trimmed(title)
                         let finalCustomSubcategory = trimmedOrNil(customSubcategoryText)
@@ -642,10 +675,12 @@ struct ExperimentEditorView: View {
                 case .duplicate(let from):
                     // Suggest a default title, but allow user to edit
                     // Prevent duplicate "(Copy)" suffix
-                    if from.title.hasSuffix("(Copy)") {
+                    let copySuffix = L.createDuplicateTitleSuffix(lang)
+                    if from.title.hasSuffix(L.createDuplicateTitleSuffix(.english)) ||
+                        from.title.hasSuffix(L.createDuplicateTitleSuffix(.chinese)) {
                         title = from.title
                     } else {
-                        title = "\(from.title) (Copy)"
+                        title = from.title + copySuffix
                     }
                     prefillCategorySubcategory(from: from)
 
@@ -769,6 +804,9 @@ struct ExperimentEditorView: View {
             saveCustomSubcategoryToList: $saveCustomSubcategoryToList,
             pickedSavedSubcategory: $pickedSavedSubcategory,
             categoryDisplayText: categoryDisplayText,
+            selectPlaceholder: L.createSelectPlaceholder(lang),
+            otherCategoryLabel: L.createCategoryOther(lang),
+            lang: lang,
             onDismissKeyboard: {
                 focusedField = nil
             }
@@ -792,19 +830,26 @@ struct ExperimentEditorView: View {
             enterCustomSubcategoryMode: enterCustomSubcategoryMode,
             pickSavedSubcategory: pickSavedSubcategory,
             selectSeedSubcategoryId: selectSeedSubcategory,
+            selectPlaceholder: L.createSelectPlaceholder(lang),
+            enterPlaceholder: L.createEnterSubcategoryPlaceholder(lang),
+            lang: lang,
             onDismissKeyboard: {
                 focusedField = nil
             }
         )
 
         if !hasCategorySelected {
-            Text("Please select a category.")
+            Text(L.createValidationSelectCategory(lang))
                 .font(DSText.caption)
                 .foregroundColor(.red)
                 .padding(.horizontal, 4)
                 .padding(.top, -8)
         } else if !hasRequiredSubcategorySelection {
-            Text(isOtherCategory ? "Please enter a subcategory." : "Please select a subcategory.")
+            Text(
+                isOtherCategory
+                ? L.createValidationEnterSubcategory(lang)
+                : L.createValidationSelectSubcategory(lang)
+            )
                 .font(DSText.caption)
                 .foregroundColor(.red)
                 .padding(.horizontal, 4)
@@ -818,10 +863,10 @@ struct ExperimentEditorView: View {
             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Suggested prompts")
+                        Text(L.createSuggestedPrompts(lang))
                             .createSectionLabelStyle()
 
-                        Text("A few gentle starting points if you want help naming this experiment.")
+                        Text(L.createSuggestedPromptsSub(lang))
                             .lifeSecondaryText()
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -839,7 +884,7 @@ struct ExperimentEditorView: View {
                                 isProgrammaticTitleChange = false
                             }
                         }) {
-                            Label("Revert", systemImage: "arrow.uturn.backward")
+                            Label(L.createRevert(lang), systemImage: "arrow.uturn.backward")
                                 .font(DSText.caption)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)

@@ -2,14 +2,14 @@ import Foundation
 
 struct RecentEventBuilder {
 
-    static func build(experiments: [Experiment], today: Date) -> [RecentEvent] {
+    static func build(experiments: [Experiment], today: Date, lang: AppLanguage) -> [RecentEvent] {
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: today)
 
         var events: [RecentEvent] = []
 
         // 1. Milestones
-        if let milestoneEvent = milestoneEvent(experiments: experiments, today: todayStart) {
+        if let milestoneEvent = milestoneEvent(experiments: experiments, today: todayStart, lang: lang) {
             events.append(milestoneEvent)
         }
 
@@ -19,22 +19,25 @@ struct RecentEventBuilder {
             events.append(
                 RecentEvent(
                     iconSystemName: RecentEventTemplate.Icon.streak,
-                    title: "🔥 \(streak) days in a row",
-                    subtitle: "You’re building a rhythm"
+                    title: L.homeRecentStreakTitle(lang, streakDays: streak),
+                    subtitle: L.homeRecentStreakSubtitle(lang)
                 )
             )
         }
 
         // 3. Exploration
         if events.count < 2 {
-            if let category = firstTimeCategoryLoggedToday(experiments: experiments, today: todayStart) {
-                events.append(
-                    RecentEvent(
-                        iconSystemName: RecentEventTemplate.Icon.firstTime,
-                        title: "✨ First time in \(category)",
-                        subtitle: "A new area to explore"
+            if let rawCategory = firstTimeCategoryLoggedToday(experiments: experiments, today: todayStart) {
+                let displayCategory = SeedTaxonomyDisplay.displayCategory(stored: rawCategory, lang: lang)
+                if !displayCategory.isEmpty {
+                    events.append(
+                        RecentEvent(
+                            iconSystemName: RecentEventTemplate.Icon.firstTime,
+                            title: L.homeRecentFirstTimeTitle(lang, categoryName: displayCategory),
+                            subtitle: L.homeRecentFirstTimeSubtitle(lang)
+                        )
                     )
-                )
+                }
             }
         }
 
@@ -45,8 +48,8 @@ struct RecentEventBuilder {
                 events.append(
                     RecentEvent(
                         iconSystemName: "leaf.fill",
-                        title: "🌱 You showed up today",
-                        subtitle: "A small return still counts"
+                        title: L.homeRecentShowedUpTitle(lang),
+                        subtitle: L.homeRecentShowedUpSubtitle(lang)
                     )
                 )
             }
@@ -59,8 +62,8 @@ struct RecentEventBuilder {
                 events.append(
                     RecentEvent(
                         iconSystemName: "brain.head.profile",
-                        title: "🧠 You’ve been reflecting consistently",
-                        subtitle: "You’re noticing your inner patterns"
+                        title: L.homeRecentReflectionTitle(lang),
+                        subtitle: L.homeRecentReflectionSubtitle(lang)
                     )
                 )
             }
@@ -80,7 +83,7 @@ struct RecentEventBuilder {
         }
     }
 
-    private static func milestoneEvent(experiments: [Experiment], today: Date) -> RecentEvent? {
+    private static func milestoneEvent(experiments: [Experiment], today: Date, lang: AppLanguage) -> RecentEvent? {
         let calendar = Calendar.current
 
         guard let anchorDate = milestoneAnchorDate(experiments: experiments, calendar: calendar) else {
@@ -93,20 +96,20 @@ struct RecentEventBuilder {
         case 0:
             return RecentEvent(
                 iconSystemName: "heart.fill",
-                title: "Your first day in Life Experiment",
-                subtitle: "A small beginning counts"
+                title: L.homeRecentMilestoneFirstDayTitle(lang),
+                subtitle: L.homeRecentMilestoneFirstDaySubtitle(lang)
             )
         case 6:
             return RecentEvent(
                 iconSystemName: "sparkles",
-                title: "7 days with Life Experiment",
-                subtitle: "You’ve stayed with it"
+                title: L.homeRecentMilestone7DaysTitle(lang),
+                subtitle: L.homeRecentMilestone7DaysSubtitle(lang)
             )
         case 29:
             return RecentEvent(
                 iconSystemName: "sparkles",
-                title: "30 days with Life Experiment",
-                subtitle: "Small steps add up"
+                title: L.homeRecentMilestone30DaysTitle(lang),
+                subtitle: L.homeRecentMilestone30DaysSubtitle(lang)
             )
         default:
             return nil

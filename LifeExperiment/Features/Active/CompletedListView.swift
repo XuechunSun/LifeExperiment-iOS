@@ -8,6 +8,9 @@ struct CompletedListView: View {
     let onDuplicate: (Experiment) -> Void
     let onDelete: (Experiment) -> Void
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
     private var thisWeek: [Experiment] {
         let calendar = Calendar.current
         return completedExperiments.filter { exp in
@@ -32,16 +35,16 @@ struct CompletedListView: View {
                     Spacer()
                         .frame(height: 60)
 
-                    Text(S.emptyNoCompletedExperiments)
+                    Text(L.noCompletedExperiments(lang))
                         .font(DSText.title2)
                         .fontWeight(.semibold)
 
-                    Text(S.emptyNoCompletedSubtitle)
+                    Text(L.noCompletedExperimentsSubtitle(lang))
                         .lifeSecondaryText()
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
 
-                    Text("Try something tiny—one day is still an experiment.")
+                    Text(L.completedListEncouragement(lang))
                         .lifeCaption()
                         .italic()
                         .padding(.top, 8)
@@ -53,13 +56,13 @@ struct CompletedListView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: DSSpacing.lg) {
                         if !thisWeek.isEmpty {
-                            Text(S.sectionThisWeek)
+                            Text(L.sectionThisWeekList(lang))
                                 .lifeSectionTitle()
                             sectionCard(experiments: thisWeek)
                         }
 
                         if !earlier.isEmpty {
-                            Text(S.sectionEarlier)
+                            Text(L.sectionEarlierList(lang))
                                 .lifeSectionTitle()
                             sectionCard(experiments: earlier)
                         }
@@ -68,7 +71,7 @@ struct CompletedListView: View {
                 }
             }
         }
-        .navigationTitle("Completed Experiments")
+        .navigationTitle(L.completedExperiments(lang))
         .navigationBarTitleDisplayMode(.large)
     }
 
@@ -77,8 +80,11 @@ struct CompletedListView: View {
             ForEach(experiments) { experiment in
                 ExperimentListCard(
                     title: experiment.title,
-                    subtitle: experiment.completedAt.map {
-                        "Completed \($0.formatted(date: .abbreviated, time: .omitted))"
+                    subtitle: experiment.completedAt.map { date in
+                        L.completedOnDate(
+                            lang,
+                            dateString: date.formatted(date: .abbreviated, time: .omitted)
+                        )
                     },
                     titleWeight: .medium,
                     surfaceStyle: .completed,

@@ -22,7 +22,7 @@ enum InsightCalculator {
     private static let stabilityEpsilon: Double = 0.05
     private static let maxLines: Int = 2
 
-    static func compute(logs: [DailyLog], now: Date, calendar: Calendar = .current) -> [InsightLine] {
+    static func compute(logs: [DailyLog], now: Date, calendar: Calendar = .current, lang: AppLanguage) -> [InsightLine] {
         // 1) Mood windows: log-based (last 7 mood logs vs previous 7 mood logs)
         let moodLogs: [(date: Date, score: Double)] = logs.compactMap { log in
             guard let score = moodScore(for: log.mood) else { return nil }
@@ -42,16 +42,15 @@ enum InsightCalculator {
         // 2) Always include Mood Direction (fallback to steady if no previous window)
         let directionText: String = {
             guard let recentAvg = average(recentMoodScores) else {
-                return "Mood has been fairly steady recently."
+                return L.insightMoodFairlySteady(lang)
             }
             guard let prevAvg = average(previousMoodScores) else {
-                // No baseline -> avoid pretending trend; show steady fallback
-                return "Mood has been fairly steady recently."
+                return L.insightMoodFairlySteady(lang)
             }
             let delta = recentAvg - prevAvg
-            if delta > moodDeltaThreshold { return "Mood has been slightly trending up recently." }
-            if delta < -moodDeltaThreshold { return "Mood has been slightly trending down recently." }
-            return "Mood has been fairly steady recently."
+            if delta > moodDeltaThreshold { return L.insightMoodSlightlyUp(lang) }
+            if delta < -moodDeltaThreshold { return L.insightMoodSlightlyDown(lang) }
+            return L.insightMoodFairlySteady(lang)
         }()
 
         var lines: [InsightLine] = [
@@ -65,14 +64,14 @@ enum InsightCalculator {
 
         // 3) Optional second line (priority: Stability, else Participation)
         // 3a) Stability: requires recent >= 3 AND previous >= 2
-        if let stability = moodStabilityLine(recent: recentMoodScores, previous: previousMoodScores) {
+        if let stability = moodStabilityLine(recent: recentMoodScores, previous: previousMoodScores, lang: lang) {
             lines.append(InsightLine(id: "\(InsightKind.stability.rawValue)|\(stability)|1", text: stability, kind: .stability))
             return Array(lines.prefix(maxLines))
         }
 
         // 3b) Participation: calendar-based (keep frequency meaning)
         let counts = participationCountsCalendar(logs: logs, now: now, calendar: calendar)
-        if let participation = participationLine(recentCount: counts.recent, previousCount: counts.previous) {
+        if let participation = participationLine(recentCount: counts.recent, previousCount: counts.previous, lang: lang) {
             lines.append(InsightLine(id: "\(InsightKind.rhythm.rawValue)|\(participation)|1", text: participation, kind: .rhythm))
         }
 
@@ -93,20 +92,20 @@ enum InsightCalculator {
         return (recent, previous)
     }
 
-    private static func participationLine(recentCount: Int, previousCount: Int) -> String? {
+    private static func participationLine(recentCount: Int, previousCount: Int, lang: AppLanguage) -> String? {
         let delta = recentCount - previousCount
-        if delta >= participationThreshold { return "You've been checking in more often recently." }
-        if delta <= -participationThreshold { return "You've been checking in less often recently." }
-        return "Your check-in rhythm has been consistent."
+        if delta >= participationThreshold { return L.insightCheckInMoreOften(lang) }
+        if delta <= -participationThreshold { return L.insightCheckInLessOften(lang) }
+        return L.insightCheckInRhythmConsistent(lang)
     }
 
-    private static func moodStabilityLine(recent: [Double], previous: [Double]) -> String? {
+    private static func moodStabilityLine(recent: [Double], previous: [Double], lang: AppLanguage) -> String? {
         guard recent.count >= 3, previous.count >= 2 else { return nil }
         let recentStd = standardDeviation(recent)
         let previousStd = standardDeviation(previous)
-        if recentStd < previousStd - stabilityEpsilon { return "Mood swings have been smoothing out." }
-        if recentStd > previousStd + stabilityEpsilon { return "Mood swings have been slightly more variable." }
-        return "Mood variability has been fairly consistent."
+        if recentStd < previousStd - stabilityEpsilon { return L.insightMoodSwingsSmoothingOut(lang) }
+        if recentStd > previousStd + stabilityEpsilon { return L.insightMoodSwingsMoreVariable(lang) }
+        return L.insightMoodVariabilityConsistent(lang)
     }
 
     private static func moodScore(for mood: Mood?) -> Double? {

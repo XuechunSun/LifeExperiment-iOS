@@ -26,16 +26,19 @@ struct SubcategorySection: View {
     let enterCustomSubcategoryMode: () -> Void
     let pickSavedSubcategory: (String) -> Void
     let selectSeedSubcategoryId: (String) -> Void
+    let selectPlaceholder: String
+    let enterPlaceholder: String
+    let lang: AppLanguage
     let onDismissKeyboard: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Subcategory")
+                Text(L.createSubcategoryLabel(lang))
                     .createSectionLabelStyle()
                 Spacer()
                 if !savedCustomSubcategoriesForCurrentCategory.isEmpty {
-                    Button("Manage") {
+                    Button(L.createManageSubcategories(lang)) {
                         showManageSheet = true
                     }
                     .buttonStyle(.plain)
@@ -57,7 +60,7 @@ struct SubcategorySection: View {
                                 }
 
                                 Divider()
-                                Button("Custom...") {
+                                Button(L.createCustomSubcategoryMenu(lang)) {
                                     enterCustomSubcategoryMode()
                                 }
                             } label: {
@@ -67,11 +70,11 @@ struct SubcategorySection: View {
 
                         if savedCustomSubcategoriesForCurrentCategory.isEmpty || useCustomSubcategory {
                             let hintText = pickedSavedSubcategory
-                                ? "You can edit this subcategory below"
-                                : "Please enter a custom subcategory below"
+                                ? L.createSubcategoryHintEditSaved(lang)
+                                : L.createSubcategoryHintEnter(lang)
                             customInputBlock(
                                 hint: hintText,
-                                placeholder: "Custom Subcategory",
+                                placeholder: L.createCustomSubcategoryPlaceholderInput(lang),
                                 text: $customSubcategoryText
                             )
                         }
@@ -99,7 +102,7 @@ struct SubcategorySection: View {
                             }
 
                             Divider()
-                            Button("Custom...") {
+                            Button(L.createCustomSubcategoryMenu(lang)) {
                                 enterCustomSubcategoryMode()
                             }
                         } label: {
@@ -108,8 +111,8 @@ struct SubcategorySection: View {
 
                         if useCustomSubcategory {
                             customInputBlock(
-                                hint: "Please enter a custom subcategory below",
-                                placeholder: "Custom Subcategory",
+                                hint: L.createSubcategoryHintEnter(lang),
+                                placeholder: L.createCustomSubcategoryPlaceholderInput(lang),
                                 text: $customSubcategoryText
                             )
 
@@ -123,7 +126,7 @@ struct SubcategorySection: View {
                         EmptyView()
                     } else {
                         HStack {
-                            Text("Select a category first")
+                            Text(L.createSelectCategoryFirst(lang))
                                 .foregroundColor(.secondary)
                                 .italic()
                             Spacer()
@@ -141,7 +144,10 @@ struct SubcategorySection: View {
     private var subcategoryMenuLabel: some View {
         HStack {
             Text(subcategoryDisplayText)
-                .foregroundColor(subcategoryDisplayText == "Select..." || subcategoryDisplayText == "Enter..." ? .secondary : .primary)
+                .foregroundColor(
+                    subcategoryDisplayText == selectPlaceholder
+                    || subcategoryDisplayText == enterPlaceholder ? .secondary : .primary
+                )
             Spacer()
             Image(systemName: "chevron.up.chevron.down")
                 .font(DSText.subheadline)
@@ -155,13 +161,13 @@ struct SubcategorySection: View {
 
     private var saveToggleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle("Save to this category’s list", isOn: $saveCustomSubcategoryToList)
+            Toggle(L.createSaveToCategoryList(lang), isOn: $saveCustomSubcategoryToList)
                 .font(DSText.subheadline)
-            Text("Up to 5 saved")
+            Text(L.createUpTo5Saved(lang))
                 .font(DSText.caption2)
                 .foregroundColor(.secondary)
             if willReplaceOldestSavedIfAdded {
-                Text("Max 5 saved — saving this will replace the oldest.")
+                Text(L.createMax5ReplaceNote(lang))
                     .font(DSText.caption2)
                     .foregroundStyle(.secondary)
             }

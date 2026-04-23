@@ -11,11 +11,14 @@ struct CategorySection: View {
     @Binding var pickedSavedSubcategory: Bool
 
     let categoryDisplayText: String
+    let selectPlaceholder: String
+    let otherCategoryLabel: String
+    let lang: AppLanguage
     let onDismissKeyboard: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Category")
+            Text(L.createCategoryLabel(lang))
                 .createSectionLabelStyle()
 
             VStack(alignment: .leading, spacing: 0) {
@@ -40,7 +43,7 @@ struct CategorySection: View {
                         }
                     }
 
-                    Button("Other") {
+                    Button(otherCategoryLabel) {
                         isOtherCategory = true
                         selectedSeedCategoryId = nil
 
@@ -54,7 +57,7 @@ struct CategorySection: View {
                 } label: {
                     HStack {
                         Text(categoryDisplayText)
-                            .foregroundColor(categoryDisplayText == "Select..." ? .secondary : .primary)
+                            .foregroundColor(categoryDisplayText == selectPlaceholder ? .secondary : .primary)
                         Spacer()
                         Image(systemName: "chevron.down")
                             .font(DSText.caption)

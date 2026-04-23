@@ -13,22 +13,48 @@ struct GuideCopy {
 
 enum GuideCopyProvider {
 
-    static func copy(for state: HomeGuideState, sessionIndex: Int) -> GuideCopy {
-        let pool = copies(for: state)
+    /// Stable for the calendar day + state + language (not re-picked on every `body` refresh).
+    static func stableCopy(for state: HomeGuideState, lang: AppLanguage) -> GuideCopy {
+        let pool = copies(for: state, lang: lang)
         guard !pool.isEmpty else {
             return GuideCopy(headline: "", subheadline: "")
         }
-        let idx = ((sessionIndex % pool.count) + pool.count) % pool.count
+        let idx = dayStableBucket(state: state, lang: lang) % pool.count
         return pool[idx]
+    }
+
+    private static func dayStableBucket(state: HomeGuideState, lang: AppLanguage) -> Int {
+        let cal = Calendar.current
+        let now = Date()
+        let y = cal.component(.year, from: now)
+        let m = cal.component(.month, from: now)
+        let d = cal.component(.day, from: now)
+        let stateTag: Int
+        switch state {
+        case .noActive: stateTag = 0
+        case .activeNoLogToday: stateTag = 1
+        case .loggedToday: stateTag = 2
+        }
+        let langTag = lang == .chinese ? 31 : 17
+        return abs(y &* 10_000 &+ m &* 100 &+ d &+ stateTag &* 13 &+ langTag)
     }
 
     // MARK: - Copy pools per state
 
-    private static func copies(for state: HomeGuideState) -> [GuideCopy] {
-        switch state {
-        case .noActive:       return noActiveCopies
-        case .activeNoLogToday: return activeNoLogCopies
-        case .loggedToday:    return loggedTodayCopies
+    private static func copies(for state: HomeGuideState, lang: AppLanguage) -> [GuideCopy] {
+        switch lang {
+        case .english:
+            switch state {
+            case .noActive: return noActiveCopies
+            case .activeNoLogToday: return activeNoLogCopies
+            case .loggedToday: return loggedTodayCopies
+            }
+        case .chinese:
+            switch state {
+            case .noActive: return noActiveCopiesZh
+            case .activeNoLogToday: return activeNoLogCopiesZh
+            case .loggedToday: return loggedTodayCopiesZh
+            }
         }
     }
 
@@ -143,5 +169,42 @@ enum GuideCopyProvider {
             headline: "Good. You paid attention today.",
             subheadline: "That matters more than you think."
         ),
+    ]
+
+    // MARK: - Chinese pools (independent copy; counts need not match English)
+
+    private static let noActiveCopiesZh: [GuideCopy] = [
+        GuideCopy(headline: "可以从一件很小的事开始。", subheadline: "今天想试的话，挑一个就好。"),
+        GuideCopy(headline: "今天也许适合轻轻开个头。", subheadline: "再小的一步也算数。"),
+        GuideCopy(headline: "开始没有标准答案。", subheadline: "选一件听起来有趣的就行。"),
+        GuideCopy(headline: "不用一开始就想得很大。", subheadline: "一件小事就够了。"),
+        GuideCopy(headline: "就从现在开始。", subheadline: "一个小实验，也会让你看见不少东西。"),
+        GuideCopy(headline: "今天要不要试一件小事？", subheadline: "不必完美，先试试。"),
+        GuideCopy(headline: "再小的事也算一件事。", subheadline: "边做边调整就好。"),
+        GuideCopy(headline: "开始往往是最简单的一步。", subheadline: "先选一个方向就好。"),
+    ]
+
+    private static let activeNoLogCopiesZh: [GuideCopy] = [
+        GuideCopy(headline: "你手上已经有几件开始了的小事。", subheadline: "今天想的话，可以继续一点点。"),
+        GuideCopy(headline: "你已经开始了。", subheadline: "想到什么，写一句就好。"),
+        GuideCopy(headline: "还有几个实验可以接着做。", subheadline: "写一句简短的也好。"),
+        GuideCopy(headline: "从上次停下的地方接着来。", subheadline: "稍微留意一下今天就好。"),
+        GuideCopy(headline: "还有几件事，可以接着做。", subheadline: "怎么舒服怎么来。"),
+        GuideCopy(headline: "不必做很多。", subheadline: "感受一下今天也可以。"),
+        GuideCopy(headline: "一点点也很好。", subheadline: "想记的时候，再写一句就好。"),
+        GuideCopy(headline: "你已经在路上了。", subheadline: "今天也可以慢慢往前。"),
+        GuideCopy(headline: "你还在，挺好的。", subheadline: "想记的时候，写一句就好。"),
+        GuideCopy(headline: "今天注意到了什么？", subheadline: "一个念头也值得留下。"),
+    ]
+
+    private static let loggedTodayCopiesZh: [GuideCopy] = [
+        GuideCopy(headline: "今天你已经做了一点点。", subheadline: "如果想，可以试试新的。"),
+        GuideCopy(headline: "今天你也来了。", subheadline: "这样就很好。"),
+        GuideCopy(headline: "不错，今天已经记了一笔。", subheadline: "换一件事试试，或休息一下。"),
+        GuideCopy(headline: "今天的记录写完了。", subheadline: "有心情的话，可以再试点新的。"),
+        GuideCopy(headline: "今天你来过这里。", subheadline: "想再多试一点，也可以。"),
+        GuideCopy(headline: "这些小事在慢慢累起来。", subheadline: "继续或休息一下，都可以。"),
+        GuideCopy(headline: "完成了一小步。", subheadline: "接下来随你。"),
+        GuideCopy(headline: "今天你有停下来看看自己。", subheadline: "这样的小事，其实很难得。"),
     ]
 }

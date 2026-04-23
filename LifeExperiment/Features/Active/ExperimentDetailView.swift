@@ -29,6 +29,9 @@ struct ExperimentDetailView: View {
     @State private var draftWhatHappened: String = ""
     @State private var draftWhatWillIDoDifferently: String = ""
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
     init(experiment: Experiment, isNewUser: Bool = false, onUpdate: @escaping (Experiment) -> Void) {
         self.isNewUser = isNewUser
         self.onUpdate = onUpdate
@@ -61,7 +64,7 @@ struct ExperimentDetailView: View {
     private var preferences = AppPreferences()
 
     private var insightLines: [InsightLine] {
-        InsightCalculator.compute(logs: localExperiment.logs, now: Date())
+        InsightCalculator.compute(logs: localExperiment.logs, now: Date(), lang: lang)
     }
 
     private var canShowImages: Bool {
@@ -78,10 +81,10 @@ struct ExperimentDetailView: View {
         let persisted = persistedTodayPhotoLocalPath
         if draftPhotoLocalPath == persisted { return nil }
         if draftPhotoLocalPath != nil {
-            return "Photo will be saved when you tap Save."
+            return L.photoWillSaveWhenSave(lang)
         }
         if persisted != nil {
-            return "Photo will be removed when you tap Save."
+            return L.photoWillRemoveWhenSave(lang)
         }
         return nil
     }
@@ -95,45 +98,45 @@ struct ExperimentDetailView: View {
         if draftMood == nil {
             if isNewUser {
                 return (
-                    "Start with how today felt.",
-                    "Your first note can be simple.",
+                    L.todaySuggestionStartWithFelt(lang),
+                    L.todaySuggestionFirstNoteSimple(lang),
                     "🌿"
                 )
             }
             return (
-                "Start with a quick check-in",
-                "A simple mood check can be enough to mark how today feels.",
+                L.todaySuggestionQuickCheckIn(lang),
+                L.todaySuggestionMoodCheckSubtitle(lang),
                 "🌿"
             )
         }
 
         if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return (
-                "Add one small note",
-                "A sentence is enough to remember what stood out today.",
+                L.todaySuggestionAddOneNote(lang),
+                L.todaySuggestionNoteSentence(lang),
                 "✍️"
             )
         }
 
         if canShowImages && draftPhotoLocalPath == nil {
             return (
-                "A photo is optional",
-                "If an image helps capture today more clearly, you can add one.",
+                L.todaySuggestionPhotoOptional(lang),
+                L.todaySuggestionPhotoClarify(lang),
                 "📷"
             )
         }
 
         if hasTodayLog {
             return (
-                "You already have a start",
-                "Save again anytime if you want to refine today’s check-in.",
+                L.todaySuggestionAlreadyStart(lang),
+                L.todaySuggestionSaveAgain(lang),
                 "✨"
             )
         }
 
         return (
-            "Keep today simple",
-            "A quick check-in is enough to keep this experiment in motion.",
+            L.todaySuggestionKeepSimple(lang),
+            L.todaySuggestionQuickEnough(lang),
             "🌱"
         )
     }
@@ -154,27 +157,27 @@ struct ExperimentDetailView: View {
             } message: {
                 Text("A short note helps you remember what happened today.")
             }
-            .alert("Pick a mood?", isPresented: $showMoodRequiredAlert) {
-                Button("OK", role: .cancel) { }
+            .alert(L.detailPickMoodAlertTitle(lang), isPresented: $showMoodRequiredAlert) {
+                Button(L.actionOK(lang), role: .cancel) { }
             } message: {
-                Text("It takes one tap and helps you see patterns over time.")
+                Text(L.detailPickMoodAlertMessage(lang))
             }
             .alert("Couldn't attach photo.", isPresented: $showPhotoErrorAlert, presenting: photoErrorMessage) { _ in
                 Button("OK", role: .cancel) { }
             } message: { message in
                 Text(message)
             }
-            .alert(S.experimentCompleteConfirm, isPresented: $showCompleteConfirm) {
-                Button(S.actionCancel, role: .cancel) { }
-                Button(S.actionComplete, role: .destructive) { completeExperiment() }
+            .alert(L.experimentCompleteConfirm(lang), isPresented: $showCompleteConfirm) {
+                Button(L.actionCancel(lang), role: .cancel) { }
+                Button(L.actionComplete(lang), role: .destructive) { completeExperiment() }
             } message: {
-                Text(S.experimentCompleteMessage)
+                Text(L.experimentCompleteMessage(lang))
             }
-            .alert(S.experimentReopenConfirm, isPresented: $showReopenConfirm) {
-                Button(S.actionCancel, role: .cancel) { }
-                Button(S.actionReopen) { reopenExperiment() }
+            .alert(L.experimentReopenConfirm(lang), isPresented: $showReopenConfirm) {
+                Button(L.actionCancel(lang), role: .cancel) { }
+                Button(L.actionReopen(lang)) { reopenExperiment() }
             } message: {
-                Text("You'll be able to add new logs again.")
+                Text(L.experimentReopenMessage(lang))
             }
             .onChange(of: selectedPhotoItem) { _, newItem in
                 guard let newItem else { return }
@@ -209,21 +212,26 @@ struct ExperimentDetailView: View {
             if localExperiment.category != nil || localExperiment.subcategory != nil {
                 HStack(spacing: 8) {
                     if let category = localExperiment.category {
-                        detailTag(category)
+                        detailTag(SeedTaxonomyDisplay.displayCategory(stored: category, lang: lang))
                     }
                     if let subcategory = localExperiment.subcategory {
-                        detailTag(subcategory)
+                        detailTag(SeedTaxonomyDisplay.displaySubcategory(stored: subcategory, lang: lang))
                     }
                 }
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Created \(localExperiment.createdAt, style: .date)")
+                Text(
+                    L.detailCreatedOn(
+                        lang,
+                        dateString: localExperiment.createdAt.formatted(date: .abbreviated, time: .omitted)
+                    )
+                )
                     .font(DSText.caption)
                     .foregroundColor(.secondary)
 
                 if isCompleted {
-                    Label("Completed", systemImage: "checkmark.seal.fill")
+                    Label(L.sectionCompleted(lang), systemImage: "checkmark.seal.fill")
                         .font(DSText.caption)
                         .foregroundColor(primaryLavenderButton)
                         .padding(.horizontal, 10)
@@ -231,13 +239,18 @@ struct ExperimentDetailView: View {
                         .background(primaryLavenderButton.opacity(0.12))
                         .clipShape(Capsule())
 
-                    Text("This experiment is completed. Logging is disabled.")
+                    Text(L.detailExperimentCompletedNoLogging(lang))
                         .font(DSText.caption)
                         .foregroundColor(.secondary)
                         .italic()
 
                     if let completedAt = localExperiment.completedAt {
-                        Text("Completed on \(completedAt, style: .date)")
+                        Text(
+                            L.detailCompletedOn(
+                                lang,
+                                dateString: completedAt.formatted(date: .abbreviated, time: .omitted)
+                            )
+                        )
                             .font(DSText.caption)
                             .foregroundColor(.secondary)
                     }
@@ -262,7 +275,7 @@ struct ExperimentDetailView: View {
         if !isCompleted {
             VStack(alignment: .leading, spacing: DSSpacing.md) {
                 if !insightLines.isEmpty {
-                    ExperimentInsightSnapshotSection(lines: insightLines)
+                    ExperimentInsightSnapshotSection(lines: insightLines, lang: lang)
                 }
 
                 if let suggestion = todaySuggestion {
@@ -287,14 +300,14 @@ struct ExperimentDetailView: View {
 
                 VStack(alignment: .leading, spacing: DSSpacing.md) {
                     VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                        Text("How do you feel today?")
+                        Text(L.howDoYouFeelToday(lang))
                             .font(DSText.headline)
                         MoodSelectorView(selectedMood: $draftMood)
                     }
 
                     VStack(alignment: .leading, spacing: DSSpacing.sm) {
                         HStack(alignment: .firstTextBaseline) {
-                            Text("Notes")
+                            Text(L.notes(lang))
                                 .font(DSText.headline)
 
                             Spacer()
@@ -303,7 +316,7 @@ struct ExperimentDetailView: View {
                                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                                     HStack(spacing: 6) {
                                         Image(systemName: "camera")
-                                        Text("Add photo")
+                                        Text(L.addPhoto(lang))
                                             .underline()
                                     }
                                     .font(DSText.subheadline)
@@ -312,7 +325,7 @@ struct ExperimentDetailView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(isSavingPhoto)
-                                .accessibilityLabel("Add photo")
+                                .accessibilityLabel(L.addPhoto(lang))
                             }
                         }
                         .frame(minHeight: 24)
@@ -335,11 +348,11 @@ struct ExperimentDetailView: View {
                                     .frame(width: 44, height: 44)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                                Text("Photo attached")
+                                Text(L.photoAttached(lang))
                                     .font(DSText.caption)
                                     .foregroundColor(.secondary)
 
-                                Button("Remove") {
+                                Button(L.remove(lang)) {
                                     draftPhotoLocalPath = nil
                                     photoMarkedForRemoval = true
                                 }
@@ -371,7 +384,7 @@ struct ExperimentDetailView: View {
 
                         Spacer()
 
-                        Button("Save") {
+                        Button(L.save(lang)) {
                             if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 showEmptyNoteAlert = true
                             } else if draftMood == nil {
@@ -387,7 +400,7 @@ struct ExperimentDetailView: View {
                     Button {
                         showCompleteConfirm = true
                     } label: {
-                        Text("Complete Experiment")
+                        Text(L.completeExperiment(lang))
                             .underline()
                     }
                     .buttonStyle(.plain)
@@ -411,7 +424,7 @@ struct ExperimentDetailView: View {
     private var reviewSection: some View {
         if isCompleted {
             VStack(alignment: .leading, spacing: DSSpacing.md) {
-                Text("A small reflection")
+                Text(L.completedReflectionTitle(lang))
                     .font(DSText.section)
                     .foregroundColor(.primary)
 
@@ -419,19 +432,19 @@ struct ExperimentDetailView: View {
                     if let review = localExperiment.review, review.locked {
                         VStack(alignment: .leading, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("What did I try?")
+                                Text(L.completedReflectionWhatDidITry(lang))
                                     .font(DSText.headline)
                                 Text(review.whatDidITry)
                                     .foregroundColor(.secondary)
                             }
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("What happened?")
+                                Text(L.completedReflectionWhatHappened(lang))
                                     .font(DSText.headline)
                                 Text(review.whatHappened)
                                     .foregroundColor(.secondary)
                             }
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("What will I do differently next time?")
+                                Text(L.completedReflectionWhatNextTime(lang))
                                     .font(DSText.headline)
                                 Text(review.whatWillIDoDifferently)
                                     .foregroundColor(.secondary)
@@ -441,9 +454,9 @@ struct ExperimentDetailView: View {
                         VStack(alignment: .leading, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("What did I try?")
+                                    Text(L.completedReflectionWhatDidITry(lang))
                                         .font(DSText.headline)
-                                    Text("Optional")
+                                    Text(L.optionalField(lang))
                                         .font(DSText.caption)
                                         .foregroundColor(.secondary)
                                         .italic()
@@ -458,10 +471,10 @@ struct ExperimentDetailView: View {
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("What happened?")
+                                    Text(L.completedReflectionWhatHappened(lang))
                                         .font(DSText.headline)
 
-                                    Text("Optional")
+                                    Text(L.optionalField(lang))
                                         .font(DSText.caption)
                                         .foregroundColor(.secondary)
                                         .italic()
@@ -477,10 +490,10 @@ struct ExperimentDetailView: View {
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("What will I do differently next time?")
+                                    Text(L.completedReflectionWhatNextTime(lang))
                                         .font(DSText.headline)
 
-                                    Text("Optional")
+                                    Text(L.optionalField(lang))
                                         .font(DSText.caption)
                                         .foregroundColor(.secondary)
                                         .italic()
@@ -496,7 +509,7 @@ struct ExperimentDetailView: View {
                             HStack {
                                 Spacer()
 
-                                Button("Save Review") { saveReview() }
+                                Button(L.saveReview(lang)) { saveReview() }
                                     .buttonStyle(.borderedProminent)
                                     .tint(primaryLavenderButton)
                             }
@@ -522,12 +535,12 @@ struct ExperimentDetailView: View {
         let visibleLogs = showFullHistory ? sortedLogs : Array(sortedLogs.prefix(6))
 
         VStack(alignment: .leading, spacing: DSSpacing.md) {
-            Text("History")
+            Text(L.history(lang))
                 .font(DSText.section)
                 .foregroundColor(.primary)
 
             if sortedLogs.isEmpty {
-                Text("No logs yet. Start logging today!")
+                Text(L.historyNoLogsYet(lang))
                     .foregroundColor(.secondary)
                     .italic()
             } else {
@@ -536,7 +549,7 @@ struct ExperimentDetailView: View {
                 }
 
                 if sortedLogs.count > 10 {
-                    Button(showFullHistory ? "Show less" : "See earlier entries") {
+                    Button(showFullHistory ? L.showLess(lang) : L.seeEarlierEntries(lang)) {
                         showFullHistory.toggle()
                     }
                     .font(DSText.subheadline)
@@ -561,7 +574,7 @@ struct ExperimentDetailView: View {
     @ViewBuilder
     private var toastOverlay: some View {
         if showSavedToast {
-            Text("Saved ✓")
+            Text(L.savedToast(lang))
                 .font(DSText.subheadline)
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
@@ -571,7 +584,7 @@ struct ExperimentDetailView: View {
                 .shadow(radius: 4)
                 .padding(.top, 8)
         } else if showBlankReviewToast {
-            Text("Saved. Review left blank.")
+            Text(L.savedReviewBlankToast(lang))
                 .font(DSText.subheadline)
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
@@ -587,7 +600,7 @@ struct ExperimentDetailView: View {
     private var toolbarContent: some ToolbarContent {
         if isCompleted {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Reopen") { showReopenConfirm = true }
+                Button(L.actionReopen(lang)) { showReopenConfirm = true }
                     .tint(primaryLavenderButton)
             }
         }
@@ -745,11 +758,12 @@ private enum LocalPhotoStore {
 
 fileprivate struct ExperimentInsightSnapshotSection: View {
     let lines: [InsightLine]
+    let lang: AppLanguage
     fileprivate var preferences = AppPreferences()
 
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
-            Text("Insight Snapshot")
+            Text(L.insightSnapshotTitle(lang))
                 .font(DSText.headline)
                 .foregroundColor(.primary)
 

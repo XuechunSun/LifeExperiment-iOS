@@ -5,6 +5,7 @@ import SwiftUI
 struct DimensionChip: View {
     let dimension: Dimension
     let isPrimary: Bool
+    let lang: AppLanguage
 
     var body: some View {
         HStack(spacing: 4) {
@@ -13,7 +14,7 @@ struct DimensionChip: View {
                     .font(DSText.caption2)
                     .foregroundColor(.yellow)
             }
-            Text(dimension.title)
+            Text(L.dimensionDisplayTitle(lang, dimension: dimension))
                 .font(.system(size: 14, weight: .medium))
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -33,6 +34,7 @@ struct DimensionChip: View {
 
 private struct ImpactChipGroupView: View {
     let impact: ExperimentImpact
+    let lang: AppLanguage
 
     private var chips: [(dimension: Dimension, isPrimary: Bool)] {
         var values: [(Dimension, Bool)] = [(impact.primary, true)]
@@ -49,7 +51,11 @@ private struct ImpactChipGroupView: View {
         if chips.count <= 2 {
             HStack(spacing: 8) {
                 ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
-                    DimensionChip(dimension: chip.dimension, isPrimary: chip.isPrimary)
+                    DimensionChip(
+                        dimension: chip.dimension,
+                        isPrimary: chip.isPrimary,
+                        lang: lang
+                    )
                 }
             }
         } else {
@@ -57,7 +63,11 @@ private struct ImpactChipGroupView: View {
                 GridItem(.adaptive(minimum: 100), spacing: 8)
             ], alignment: .leading, spacing: 8) {
                 ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
-                    DimensionChip(dimension: chip.dimension, isPrimary: chip.isPrimary)
+                    DimensionChip(
+                        dimension: chip.dimension,
+                        isPrimary: chip.isPrimary,
+                        lang: lang
+                    )
                 }
             }
         }
@@ -66,30 +76,31 @@ private struct ImpactChipGroupView: View {
 
 struct DefaultDimensionsCard: View {
     let impact: ExperimentImpact
+    let lang: AppLanguage
     let onEdit: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.md) {
             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("This experiment might help you explore")
+                    Text(L.createDefaultDimensionsHeadline(lang))
                         .font(DSText.subheadline)
                         .foregroundColor(.secondary)
                     Spacer()
                     Button(action: onEdit) {
-                        Text("Edit")
+                        Text(L.createDimensionEditAction(lang))
                             .font(DSText.subheadline)
                             .foregroundColor(.blue)
                     }
                 }
 
-                Text("Your primary area appears first, with others following.")
+                Text(L.createDefaultDimensionsSub(lang))
                     .font(DSText.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            ImpactChipGroupView(impact: impact)
+            ImpactChipGroupView(impact: impact, lang: lang)
         }
         .createSupportSurface(contentPadding: 16)
     }
@@ -97,6 +108,7 @@ struct DefaultDimensionsCard: View {
 
 struct CustomDimensionSelectionCard: View {
     let selectedImpact: ExperimentImpact?
+    let lang: AppLanguage
     let onChoose: () -> Void
 
     var body: some View {
@@ -105,33 +117,33 @@ struct CustomDimensionSelectionCard: View {
                 // Show selected dimensions with Edit button
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("This experiment helps with")
+                        Text(L.createCustomDimensionsHeadline(lang))
                             .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                         Spacer()
                         Button(action: onChoose) {
-                            Text("Edit")
+                            Text(L.createDimensionEditAction(lang))
                                 .font(DSText.subheadline)
                                 .foregroundColor(.blue)
                         }
                     }
 
-                    Text("Choose the dimensions that feel most true right now. You can adjust them later.")
+                    Text(L.createCustomDimensionsSubWhenSelected(lang))
                         .font(DSText.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                ImpactChipGroupView(impact: impact)
+                ImpactChipGroupView(impact: impact, lang: lang)
             } else {
                 // Show "Choose dimensions" prompt
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text("What does this experiment help with most? (required)")
+                    Text(L.createCustomDimensionsHeadlineUnselected(lang))
                         .font(DSText.subheadline)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("Start with the most relevant area first, then add any supporting ones.")
+                    Text(L.createCustomDimensionsSubUnselected(lang))
                         .font(DSText.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -139,7 +151,7 @@ struct CustomDimensionSelectionCard: View {
                     Button(action: onChoose) {
                         HStack {
                             Image(systemName: "plus.circle.fill")
-                            Text("Choose dimensions")
+                            Text(L.createDimensionChooseCTA(lang))
                                 .fontWeight(.medium)
                         }
                         .foregroundColor(.blue)
@@ -154,7 +166,7 @@ struct CustomDimensionSelectionCard: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text("Don't overthink it — you can adjust later.")
+                    Text(L.createCustomDimensionsReassure(lang))
                         .font(DSText.caption)
                         .foregroundColor(.secondary)
                 }

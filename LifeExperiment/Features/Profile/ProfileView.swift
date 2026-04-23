@@ -12,9 +12,12 @@ struct ProfileView: View {
     var lowEnergyLogs: [LowEnergyLog] = []
     let onResetAllData: () -> Void
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
     @State private var showResetAllDataConfirm = false
 
     private var preferences = AppPreferences()
+
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
     init(
         loadExperiments: @escaping () -> [Experiment],
@@ -62,7 +65,11 @@ struct ProfileView: View {
     }
 
     private var headerSubtitle: String {
-        shownUpCount > 0 ? "You've shown up \(shownUpCount) times" : "Still exploring"
+        shownUpCount > 0 ? L.profileShownUp(lang, count: shownUpCount) : L.profileStillExploring(lang)
+    }
+
+    private var currentLanguageDisplay: String {
+        L.currentLanguage(from: appLanguageRaw).displayName
     }
 
     var body: some View {
@@ -96,7 +103,7 @@ struct ProfileView: View {
                     }
 
                     VStack(spacing: 6) {
-                        Text("Life Experimenter")
+                        Text(L.lifeExperimenter(lang))
                             .font(DSText.title2)
                             .fontWeight(.semibold)
                             .multilineTextAlignment(.center)
@@ -107,13 +114,13 @@ struct ProfileView: View {
                             .multilineTextAlignment(.center)
 
                         if gentleDayCount > 0 {
-                            Text("\(gentleDayCount) were gentle days")
+                            Text(L.gentleDays(lang, count: gentleDayCount))
                                 .font(DSText.caption)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                         }
 
-                        Text("Using this device only")
+                        Text(L.usingThisDeviceOnly(lang))
                             .font(DSText.caption)
                             .foregroundColor(.secondary)
                     }
@@ -132,17 +139,17 @@ struct ProfileView: View {
                 )
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Your experience")
+                    Text(L.yourExperience(lang))
                         .font(DSText.headline)
 
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .top, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                                Text("Image logging")
+                                Text(L.imageLogging(lang))
                                     .font(DSText.subheadline)
                                     .fontWeight(.medium)
 
-                                Text("Add photos to your daily logs")
+                                Text(L.profileImageLoggingSubtitle(lang))
                                     .lifeCaption()
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -156,14 +163,45 @@ struct ProfileView: View {
 
                         Divider()
 
+                        HStack(alignment: .center, spacing: DSSpacing.md) {
+                            Text(L.language(lang))
+                                .font(DSText.subheadline)
+                                .fontWeight(.medium)
+
+                            Spacer(minLength: 0)
+
+                            Menu {
+                                ForEach(AppLanguage.allCases) { option in
+                                    Button(option.displayName) {
+                                        appLanguageRaw = option.rawValue
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text(currentLanguageDisplay)
+                                        .font(DSText.subheadline)
+                                        .foregroundColor(.secondary)
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(minHeight: 32)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
+                        .padding(.vertical, 12)
+
+                        Divider()
+
                         NavigationLink(value: Route.completedMore) {
                             HStack(alignment: .top, spacing: DSSpacing.md) {
                                 VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                                    Text("Completed Experiments")
+                                    Text(L.completedExperiments(lang))
                                         .font(DSText.subheadline)
                                         .fontWeight(.medium)
 
-                                    Text("Browse experiments you’ve already finished")
+                                    Text(L.profileCompletedSubtitle(lang))
                                         .lifeCaption()
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
@@ -192,16 +230,16 @@ struct ProfileView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Data & System")
+                    Text(L.profileDataAndSystemSection(lang))
                         .font(DSText.headline)
 
                     VStack(alignment: .leading, spacing: 0) {
                         VStack(alignment: .leading, spacing: DSSpacing.xxs) {
-                            Text("Data storage")
+                            Text(L.dataStorage(lang))
                                 .font(DSText.subheadline)
                                 .fontWeight(.medium)
 
-                            Text("Your data is stored on this device only.")
+                            Text(L.dataStoredOnDeviceOnly(lang))
                                 .lifeCaption()
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -249,7 +287,7 @@ struct ProfileView: View {
                 }
 #endif
 
-                Text("Built for curiosity")
+                Text(L.builtForCuriosity(lang))
                     .font(DSText.caption2)
                     .foregroundColor(.secondary.opacity(0.85))
                     .multilineTextAlignment(.center)
@@ -260,16 +298,16 @@ struct ProfileView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 28)
         }
-        .navigationTitle("Profile")
+        .navigationTitle(L.profile(lang))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
-        .alert("Reset all app data?", isPresented: $showResetAllDataConfirm) {
-            Button("Cancel", role: .cancel) { }
-            Button("Reset", role: .destructive) {
+        .alert(L.profileResetTitle(lang), isPresented: $showResetAllDataConfirm) {
+            Button(L.profileResetCancel(lang), role: .cancel) { }
+            Button(L.profileResetConfirm(lang), role: .destructive) {
                 onResetAllData()
             }
         } message: {
-            Text("This will permanently delete all experiments, logs, saved custom subcategories, and locally stored images on this device.")
+            Text(L.profileResetMessage(lang))
         }
     }
 }

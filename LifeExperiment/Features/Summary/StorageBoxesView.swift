@@ -18,41 +18,38 @@ struct StorageBoxesView: View {
         }
     }
 
-    private var allCategories: [String] {
-        var categories: [String] = []
-
-        // Add seed categories first
-        if let catalog = seedCatalog {
-            categories.append(contentsOf: catalog.categories.map { $0.title })
-        }
-
-        // Add "Other"
-        categories.append("Other")
-
-        return categories
-    }
-
     private var categoryBoxes: [CategoryBox] {
         var boxes: [CategoryBox] = []
 
-        for category in allCategories {
-            let exps: [Experiment]
-            let customNames: [String]
-
-            if category == "Other" {
-                exps = otherExperiments
-                customNames = []
-            } else {
-                // Seed category
-                exps = experiments.filter { exp in
-                    exp.category?.trimmingCharacters(in: .whitespacesAndNewlines) == category
+        if let catalog = seedCatalog {
+            for cat in catalog.categories {
+                let exps = experiments.filter { exp in
+                    exp.category?.trimmingCharacters(in: .whitespacesAndNewlines) == cat.title
                 }
-                customNames = []
+                let updatedAt = exps.isEmpty ? Date.distantPast : (exps.map { $0.updatedAt }.max() ?? Date.distantPast)
+                boxes.append(
+                    CategoryBox(
+                        category: cat.title,
+                        seedCategoryId: cat.id,
+                        experiments: exps,
+                        updatedAt: updatedAt
+                    )
+                )
             }
-
-            let updatedAt = exps.isEmpty ? Date.distantPast : (exps.map { $0.updatedAt }.max() ?? Date.distantPast)
-            boxes.append(CategoryBox(category: category, experiments: exps, updatedAt: updatedAt, customCategoryNames: customNames))
         }
+
+        let otherExps = otherExperiments
+        let otherUpdated = otherExps.isEmpty
+            ? Date.distantPast
+            : (otherExps.map { $0.updatedAt }.max() ?? Date.distantPast)
+        boxes.append(
+            CategoryBox(
+                category: "Other",
+                seedCategoryId: nil,
+                experiments: otherExps,
+                updatedAt: otherUpdated
+            )
+        )
 
         let coreBoxes = boxes
             .filter { $0.category != "Other" }
@@ -73,8 +70,10 @@ struct StorageBoxesView: View {
 }
 
 struct CategoryBox: Identifiable {
-    var id: String { category }
+    /// Stable key for the grid: seed category id, or `"other"` for the Other bucket.
+    var id: String { seedCategoryId ?? "other" }
     let category: String
+    let seedCategoryId: String?
     let experiments: [Experiment]
     let updatedAt: Date
     let customCategoryNames: [String]
@@ -88,8 +87,15 @@ struct CategoryBox: Identifiable {
         return Array(Set(subs)).sorted()
     }
 
-    init(category: String, experiments: [Experiment], updatedAt: Date, customCategoryNames: [String] = []) {
+    init(
+        category: String,
+        seedCategoryId: String?,
+        experiments: [Experiment],
+        updatedAt: Date,
+        customCategoryNames: [String] = []
+    ) {
         self.category = category
+        self.seedCategoryId = seedCategoryId
         self.experiments = experiments
         self.updatedAt = updatedAt
         self.customCategoryNames = customCategoryNames
@@ -101,12 +107,27 @@ struct StorageBoxTile: View {
     let isNewUser: Bool
     let onUpdate: (Experiment) -> Void
     @State private var showExperimentsList: Bool = false
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
-    private var subtitleText: String? {
+    private var displayCategoryName: String {
+        if let seedId = box.seedCategoryId {
+            return L.summarySeedCategoryTitle(lang, categoryId: seedId)
+        }
+        if box.category == "Other" {
+            return L.createCategoryOther(lang)
+        }
+        return box.category
+    }
+
+    private func subtitleText() -> String? {
         if box.isEmpty {
-            return "Empty"
+            return L.storageBoxEmpty(lang)
         } else if !box.subcategories.isEmpty {
-            return box.subcategories.prefix(2).joined(separator: ", ")
+            return box.subcategories
+                .prefix(2)
+                .map { SeedTaxonomyDisplay.displaySubcategory(stored: $0, lang: lang) }
+                .joined(separator: ", ")
         }
         return nil
     }
@@ -123,7 +144,7 @@ struct StorageBoxTile: View {
                     .frame(maxWidth: .infinity, alignment: .center)
 
                 // Category name
-                Text(box.category)
+                Text(displayCategoryName)
                     .font(DSText.rowTitle)
                     .foregroundColor(box.isEmpty ? .secondary : .primary)
                     .lineLimit(2)
@@ -131,7 +152,7 @@ struct StorageBoxTile: View {
                     .frame(maxWidth: .infinity)
 
                 // Subtitle: custom categories, subcategories, or Empty label
-                if let subtitle = subtitleText {
+                if let subtitle = subtitleText() {
                     Text(subtitle)
                         .font(DSText.caption)
                         .foregroundColor(.secondary)
@@ -159,21 +180,21 @@ struct StorageBoxTile: View {
                             .font(.system(size: 60))
                             .foregroundColor(.gray.opacity(0.3))
 
-                        Text("Empty Category")
+                        Text(L.storageBoxEmptyStateTitle(lang))
                             .font(DSText.title2)
                             .fontWeight(.semibold)
 
-                        Text("No experiments in \"\(box.category)\" yet.")
+                        Text(L.storageBoxNoExperiments(lang, categoryName: displayCategoryName))
                             .font(DSText.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     }
                     .padding()
-                    .navigationTitle(box.category)
+                    .navigationTitle(displayCategoryName)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Close") {
+                            Button(L.actionClose(lang)) {
                                 showExperimentsList = false
                             }
                         }
@@ -184,7 +205,10 @@ struct StorageBoxTile: View {
                             ForEach(box.experiments.sorted { $0.updatedAt > $1.updatedAt }) { experiment in
                                 ExperimentListCard(
                                     title: experiment.title,
-                                    subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
+                                    subtitle: L.lastUpdated(
+                                        lang,
+                                        dateString: experiment.updatedAt.formatted(date: .abbreviated, time: .omitted)
+                                    ),
                                     surfaceStyle: .browse,
                                     contentPadding: DSSpacing.md,
                                     destination: ExperimentDetailView(
@@ -201,11 +225,11 @@ struct StorageBoxTile: View {
                         }
                         .padding(DSSpacing.md)
                     }
-                    .navigationTitle(box.category)
+                    .navigationTitle(displayCategoryName)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Close") {
+                            Button(L.actionClose(lang)) {
                                 showExperimentsList = false
                             }
                         }

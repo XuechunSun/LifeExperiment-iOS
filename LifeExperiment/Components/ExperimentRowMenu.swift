@@ -13,6 +13,9 @@ struct ExperimentRowMenu: View {
     let onDuplicate: () -> Void
     let onDelete: () -> Void
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
     init(kind: Kind, onRename: (() -> Void)? = nil, onDuplicate: @escaping () -> Void, onDelete: @escaping () -> Void) {
         self.kind = kind
         self.onRename = onRename
@@ -24,17 +27,17 @@ struct ExperimentRowMenu: View {
         Menu {
             if kind == .active, let onRename {
                 Button(action: onRename) {
-                    Label("Rename", systemImage: "pencil")
+                    Label(L.actionRename(lang), systemImage: "pencil")
                 }
             }
 
             Button(action: onDuplicate) {
-                Label("Duplicate", systemImage: "doc.on.doc")
+                Label(L.actionDuplicate(lang), systemImage: "doc.on.doc")
             }
 
             Divider()
 
-            Button("Delete", role: .destructive, action: onDelete)
+            Button(L.actionDelete(lang), role: .destructive, action: onDelete)
         } label: {
             Image(systemName: "ellipsis")
                 .foregroundStyle(.secondary)

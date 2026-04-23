@@ -5,19 +5,31 @@ struct HomePersonalizedSuggestionSection: View {
     let suggestion: ExperimentSuggestion
     let onTapSuggestion: () -> Void
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
+    private var worthNoticingBodyVariant: Int {
+        let cal = Calendar.current
+        let now = Date()
+        let y = cal.component(.year, from: now)
+        let m = cal.component(.month, from: now)
+        let d = cal.component(.day, from: now)
+        return abs(y &* 10_000 &+ m &* 100 &+ d) % 3
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
-            Text("Something worth noticing")
+            Text(L.worthNoticing(lang))
                 .font(DSText.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary.opacity(0.82))
 
             VStack(alignment: .leading, spacing: DSSpacing.xs) {
-                Text("You’ve been leaning toward \(PersonalizedSuggestionFormatter.dimensionSummaryLabel(for: signal.topDimension)) lately.")
+                Text(L.worthNoticingBodyPrimary(lang, variant: worthNoticingBodyVariant))
                     .lifeSecondaryText()
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("Here’s something different you could explore.")
+                Text(L.worthNoticingBodySecondary(lang, variant: worthNoticingBodyVariant))
                     .lifeCaption()
             }
 
@@ -40,25 +52,6 @@ struct HomePersonalizedSuggestionSection: View {
 }
 
 private enum PersonalizedSuggestionFormatter {
-    static func dimensionSummaryLabel(for dimension: Dimension) -> String {
-        switch dimension {
-        case .emotion_awareness:
-            return "emotional awareness"
-        case .body_energy:
-            return "body and energy"
-        case .execution:
-            return "action"
-        case .focus_flow:
-            return "focus"
-        case .expression_creativity:
-            return "expression"
-        case .connection:
-            return "connection"
-        case .self_understanding:
-            return "self-understanding"
-        }
-    }
-
     static func emoji(for dimension: Dimension) -> String {
         switch dimension {
         case .connection:

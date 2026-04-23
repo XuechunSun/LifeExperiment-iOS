@@ -9,6 +9,9 @@ struct CalendarFootprintView: View {
     let onSelectDay: (Date) -> Void
     @State private var weekOffset: Int = 0
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
     // Find the earliest and latest activity dates across all experiments
     private var activityDateRange: (earliest: Date, latest: Date) {
         var minDate: Date?
@@ -127,8 +130,15 @@ struct CalendarFootprintView: View {
 
     private var weekHeaderText: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return "Week of \(formatter.string(from: displayedWeekStart))"
+        if lang == .chinese {
+            formatter.locale = Locale(identifier: "zh_Hans_CN")
+            formatter.dateFormat = "M月d日"
+        } else {
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "MMM d"
+        }
+        let formatted = formatter.string(from: displayedWeekStart)
+        return L.calendarWeekOf(lang, weekStartFormatted: formatted)
     }
 
     private func jumpToToday() {
@@ -145,7 +155,7 @@ struct CalendarFootprintView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("This Week")
+            Text(L.thisWeek(lang))
                 .font(DSText.headline)
 
             // Week navigation header
@@ -172,7 +182,7 @@ struct CalendarFootprintView: View {
                 Spacer()
 
                 // Today button
-                Button("Today") {
+                Button(L.calendarToday(lang)) {
                     jumpToToday()
                 }
                 .font(DSText.caption)
@@ -204,7 +214,7 @@ struct CalendarFootprintView: View {
             // See full calendar link
             NavigationLink(destination: FullCalendarView(loggedDates: loggedDates, experiments: experiments, lowEnergyLogs: lowEnergyLogs, onUpdate: onUpdate)) {
                 HStack {
-                    Text("See full calendar")
+                    Text(L.calendarSeeFullCalendar(lang))
                         .font(DSText.subheadline)
                     Image(systemName: "chevron.right")
                         .font(DSText.caption)

@@ -32,6 +32,8 @@ struct ContentView: View {
         }
     }
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+
     // Persistent storage
     @AppStorage("dayCount") private var dayCount: Int = 1
     @AppStorage("statusRaw") private var statusRaw: String = LoggingStatus.idle.rawValue
@@ -60,6 +62,8 @@ struct ContentView: View {
     
     // Seed catalog
     @State private var seedCatalog: SeedCatalog?
+
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
     // MARK: - Persistence helpers
 
@@ -407,28 +411,28 @@ struct ContentView: View {
                 }
             }
             .tabItem {
-                Label(S.tabHome, systemImage: "house.fill")
+                Label(L.tabHome(lang), systemImage: "house.fill")
             }
             .tag(Tab.home)
             
             // Tab 2: Active Experiments
             NavigationStack(path: $activePath) {
                 activeExperimentsView
-                    .navigationTitle(S.tabActive)
+                    .navigationTitle(L.active(lang))
                     .navigationBarTitleDisplayMode(.inline)
                     .navigationDestination(for: Route.self) { route in
                         routeDestination(route: route, path: $activePath)
                     }
             }
             .tabItem {
-                Label(S.tabActive, systemImage: "list.bullet")
+                Label(L.tabActive(lang), systemImage: "list.bullet")
             }
             .tag(Tab.active)
             
             // Tab 3: Create (placeholder - sheet is presented via onChange)
             Color.clear
                 .tabItem {
-                    Label(S.tabCreate, systemImage: "plus.circle.fill")
+                    Label(L.tabCreate(lang), systemImage: "plus.circle.fill")
                 }
                 .tag(Tab.create)
             
@@ -440,7 +444,7 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label(S.tabSummary, systemImage: "chart.bar.fill")
+                Label(L.tabSummary(lang), systemImage: "chart.bar.fill")
             }
             .tag(Tab.summary)
             
@@ -456,7 +460,7 @@ struct ContentView: View {
                     }
             }
             .tabItem {
-                Label(S.tabProfile, systemImage: "person.fill")
+                Label(L.tabProfile(lang), systemImage: "person.fill")
             }
             .tag(Tab.profile)
         }
@@ -516,19 +520,19 @@ struct ContentView: View {
                 seedCatalog = SeedCatalogLoader.load()
             }
         }
-        .alert(S.experimentDeleteConfirm, isPresented: Binding(
+        .alert(L.experimentDeleteConfirm(lang), isPresented: Binding(
             get: { experimentToDelete != nil },
             set: { if !$0 { experimentToDelete = nil } }
         ), presenting: experimentToDelete) { experiment in
-            Button(S.actionCancel, role: .cancel) {
+            Button(L.actionCancel(lang), role: .cancel) {
                 experimentToDelete = nil
             }
-            Button(S.actionDelete, role: .destructive) {
+            Button(L.actionDelete(lang), role: .destructive) {
                 deleteExperiment(id: experiment.id)
                 experimentToDelete = nil
             }
         } message: { experiment in
-            Text("All logs and data for \"\(experiment.title)\" " + S.experimentDeleteMessage)
+            Text(L.experimentDeleteBody(lang, experimentTitle: experiment.title))
         }
         .overlay(alignment: .top) {
             if let actionToastMessage {
@@ -560,11 +564,11 @@ struct ContentView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.secondary)
                     
-                    Text(S.emptyNoActiveExperiments)
+                    Text(L.noActiveExperiments(lang))
                         .font(DSText.title2)
                         .fontWeight(.semibold)
                     
-                    Text(S.emptyNoActiveSubtitle)
+                    Text(L.noActiveExperimentsSubtitle(lang))
                         .font(DSText.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -575,7 +579,7 @@ struct ContentView: View {
                     }) {
                         HStack {
                             Image(systemName: "plus.circle.fill")
-                            Text(S.actionCreate + " Experiment")
+                            Text(L.createExperimentButton(lang))
                                 .fontWeight(.medium)
                         }
                         .foregroundColor(.white)
@@ -642,7 +646,7 @@ struct ContentView: View {
                 )
                 .id("\(experiment.id.uuidString)-\(experiment.updatedAt.timeIntervalSinceReferenceDate)")
             } else {
-                Text("Experiment not found")
+                Text(L.experimentNotFound(lang))
                     .foregroundColor(.secondary)
             }
             
