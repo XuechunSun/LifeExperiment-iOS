@@ -516,6 +516,7 @@ struct ExperimentDetailView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .lightCardStyle(
                     cornerRadius: 16,
                     fillColor: Color(.systemBackground),
