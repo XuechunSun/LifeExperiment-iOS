@@ -644,7 +644,9 @@ struct ContentView: View {
                     isNewUser: ExperimentDetailView.shouldShowFirstLogGuidance(for: experiments),
                     onUpdate: updateExperiment
                 )
-                .id("\(experiment.id.uuidString)-\(experiment.updatedAt.timeIntervalSinceReferenceDate)")
+                // Stable per experiment: id must NOT include updatedAt, or each save remounts the view
+                // and clears @State (e.g. the post-save success toast).
+                .id(experiment.id.uuidString)
             } else {
                 Text(L.experimentNotFound(lang))
                     .foregroundColor(.secondary)
