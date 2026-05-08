@@ -1,13 +1,19 @@
 # Xcode
 DerivedData/
+.build/
+.derivedDataBuild/
+
+# Xcode user data
+*.xcuserdata
 *.xcuserstate
-*.xcuserdata/
+
+# Swift Package Manager
+.swiftpm/
+Packages/
 
 # macOS
 .DS_Store
 
-# SwiftPM
-.build/
-
-.Rhistory
+# Local screenshots / history
 screenshot*.png
+.Rhistory

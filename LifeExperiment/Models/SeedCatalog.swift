@@ -24,17 +24,30 @@ struct SeedSubcategory: Identifiable, Codable {
 struct SeedCatalogLoader {
     static func load() -> SeedCatalog? {
         guard let url = Bundle.main.url(forResource: "experiment_seed", withExtension: "json") else {
+            #if DEBUG
             print("⚠️ SeedCatalogLoader: experiment_seed.json not found in bundle")
+            #endif
             return nil
         }
 
         do {
             let data = try Data(contentsOf: url)
             let catalog = try JSONDecoder().decode(SeedCatalog.self, from: data)
+            #if DEBUG
             print("✅ SeedCatalogLoader: Loaded catalog v\(catalog.version) with \(catalog.categories.count) categories")
+            // Coverage check: prompts are tappable in Create and persisted as their
+            // English-normalized form. Verify every normalized prompt has a Chinese mapping.
+            let normalizedPrompts: [String] = catalog.categories
+                .flatMap { $0.subcategories }
+                .flatMap { $0.prompts }
+                .map { normalizedTitle(from: $0) }
+            BuiltInTitleDisplay.debugAssertCoverage(normalizedPrompts, context: "seed prompt")
+            #endif
             return catalog
         } catch {
+            #if DEBUG
             print("⚠️ SeedCatalogLoader: Failed to decode experiment_seed.json - \(error)")
+            #endif
             return nil
         }
     }

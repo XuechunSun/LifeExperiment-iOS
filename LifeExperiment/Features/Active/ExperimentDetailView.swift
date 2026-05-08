@@ -152,18 +152,18 @@ struct ExperimentDetailView: View {
             .overlay(alignment: .top) { toastOverlay }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
-            .alert("Add a quick note?", isPresented: $showEmptyNoteAlert) {
-                Button("OK", role: .cancel) { }
+            .alert(L.detailEmptyNoteAlertTitle(lang), isPresented: $showEmptyNoteAlert) {
+                Button(L.actionOK(lang), role: .cancel) { }
             } message: {
-                Text("A short note helps you remember what happened today.")
+                Text(L.detailEmptyNoteAlertMessage(lang))
             }
             .alert(L.detailPickMoodAlertTitle(lang), isPresented: $showMoodRequiredAlert) {
                 Button(L.actionOK(lang), role: .cancel) { }
             } message: {
                 Text(L.detailPickMoodAlertMessage(lang))
             }
-            .alert("Couldn't attach photo.", isPresented: $showPhotoErrorAlert, presenting: photoErrorMessage) { _ in
-                Button("OK", role: .cancel) { }
+            .alert(L.detailPhotoAttachFailedTitle(lang), isPresented: $showPhotoErrorAlert, presenting: photoErrorMessage) { _ in
+                Button(L.actionOK(lang), role: .cancel) { }
             } message: { message in
                 Text(message)
             }
@@ -198,12 +198,14 @@ struct ExperimentDetailView: View {
             .padding(.horizontal, pageHorizontalPadding)
             .padding(.vertical, 16)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .onTapGesture { hideKeyboard() }
     }
 
     @ViewBuilder
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: DSSpacing.sm) {
-            Text(localExperiment.title)
+            Text(BuiltInTitleDisplay.localizedTitle(stored: localExperiment.title, lang: lang))
                 .font(DSText.title2)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.leading)
@@ -703,12 +705,12 @@ struct ExperimentDetailView: View {
         }
 
         guard let data = try? await item.loadTransferable(type: Data.self) else {
-            photoErrorMessage = "Please try selecting another photo."
+            photoErrorMessage = L.detailPhotoPickFailedMessage(lang)
             showPhotoErrorAlert = true
             return
         }
         guard let relativePath = LocalPhotoStore.saveImageData(data) else {
-            photoErrorMessage = "Unable to save this photo locally."
+            photoErrorMessage = L.detailPhotoSaveFailedMessage(lang)
             showPhotoErrorAlert = true
             return
         }
@@ -816,6 +818,8 @@ fileprivate struct ExperimentInsightSnapshotSection: View {
 private struct HistoryLogRow: View {
     let log: DailyLog
     @State private var showPhotoPreview = false
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
     private var historyImage: UIImage? {
         guard let path = log.photoLocalPath else { return nil }
@@ -871,7 +875,7 @@ private struct HistoryLogRow: View {
                             }
                             .toolbar {
                                 ToolbarItem(placement: .cancellationAction) {
-                                    Button("Done") {
+                                    Button(L.detailPhotoPreviewDone(lang)) {
                                         showPhotoPreview = false
                                     }
                                     .foregroundColor(.white)
@@ -883,7 +887,7 @@ private struct HistoryLogRow: View {
                 HStack(spacing: 8) {
                     Image(systemName: "photo.slash")
                         .font(DSText.caption)
-                    Text("Photo unavailable")
+                    Text(L.detailPhotoUnavailable(lang))
                         .font(DSText.caption)
                 }
                 .foregroundColor(.secondary)

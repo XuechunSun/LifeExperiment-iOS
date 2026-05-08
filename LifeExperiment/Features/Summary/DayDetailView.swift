@@ -18,8 +18,13 @@ struct DayDetailView: View {
 
     private var dayLabel: String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: lang == .chinese ? "zh_CN" : "en_US")
-        formatter.dateFormat = "EEEE, MMM d"
+        if lang == .chinese {
+            formatter.locale = Locale(identifier: "zh_Hans_CN")
+            formatter.dateFormat = "EEEE，M月d日"
+        } else {
+            formatter.locale = Locale(identifier: "en_US")
+            formatter.dateFormat = "EEEE, MMM d"
+        }
         return formatter.string(from: day)
     }
 
@@ -94,7 +99,7 @@ struct DayDetailView: View {
                         VStack(spacing: rowSpacing) {
                             ForEach(activeUpdateExperiments) { experiment in
                                 ExperimentListCard(
-                                    title: experiment.title,
+                                    title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
                                     subtitle: activeSubtitle(for: experiment),
                                     surfaceStyle: .activePrimary,
                                     contentPadding: DSSpacing.md,
@@ -133,7 +138,7 @@ struct DayDetailView: View {
                         VStack(spacing: rowSpacing) {
                             ForEach(completedExperiments) { experiment in
                                 ExperimentListCard(
-                                    title: experiment.title,
+                                    title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
                                     subtitle: completedSubtitle(for: experiment),
                                     surfaceStyle: .completed,
                                     contentPadding: DSSpacing.md,

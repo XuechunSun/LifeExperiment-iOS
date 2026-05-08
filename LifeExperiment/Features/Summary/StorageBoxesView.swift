@@ -204,7 +204,7 @@ struct StorageBoxTile: View {
                         VStack(spacing: DSSpacing.md) {
                             ForEach(box.experiments.sorted { $0.updatedAt > $1.updatedAt }) { experiment in
                                 ExperimentListCard(
-                                    title: experiment.title,
+                                    title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
                                     subtitle: L.lastUpdated(
                                         lang,
                                         dateString: experiment.updatedAt.formatted(date: .abbreviated, time: .omitted)

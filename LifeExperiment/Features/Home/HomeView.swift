@@ -238,7 +238,7 @@ struct HomeView: View {
 
                         ForEach(continuePreview) { experiment in
                             ExperimentListCard(
-                                title: experiment.title,
+                                title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
                                 subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
                                 titleWeight: .semibold,
                                 surfaceStyle: .activePrimary,
@@ -299,7 +299,7 @@ struct HomeView: View {
 
                         ForEach(completedPreview) { experiment in
                             ExperimentListCard(
-                                title: experiment.title,
+                                title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
                                 subtitle: experiment.completedAt.map {
                                     "Completed \($0.formatted(date: .abbreviated, time: .omitted))"
                                 },

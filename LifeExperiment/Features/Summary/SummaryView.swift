@@ -314,7 +314,10 @@ struct SummaryView: View {
                         }
 
                         if let insight = primaryHelpfulInsight {
-                            Text(L.highlightFeltBetterOnDaysDid(lang, experimentTitle: insight.title))
+                            Text(L.highlightFeltBetterOnDaysDid(
+                                lang,
+                                experimentTitle: BuiltInTitleDisplay.localizedTitle(stored: insight.title, lang: lang)
+                            ))
                                 .font(DSFont.accent(size: 22, relativeTo: .title3))
                                 .foregroundColor(.white)
                                 .lineLimit(3)

@@ -507,6 +507,42 @@ enum L {
         }
     }
 
+    static func profileDeveloperToolsBannerShown(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Developer tools on"
+        case .chinese: return "开发者选项已开启"
+        }
+    }
+
+    static func profileDeveloperToolsBannerHidden(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Developer tools off"
+        case .chinese: return "开发者选项已关闭"
+        }
+    }
+
+    static func profileDebugSectionTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Debug"
+        case .chinese: return "调试"
+        }
+    }
+
+    static func profileDebugResetAllData(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Reset All Data"
+        case .chinese: return "清除全部数据"
+        }
+    }
+
+    /// Default title for the single seeded experiment when the store is empty (first launch).
+    static func seedStarterExperimentTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Your first check-in"
+        case .chinese: return "你的第一次记录"
+        }
+    }
+
     // MARK: - Tab bar (visible labels)
 
     static func tabHome(_ lang: AppLanguage) -> String {
@@ -1468,6 +1504,55 @@ enum L {
         }
     }
 
+    static func detailEmptyNoteAlertTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Add a quick note?"
+        case .chinese: return "写一句简短备注？"
+        }
+    }
+
+    static func detailEmptyNoteAlertMessage(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "A short note helps you remember what happened today."
+        case .chinese: return "一句话也好，帮你记住今天发生了什么。"
+        }
+    }
+
+    static func detailPhotoAttachFailedTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Couldn't attach photo."
+        case .chinese: return "照片未能添加。"
+        }
+    }
+
+    static func detailPhotoPickFailedMessage(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Please try selecting another photo."
+        case .chinese: return "请尝试重新选择一张照片。"
+        }
+    }
+
+    static func detailPhotoSaveFailedMessage(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Unable to save this photo locally."
+        case .chinese: return "无法在本地保存这张照片。"
+        }
+    }
+
+    static func detailPhotoPreviewDone(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Done"
+        case .chinese: return "完成"
+        }
+    }
+
+    static func detailPhotoUnavailable(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Photo unavailable"
+        case .chinese: return "照片不可用"
+        }
+    }
+
     // MARK: - Detail (check-in + insight snapshot)
 
     static func insightSnapshotTitle(_ lang: AppLanguage) -> String {
@@ -1544,15 +1629,15 @@ enum L {
     // Today SuggestionCard (branches in ExperimentDetailView.todaySuggestion)
     static func todaySuggestionStartWithFelt(_ lang: AppLanguage) -> String {
         switch lang {
-        case .english: return "Start with how today felt."
-        case .chinese: return "从今天的感受开始。"
+        case .english: return "Start here with how today felt."
+        case .chinese: return "从这里开始，感受一下今天。"
         }
     }
 
     static func todaySuggestionFirstNoteSimple(_ lang: AppLanguage) -> String {
         switch lang {
-        case .english: return "Your first note can be simple."
-        case .chinese: return "第一条记录可以很简短。"
+        case .english: return "A short line is enough to start."
+        case .chinese: return "一两句话就能开始。"
         }
     }
 
@@ -1665,7 +1750,7 @@ enum L {
         case (.chinese, "challenge_30"):
             return "30 天挑战"
         case (.english, "well_being"):
-            return "Well-Being"
+            return "Well-being Habits"
         case (.chinese, "well_being"):
             return "身心状态"
         case (.english, "emotional_care"):
@@ -1733,7 +1818,7 @@ enum L {
         case (.chinese, "emotional_awareness"):
             return "情绪觉察"
         case (.english, "self_compassion"):
-            return "Self-Compassion"
+            return "Self Compassion"
         case (.chinese, "self_compassion"):
             return "自我关怀"
         case (.english, "mental_reset"):

@@ -14,6 +14,10 @@ struct ExperimentEditorView: View {
 
     // Draft state
     @State private var title: String = ""
+    /// The original English source title written by `applyCreatePrefillIfNeeded`,
+    /// used at save time to keep the persisted title English when the user did not
+    /// edit the prefilled (possibly localized) form. `nil` when not prefilled.
+    @State private var prefillSourceTitle: String? = nil
 
     @State private var selectedSeedCategoryId: String?
     @State private var selectedSeedSubcategoryId: String?
@@ -186,7 +190,9 @@ struct ExperimentEditorView: View {
         if isOtherCategory {
             return L.createCategoryOther(lang)
         }
-        if let c = selectedSeedCategory { return c.title }
+        if let c = selectedSeedCategory {
+            return L.summarySeedCategoryTitle(lang, categoryId: c.id)
+        }
         return L.createSelectPlaceholder(lang)
     }
 
@@ -207,8 +213,8 @@ struct ExperimentEditorView: View {
 
         if let category = selectedSeedCategory,
            let subId = selectedSeedSubcategoryId,
-           let sub = category.subcategories.first(where: { $0.id == subId }) {
-            return sub.title
+           category.subcategories.contains(where: { $0.id == subId }) {
+            return L.seedSubcategoryLabel(lang, subcategoryId: subId)
         }
         return L.createSelectPlaceholder(lang)
     }
@@ -488,6 +494,11 @@ struct ExperimentEditorView: View {
                     }
                     .padding()
                 }
+                .scrollDismissesKeyboard(.interactively)
+                .onTapGesture {
+                    focusedField = nil
+                    hideKeyboard()
+                }
             }
             .onChange(of: title) { _, _ in
                 if !isProgrammaticTitleChange {
@@ -598,7 +609,20 @@ struct ExperimentEditorView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(primaryToolbarButtonTitle) {
                         let now = Date()
-                        let finalTitle = trimmed(title)
+                        let trimmedInput = trimmed(title)
+                        // If the user did not edit the prefilled localized title, keep the
+                        // English source on disk so future displays still match BuiltInTitleDisplay.
+                        let finalTitle: String = {
+                            if let source = prefillSourceTitle {
+                                let localizedPrefill = trimmed(
+                                    BuiltInTitleDisplay.localizedTitle(stored: source, lang: lang)
+                                )
+                                if trimmedInput == localizedPrefill {
+                                    return trimmed(source)
+                                }
+                            }
+                            return trimmedInput
+                        }()
                         let finalCustomSubcategory = trimmedOrNil(customSubcategoryText)
 
                         if saveCustomSubcategoryToList,
@@ -762,7 +786,8 @@ struct ExperimentEditorView: View {
     private func applyCreatePrefillIfNeeded() {
         guard let createPrefill else { return }
 
-        title = createPrefill.title
+        prefillSourceTitle = createPrefill.title
+        title = BuiltInTitleDisplay.localizedTitle(stored: createPrefill.title, lang: lang)
         if let impact = createPrefill.impact {
             selectedImpact = impact
             hasManuallyEditedImpact = true
@@ -902,7 +927,7 @@ struct ExperimentEditorView: View {
                                 applyPrompt(prompt, scrollProxy: scrollProxy)
                             }) {
                                 SuggestionCard(
-                                    title: prompt,
+                                    title: localizedPromptCardTitle(for: prompt),
                                     subtitle: nil,
                                     icon: nil,
                                     style: .createSuggestion
@@ -935,8 +960,15 @@ struct ExperimentEditorView: View {
             hasBaselineTitle = true
         }
 
+        // English-normalized form is the source-of-truth title that gets persisted
+        // when the user accepts the prompt without further edits. For Chinese UI we
+        // also display the localized form so the title field reads in Chinese.
+        let englishNormalized = normalizedTitle(from: prompt)
+        let displayedTitle = displayPromptTitle(forEnglishNormalized: englishNormalized)
+        prefillSourceTitle = englishNormalized
+
         isProgrammaticTitleChange = true
-        title = normalizedTitle(from: prompt)
+        title = displayedTitle
         showRevertTitle = true
 
         DispatchQueue.main.async {
@@ -946,6 +978,24 @@ struct ExperimentEditorView: View {
                 scrollProxy.scrollTo("title-section", anchor: .center)
             }
         }
+    }
+
+    /// Localized title shown on a prompt inspiration card.
+    /// English UI: original raw seed prompt (preserves existing visual).
+    /// Chinese UI: Chinese mapping of the prompt's normalized form, falling back to the raw English prompt when no mapping exists.
+    private func localizedPromptCardTitle(for prompt: String) -> String {
+        guard lang == .chinese else { return prompt }
+        let normalized = normalizedTitle(from: prompt)
+        let zh = BuiltInTitleDisplay.localizedTitle(stored: normalized, lang: lang)
+        return zh != normalized ? zh : prompt
+    }
+
+    /// Display string for the title field after a prompt is tapped.
+    /// English UI: the existing English-normalized form.
+    /// Chinese UI: the Chinese mapping when available; falls back to the English-normalized form so behavior is never broken.
+    private func displayPromptTitle(forEnglishNormalized englishNormalized: String) -> String {
+        guard lang == .chinese else { return englishNormalized }
+        return BuiltInTitleDisplay.localizedTitle(stored: englishNormalized, lang: lang)
     }
 }
 

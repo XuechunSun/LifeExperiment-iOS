@@ -11,12 +11,14 @@ struct ExperimentSuggestion: Identifiable, Codable {
     let mode: SuggestionMode
     let tags: [String]
 
-    var impactDisplayText: String {
+    /// Lang-aware subtitle for suggestion cards. Uses `L.dimensionDisplayTitle` for
+    /// dimension labels; falls back to the (English-only) `category` field unchanged.
+    func impactDisplayText(lang: AppLanguage) -> String {
         guard let impact else { return category }
 
-        var labels = [impact.primary.title]
+        var labels = [L.dimensionDisplayTitle(lang, dimension: impact.primary)]
         if let secondary = impact.secondary, secondary != impact.primary {
-            labels.append(secondary.title)
+            labels.append(L.dimensionDisplayTitle(lang, dimension: secondary))
         }
         return labels.joined(separator: " · ")
     }

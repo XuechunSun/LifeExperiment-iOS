@@ -79,7 +79,7 @@ struct CompletedListView: View {
         VStack(spacing: DSSpacing.md) {
             ForEach(experiments) { experiment in
                 ExperimentListCard(
-                    title: experiment.title,
+                    title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
                     subtitle: experiment.completedAt.map { date in
                         L.completedOnDate(
                             lang,

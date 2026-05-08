@@ -87,7 +87,7 @@ struct SubcategorySection: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Menu {
                             ForEach(seedSubcategoryMenuItems) { s in
-                                Button(s.title) {
+                                Button(L.seedSubcategoryLabel(lang, subcategoryId: s.id)) {
                                     selectSeedSubcategoryId(s.id)
                                 }
                             }

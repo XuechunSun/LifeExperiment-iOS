@@ -37,8 +37,8 @@ struct HomePersonalizedSuggestionSection: View {
                 onTapSuggestion()
             } label: {
                 SuggestionCard(
-                    title: suggestion.title,
-                    subtitle: suggestion.impactDisplayText,
+                    title: BuiltInTitleDisplay.localizedTitle(stored: suggestion.title, lang: lang),
+                    subtitle: suggestion.impactDisplayText(lang: lang),
                     icon: PersonalizedSuggestionFormatter.emoji(for: signal.weakestDimension),
                     style: .homeSuggestion
                 )

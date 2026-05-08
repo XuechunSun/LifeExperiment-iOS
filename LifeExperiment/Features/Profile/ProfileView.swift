@@ -13,7 +13,11 @@ struct ProfileView: View {
     let onResetAllData: () -> Void
 
     @AppStorage("app_language") private var appLanguageRaw: String = ""
+    /// Persisted unlock for Debug tools (also cleared when defaults domain is wiped on reset).
+    @AppStorage("profile_developer_tools_unlocked") private var developerToolsUnlocked = false
     @State private var showResetAllDataConfirm = false
+    @State private var showDeveloperToolsBanner = false
+    @State private var developerToolsBannerText = ""
 
     private var preferences = AppPreferences()
 
@@ -73,8 +77,9 @@ struct ProfileView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 28) {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(spacing: 28) {
                 VStack(spacing: 12) {
                     ZStack {
                         Circle()
@@ -259,45 +264,77 @@ struct ProfileView: View {
                     )
                 }
 
-#if DEBUG
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Debug")
-                        .font(DSText.headline)
+                if developerToolsUnlocked {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(L.profileDebugSectionTitle(lang))
+                            .font(DSText.headline)
 
-                    VStack(alignment: .leading, spacing: 0) {
-                        Button(role: .destructive) {
-                            showResetAllDataConfirm = true
-                        } label: {
-                            Text("Reset All Data")
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Button(role: .destructive) {
+                                showResetAllDataConfirm = true
+                            } label: {
+                                Text(L.profileDebugResetAllData(lang))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.vertical, 12)
                         }
-                        .buttonStyle(.plain)
-                        .padding(.vertical, 12)
+                        .lightCardStyle(
+                            cornerRadius: preferences.uiStyle.cardCornerRadius,
+                            fillColor: Color(.systemBackground),
+                            fillOpacity: 1.0,
+                            borderOpacity: 0.04,
+                            shadowOpacity: 0.02,
+                            shadowRadius: 6,
+                            shadowYOffset: 2,
+                            contentPadding: preferences.uiStyle.cardPadding
+                        )
                     }
-                    .lightCardStyle(
-                        cornerRadius: preferences.uiStyle.cardCornerRadius,
-                        fillColor: Color(.systemBackground),
-                        fillOpacity: 1.0,
-                        borderOpacity: 0.04,
-                        shadowOpacity: 0.02,
-                        shadowRadius: 6,
-                        shadowYOffset: 2,
-                        contentPadding: preferences.uiStyle.cardPadding
-                    )
                 }
-#endif
 
                 Text(L.builtForCuriosity(lang))
                     .font(DSText.caption2)
                     .foregroundColor(.secondary.opacity(0.85))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 32)
+                    .contentShape(Rectangle())
+                    .onTapGesture(count: 6) {
+                        developerToolsUnlocked.toggle()
+                        developerToolsBannerText = developerToolsUnlocked
+                            ? L.profileDeveloperToolsBannerShown(lang)
+                            : L.profileDeveloperToolsBannerHidden(lang)
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            showDeveloperToolsBanner = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                showDeveloperToolsBanner = false
+                            }
+                        }
+                    }
                     .padding(.top, 8)
                     .padding(.bottom, 4)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 28)
         }
+        }
+        .overlay(alignment: .bottom) {
+            if showDeveloperToolsBanner {
+                Text(developerToolsBannerText)
+                    .font(DSText.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .allowsHitTesting(false)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .padding(.bottom, 12)
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: showDeveloperToolsBanner)
         .navigationTitle(L.profile(lang))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)

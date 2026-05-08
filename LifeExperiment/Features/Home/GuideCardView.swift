@@ -60,8 +60,8 @@ struct GuideSuggestionsSection: View {
                         onStartSuggestion(suggestion)
                     } label: {
                         SuggestionCard(
-                            title: suggestion.title,
-                            subtitle: suggestion.impactDisplayText,
+                            title: BuiltInTitleDisplay.localizedTitle(stored: suggestion.title, lang: lang),
+                            subtitle: suggestion.impactDisplayText(lang: lang),
                             icon: suggestionEmoji(for: suggestion),
                             style: .homeSuggestion
                         )

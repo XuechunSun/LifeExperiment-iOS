@@ -123,7 +123,7 @@ struct ContentView: View {
         if getExperiments().isEmpty {
             let now = Date()
             let defaultExperiment = Experiment(
-                title: "My First Experiment",
+                title: L.seedStarterExperimentTitle(lang),
                 status: .active,
                 createdAt: now,
                 updatedAt: now
@@ -131,7 +131,32 @@ struct ContentView: View {
             setExperiments([defaultExperiment])
         }
     }
-    
+
+    /// Startup checks: migrate legacy starter title when eligible, then seed if store empty.
+    private func runStarterPersistenceChecks() {
+        migrateLegacyStarterExperimentTitleIfNeeded()
+        seedExperimentsIfNeeded()
+    }
+
+    /// One-time-style migration: legacy seeded title → localized starter title when clearly untouched.
+    private func migrateLegacyStarterExperimentTitleIfNeeded() {
+        let legacyTitle = "My First Experiment"
+        var experiments = getExperiments()
+        guard experiments.count == 1,
+              var only = experiments.first,
+              only.title == legacyTitle,
+              only.logs.isEmpty,
+              only.review == nil,
+              only.status == .active,
+              only.completedAt == nil
+        else { return }
+
+        only.title = L.seedStarterExperimentTitle(lang)
+        only.updatedAt = Date()
+        experiments[0] = only
+        setExperiments(experiments)
+    }
+
     private func sortedExperiments() -> [Experiment] {
         let experiments = getExperiments()
         return experiments.filter { $0.status == .active }.sorted { $0.updatedAt > $1.updatedAt }
@@ -141,6 +166,7 @@ struct ContentView: View {
         if let bundleIdentifier = Bundle.main.bundleIdentifier {
             UserDefaults.standard.removePersistentDomain(forName: bundleIdentifier)
         }
+        // Note: removes all UserDefaults keys, including profile_developer_tools_unlocked → developer tools hidden after reset.
 
         let fileManager = FileManager.default
         if let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
@@ -515,7 +541,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            seedExperimentsIfNeeded()
+            runStarterPersistenceChecks()
             if seedCatalog == nil {
                 seedCatalog = SeedCatalogLoader.load()
             }
@@ -532,7 +558,10 @@ struct ContentView: View {
                 experimentToDelete = nil
             }
         } message: { experiment in
-            Text(L.experimentDeleteBody(lang, experimentTitle: experiment.title))
+            Text(L.experimentDeleteBody(
+                lang,
+                experimentTitle: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang)
+            ))
         }
         .overlay(alignment: .top) {
             if let actionToastMessage {

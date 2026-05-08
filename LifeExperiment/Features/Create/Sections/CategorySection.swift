@@ -25,7 +25,7 @@ struct CategorySection: View {
                 Menu {
                     if let catalog = seedCatalog {
                         ForEach(catalog.categories) { c in
-                            Button(c.title) {
+                            Button(L.summarySeedCategoryTitle(lang, categoryId: c.id)) {
                                 isOtherCategory = false
                                 selectedSeedCategoryId = c.id
 
