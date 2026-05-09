@@ -1866,4 +1866,104 @@ enum L {
         case .chinese: return "复制"
         }
     }
+
+    static func actionSkip(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Skip"
+        case .chinese: return "跳过"
+        }
+    }
+
+    // MARK: - Low Energy / Take It Easy flow
+
+    static func lowEnergyEnergyCheckTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "How are you feeling right now?"
+        case .chinese: return "你现在感觉怎么样？"
+        }
+    }
+
+    static func lowEnergyEnergyCheckSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "No right answer here."
+        case .chinese: return "这里没有标准答案"
+        }
+    }
+
+    static func lowEnergyNormalExitTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Sounds like you're doing okay today"
+        case .chinese: return "听起来你今天还不错"
+        }
+    }
+
+    static func lowEnergyNormalExitSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "That's a good thing."
+        case .chinese: return "这是件好事"
+        }
+    }
+
+    static func lowEnergyContinueWithExperiment(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Continue with an experiment"
+        case .chinese: return "继续做实验"
+        }
+    }
+
+    static func lowEnergyActionTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Pick one small thing"
+        case .chinese: return "挑一件小事"
+        }
+    }
+
+    static func lowEnergyActionSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Just enough to say you did something."
+        case .chinese: return "说说自己做了点什么就好"
+        }
+    }
+
+    static func lowEnergyRecoveryTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "How will you recharge?"
+        case .chinese: return "你打算怎么充电？"
+        }
+    }
+
+    static func lowEnergyRecoverySubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Optional. Skip if nothing fits."
+        case .chinese: return "可选，没合适的就跳过吧"
+        }
+    }
+
+    static func lowEnergyNoteTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Anything on your mind?"
+        case .chinese: return "有什么想法吗？"
+        }
+    }
+
+    static func lowEnergyNoteSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "A word, a thought. Or nothing at all."
+        case .chinese: return "一个词、一个念头，或者什么都不写也行"
+        }
+    }
+
+    static func lowEnergyDoneTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "That's enough for today"
+        case .chinese: return "今天就到这里"
+        }
+    }
+
+    static func lowEnergyDoneSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "You showed up. That counts."
+        case .chinese: return "你来过了，这就算数"
+        }
+    }
 }

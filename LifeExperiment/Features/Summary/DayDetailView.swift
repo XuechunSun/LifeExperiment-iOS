@@ -173,7 +173,7 @@ struct DayDetailView: View {
                                 .fontWeight(.medium)
                                 .foregroundColor(.primary)
 
-                            Text(leLog.detailLine)
+                            Text(leLog.localizedDetailLine(lang: lang))
                                 .font(DSText.caption)
                                 .foregroundColor(.secondary)
 

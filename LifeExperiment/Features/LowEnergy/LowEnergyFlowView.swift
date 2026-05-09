@@ -13,6 +13,9 @@ struct LowEnergyFlowView: View {
         case done = 5
     }
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
     @State private var step: Step = .energyCheck
     @State private var isTransitioning = false
     @State private var selectedEnergy: EnergyLevel?
@@ -59,7 +62,7 @@ struct LowEnergyFlowView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { onDismiss() }
+                    Button(L.actionClose(lang)) { onDismiss() }
                         .foregroundColor(.secondary)
                 }
             }
@@ -71,11 +74,11 @@ struct LowEnergyFlowView: View {
     private var energyCheckStep: some View {
         VStack(spacing: 28) {
             VStack(spacing: 8) {
-                Text("How are you feeling right now?")
+                Text(L.lowEnergyEnergyCheckTitle(lang))
                     .font(DSFont.accent(size: 22, relativeTo: .title3))
                     .multilineTextAlignment(.center)
 
-                Text("No right answer here.")
+                Text(L.lowEnergyEnergyCheckSubtitle(lang))
                     .font(DSText.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -93,7 +96,7 @@ struct LowEnergyFlowView: View {
                         HStack(spacing: 12) {
                             Text(level.emoji)
                                 .font(.title2)
-                            Text(level.label)
+                            Text(level.localizedLabel(lang))
                                 .font(DSText.body)
                                 .fontWeight(.medium)
                             Spacer()
@@ -114,11 +117,11 @@ struct LowEnergyFlowView: View {
     private var normalExitStep: some View {
         VStack(spacing: 28) {
             VStack(spacing: 8) {
-                Text("Sounds like you're doing okay today")
+                Text(L.lowEnergyNormalExitTitle(lang))
                     .font(DSFont.accent(size: 22, relativeTo: .title3))
                     .multilineTextAlignment(.center)
 
-                Text("That's a good thing.")
+                Text(L.lowEnergyNormalExitSubtitle(lang))
                     .font(DSText.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -126,7 +129,7 @@ struct LowEnergyFlowView: View {
             Button {
                 onDismiss()
             } label: {
-                Text("Continue with an experiment")
+                Text(L.lowEnergyContinueWithExperiment(lang))
                     .font(DSText.body)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -143,11 +146,11 @@ struct LowEnergyFlowView: View {
     private var actionStep: some View {
         VStack(spacing: 28) {
             VStack(spacing: 8) {
-                Text("Pick one small thing")
+                Text(L.lowEnergyActionTitle(lang))
                     .font(DSFont.accent(size: 22, relativeTo: .title3))
                     .multilineTextAlignment(.center)
 
-                Text("Just enough to say you did something.")
+                Text(L.lowEnergyActionSubtitle(lang))
                     .font(DSText.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -161,7 +164,7 @@ struct LowEnergyFlowView: View {
                         HStack(spacing: 12) {
                             Text(action.emoji)
                                 .font(.title2)
-                            Text(action.label)
+                            Text(action.localizedLabel(lang))
                                 .font(DSText.body)
                                 .fontWeight(.medium)
                             Spacer()
@@ -182,11 +185,11 @@ struct LowEnergyFlowView: View {
     private var recoveryStep: some View {
         VStack(spacing: 28) {
             VStack(spacing: 8) {
-                Text("How will you recharge?")
+                Text(L.lowEnergyRecoveryTitle(lang))
                     .font(DSFont.accent(size: 22, relativeTo: .title3))
                     .multilineTextAlignment(.center)
 
-                Text("Optional. Skip if nothing fits.")
+                Text(L.lowEnergyRecoverySubtitle(lang))
                     .font(DSText.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -200,7 +203,7 @@ struct LowEnergyFlowView: View {
                         HStack(spacing: 12) {
                             Text(recovery.emoji)
                                 .font(.title2)
-                            Text(recovery.label)
+                            Text(recovery.localizedLabel(lang))
                                 .font(DSText.body)
                                 .fontWeight(.medium)
                             Spacer()
@@ -217,7 +220,7 @@ struct LowEnergyFlowView: View {
             Button {
                 advance(to: .note)
             } label: {
-                Text("Skip")
+                Text(L.actionSkip(lang))
                     .font(DSText.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -229,11 +232,11 @@ struct LowEnergyFlowView: View {
     private var noteStep: some View {
         VStack(spacing: 28) {
             VStack(spacing: 8) {
-                Text("Anything on your mind?")
+                Text(L.lowEnergyNoteTitle(lang))
                     .font(DSFont.accent(size: 22, relativeTo: .title3))
                     .multilineTextAlignment(.center)
 
-                Text("A word, a thought. Or nothing at all.")
+                Text(L.lowEnergyNoteSubtitle(lang))
                     .font(DSText.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -249,7 +252,7 @@ struct LowEnergyFlowView: View {
                 Button {
                     advance(to: .done)
                 } label: {
-                    Text("Skip")
+                    Text(L.actionSkip(lang))
                         .font(DSText.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -259,7 +262,7 @@ struct LowEnergyFlowView: View {
                 Button {
                     advance(to: .done)
                 } label: {
-                    Text("Done")
+                    Text(L.actionDone(lang))
                         .font(DSText.body)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -281,11 +284,11 @@ struct LowEnergyFlowView: View {
                 .foregroundColor(.green.opacity(0.7))
 
             VStack(spacing: 8) {
-                Text("That's enough for today")
+                Text(L.lowEnergyDoneTitle(lang))
                     .font(DSFont.accent(size: 22, relativeTo: .title3))
                     .multilineTextAlignment(.center)
 
-                Text("You showed up. That counts.")
+                Text(L.lowEnergyDoneSubtitle(lang))
                     .font(DSText.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -301,7 +304,7 @@ struct LowEnergyFlowView: View {
                 )
                 onComplete(log)
             } label: {
-                Text("Close")
+                Text(L.actionClose(lang))
                     .font(DSText.body)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
