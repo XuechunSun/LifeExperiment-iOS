@@ -79,25 +79,38 @@ struct DefaultDimensionsCard: View {
     let lang: AppLanguage
     let onEdit: () -> Void
 
+    /// Synthetic URL used only to bridge an inline `AttributedString` link tap into
+    /// our `onEdit` callback via `OpenURLAction`. Never opened in the system browser.
+    private static let editURL = URL(string: "minilab://dimensions/edit")!
+
+    private var helperText: AttributedString {
+        let prefix = AttributedString(L.createDefaultDimensionsHelperPrefix(lang))
+        var action = AttributedString(L.createDefaultDimensionsHelperAction(lang))
+        action.foregroundColor = .blue
+        action.underlineStyle = .single
+        action.link = DefaultDimensionsCard.editURL
+        let suffix = AttributedString(L.createDefaultDimensionsHelperSuffix(lang))
+        return prefix + action + suffix
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.md) {
             VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(L.createDefaultDimensionsHeadline(lang))
-                        .font(DSText.subheadline)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button(action: onEdit) {
-                        Text(L.createDimensionEditAction(lang))
-                            .font(DSText.subheadline)
-                            .foregroundColor(.blue)
-                    }
-                }
+                Text(L.createDefaultDimensionsHeadline(lang))
+                    .font(DSText.subheadline)
+                    .foregroundColor(.secondary)
 
-                Text(L.createDefaultDimensionsSub(lang))
+                Text(helperText)
                     .font(DSText.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .environment(\.openURL, OpenURLAction { url in
+                        if url == DefaultDimensionsCard.editURL {
+                            onEdit()
+                            return .handled
+                        }
+                        return .systemAction
+                    })
             }
 
             ImpactChipGroupView(impact: impact, lang: lang)

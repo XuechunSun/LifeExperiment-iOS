@@ -21,6 +21,9 @@ struct FullCalendarView: View {
     @State private var hasAutoScrolledToToday: Bool = false
     private let calendar = Calendar.current
 
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
     private var normalizedLoggedDates: Set<Date> {
         Set(loggedDates.map { calendar.startOfDay(for: $0) })
     }
@@ -76,7 +79,7 @@ struct FullCalendarView: View {
         ScrollViewReader { proxy in
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Button("Today") {
+                    Button(L.calendarToday(lang)) {
                         withAnimation(.easeOut(duration: 0.2)) {
                             proxy.scrollTo(todayMonthStart, anchor: .top)
                         }
@@ -117,7 +120,7 @@ struct FullCalendarView: View {
                 }
             }
         }
-        .navigationTitle("Full Calendar")
+        .navigationTitle(L.calendarFullTitle(lang))
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $selectedDay) { selection in
             DayDetailView(day: selection.date, experiments: experiments, lowEnergyLogs: lowEnergyLogs, onUpdate: onUpdate)

@@ -234,6 +234,13 @@ enum L {
         }
     }
 
+    static func calendarFullTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Full Calendar"
+        case .chinese: return "完整日历"
+        }
+    }
+
     /// Inserts a locale-formatted week start date (caller formats the date).
     static func calendarWeekOf(_ lang: AppLanguage, weekStartFormatted: String) -> String {
         switch lang {
@@ -875,6 +882,16 @@ enum L {
         }
     }
 
+    /// Action shown on a history row when the saved log is long enough that the
+    /// compact preview truncates it. Tapping opens the full log sheet (date, mood,
+    /// full note, photo).
+    static func historyViewFullEntry(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "View full entry"
+        case .chinese: return "查看完整记录"
+        }
+    }
+
     static func saveReview(_ lang: AppLanguage) -> String {
         switch lang {
         case .english: return "Save Review"
@@ -1330,10 +1347,27 @@ enum L {
         }
     }
 
-    static func createDefaultDimensionsSub(_ lang: AppLanguage) -> String {
+    /// Helper text shown under "This experiment might help you explore" on the
+    /// `DefaultDimensionsCard`. Composed in three pieces so the middle action phrase
+    /// can be rendered as an inline underlined link that opens the dimension editor.
+    static func createDefaultDimensionsHelperPrefix(_ lang: AppLanguage) -> String {
         switch lang {
-        case .english: return "Your main area is shown first, then any others."
-        case .chinese: return "主维度排在前面，其他依次跟在后面。"
+        case .english: return "Your main area is shown first. You can "
+        case .chinese: return "主维度排在前面，你也可以"
+        }
+    }
+
+    static func createDefaultDimensionsHelperAction(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "change it"
+        case .chinese: return "调整"
+        }
+    }
+
+    static func createDefaultDimensionsHelperSuffix(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return " to better fit this experiment."
+        case .chinese: return "成更适合自己的维度。"
         }
     }
 

@@ -818,12 +818,23 @@ fileprivate struct ExperimentInsightSnapshotSection: View {
 private struct HistoryLogRow: View {
     let log: DailyLog
     @State private var showPhotoPreview = false
+    @State private var showFullLog = false
     @AppStorage("app_language") private var appLanguageRaw: String = ""
     private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
     private var historyImage: UIImage? {
         guard let path = log.photoLocalPath else { return nil }
         return LocalPhotoStore.loadImage(fromRelativePath: path)
+    }
+
+    /// Heuristic: the compact preview clamps the note to 2 lines via `.lineLimit(2)`.
+    /// SwiftUI does not surface whether truncation actually occurred, so we approximate
+    /// "needs See all" by checking for a newline (multi-line input is the most common
+    /// truncation source) or a length comfortably beyond what 2 lines can fit.
+    /// The 80-char threshold is conservative for typical iPhone widths.
+    private var noteNeedsExpansion: Bool {
+        let trimmed = log.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.contains("\n") || trimmed.count > 80
     }
 
     var body: some View {
@@ -892,6 +903,27 @@ private struct HistoryLogRow: View {
                 }
                 .foregroundColor(.secondary)
             }
+
+            // Separate bottom action row for opening the full entry. Lives below the
+            // photo thumbnail with explicit spacing so it can't be confused with the
+            // thumbnail tap target.
+            if noteNeedsExpansion {
+                HStack {
+                    Spacer()
+                    Button {
+                        showFullLog = true
+                    } label: {
+                        Text(L.historyViewFullEntry(lang))
+                            .font(DSText.subheadline)
+                            .foregroundColor(.blue)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 4)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, 8)
+            }
         }
         .lightCardStyle(
             cornerRadius: 12,
@@ -903,6 +935,104 @@ private struct HistoryLogRow: View {
             shadowYOffset: 1,
             contentPadding: 12
         )
+        .sheet(isPresented: $showFullLog) {
+            FullLogSheet(log: log, lang: lang)
+        }
+    }
+}
+
+/// Modal that shows a daily log's full saved content (date, mood, complete note
+/// preserving line breaks, optional photo). Display-only — no editing here, no
+/// translation of user-entered note text.
+private struct FullLogSheet: View {
+    let log: DailyLog
+    let lang: AppLanguage
+    @Environment(\.dismiss) private var dismiss
+    @State private var showPhotoPreview = false
+
+    private var image: UIImage? {
+        guard let path = log.photoLocalPath else { return nil }
+        return LocalPhotoStore.loadImage(fromRelativePath: path)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 10) {
+                        Text(log.date, style: .date)
+                            .font(DSText.subheadline)
+                            .foregroundColor(.secondary)
+
+                        if let mood = log.mood {
+                            Text(mood.emoji)
+                                .font(.title2)
+                        }
+
+                        Spacer()
+                    }
+
+                    if !log.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text(log.note)
+                            .font(DSText.body)
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if let image {
+                        Button {
+                            showPhotoPreview = true
+                        } label: {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: .infinity)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    } else if log.photoLocalPath != nil {
+                        HStack(spacing: 8) {
+                            Image(systemName: "photo.slash")
+                                .font(DSText.caption)
+                            Text(L.detailPhotoUnavailable(lang))
+                                .font(DSText.caption)
+                        }
+                        .foregroundColor(.secondary)
+                    }
+                }
+                .padding()
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L.actionDone(lang)) { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showPhotoPreview) {
+                if let image {
+                    NavigationStack {
+                        Color.black.opacity(0.98)
+                            .ignoresSafeArea()
+                            .overlay {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(20)
+                            }
+                            .toolbar {
+                                ToolbarItem(placement: .cancellationAction) {
+                                    Button(L.detailPhotoPreviewDone(lang)) {
+                                        showPhotoPreview = false
+                                    }
+                                    .foregroundColor(.white)
+                                }
+                            }
+                    }
+                }
+            }
+        }
     }
 }
 
