@@ -17,3 +17,11 @@ Packages/
 # Local screenshots / history
 screenshot*.png
 .Rhistory
+
+
+# App Store screenshots / marketing assets
+1-home-Start with something small.png
+2-log-Log a note, mood, or photo.png
+3-summary-See what patterns start to appear.png
+4-create -Keep your experiments light and personal.png
+5-gentle-Grow in your own way.png
