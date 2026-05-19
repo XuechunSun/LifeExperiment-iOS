@@ -119,6 +119,9 @@ struct ContentView: View {
         setLowEnergyLogs(logs)
     }
 
+    /// Deprecated as of v1.1 — onboarding owns first-experiment creation.
+    /// Retained for one release so that any in-flight code paths or rollback
+    /// branches can find the symbol; remove in a later cleanup pass.
     private func seedExperimentsIfNeeded() {
         if getExperiments().isEmpty {
             let now = Date()
@@ -132,10 +135,12 @@ struct ContentView: View {
         }
     }
 
-    /// Startup checks: migrate legacy starter title when eligible, then seed if store empty.
+    /// Startup checks: migrate legacy starter title when eligible.
+    /// (v1.1: auto-seed removed — `seedExperimentsIfNeeded()` is no longer called.
+    /// First-experiment creation now goes through the onboarding flow.)
     private func runStarterPersistenceChecks() {
         migrateLegacyStarterExperimentTitleIfNeeded()
-        seedExperimentsIfNeeded()
+        // seedExperimentsIfNeeded() — removed in v1.1; see comment above.
     }
 
     /// One-time-style migration: legacy seeded title → localized starter title when clearly untouched.
@@ -541,6 +546,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            OnboardingState.evaluateOnLaunch(loadExperiments: { getExperiments() })
             runStarterPersistenceChecks()
             if seedCatalog == nil {
                 seedCatalog = SeedCatalogLoader.load()
