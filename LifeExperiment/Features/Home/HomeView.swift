@@ -129,13 +129,26 @@ struct HomeView: View {
 
     // MARK: - Continue Recording Logic
 
-    // Candidates: active experiments NOT updated today
+    // Phase 5.1: Continue Recording uses a *log-only* "updated today" check
+    // instead of the broader `isUpdated(on:experiment:)` helper. Creating an
+    // experiment (or completing it) does not count as "recorded today" for
+    // this section — only an actual daily log does. This ensures a newly
+    // created experiment with no log yet (including the onboarding starter)
+    // shows up in Continue Recording.
+    //
+    // Other Home consumers (`hasUpdatedToday`, RecentEventBuilder, Calendar)
+    // intentionally still treat creation as activity and are unchanged.
+    private func hasLog(on day: Date, experiment: Experiment) -> Bool {
+        let calendar = Calendar.current
+        return experiment.logs.contains { calendar.isDate($0.date, inSameDayAs: day) }
+    }
+
+    // Candidates: active experiments with no log for today.
     private var continueCandidates: [Experiment] {
         let today = Calendar.current.startOfDay(for: Date())
 
-        // Filter out experiments updated today (using same definition as hasUpdatedToday)
         return activeExperiments.filter { experiment in
-            !isUpdated(on: today, experiment: experiment)
+            !hasLog(on: today, experiment: experiment)
         }.sorted { $0.updatedAt > $1.updatedAt }
     }
 
@@ -176,16 +189,38 @@ struct HomeView: View {
 
     // MARK: - UI
 
+    // Final Home section ordering (v1.1 Phase 5):
+    //   1. CalendarFootprintView                 — always
+    //   2. GuideCardView (Purple Guide CTA)      — always, atmosphere / orientation
+    //   3. Continue Recording                    — when shouldShowContinueRecording
+    //   4. Worth Noticing (Personalized)         — when personalizedSuggestion exists
+    //   5. Try Something New (GuideSuggestions)  — always
+    //   6. Recent Moments                        — when recentEvents is non-empty
+    //   7. Completed                             — when shouldShowCompleted
+    //
+    // Steps 3–5 share a tight 12pt action cluster (matching the old inner
+    // Guide cluster rhythm). The three states (no-active / active no-update /
+    // updated-today) drop out of this single ordering automatically via the
+    // existing `shouldShowContinueRecording` and `personalizedSuggestion`
+    // predicates — no per-state branching needed.
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                // 1. Calendar Footprint - Always visible
                 CalendarFootprintView(experiments: experiments, lowEnergyLogs: lowEnergyLogs, onUpdate: onUpdate, onSelectDay: onSelectDay)
 
                 sectionDivider
 
+                // Purple Guide CTA — always directly under Calendar so the
+                // brand-orientation atmosphere stays in place regardless of
+                // user state.
+                GuideCardView(copy: guideCopy)
+
+                sectionDivider
+
                 VStack(alignment: .leading, spacing: 12) {
-                    GuideCardView(copy: guideCopy)
+                    if shouldShowContinueRecording {
+                        continueSection
+                    }
 
                     if let personalizedSuggestion,
                        let personalizedSignal {
@@ -211,116 +246,120 @@ struct HomeView: View {
                     )
                 }
 
-                // 3. Continue Recording - State A (primary) & State B (weakened/optional)
-                if shouldShowContinueRecording {
-                    sectionDivider
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        //let isWeakened = hasLoggedToday
-
-                        HStack {
-                            Text(L.continueText(lang))
-                                .font(DSText.headline)
-                                .foregroundColor(.primary)
-
-                            Spacer()
-
-                            if activeExperiments.count > 2 {
-                                Button(action: {
-                                    onShowActiveMore()
-                                }) {
-                                    Text(L.seeMore(lang))
-                                        .font(DSText.subheadline)
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                        }
-
-                        ForEach(continuePreview) { experiment in
-                            ExperimentListCard(
-                                title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
-                                subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
-                                titleWeight: .semibold,
-                                surfaceStyle: .activePrimary,
-                                contentPadding: DSSpacing.md,
-                                action: {
-                                    onSelectExperiment(experiment)
-                                }
-                            ) {
-                                ExperimentRowMenu(
-                                    kind: .active,
-                                    onRename: { onRenameExperiment(experiment) },
-                                    onDuplicate: { onDuplicateExperiment(experiment) },
-                                    onDelete: { onDeleteExperiment(experiment) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // 5. Recent Events - Card style
                 if !recentEvents.isEmpty {
                     sectionDivider
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(L.recentMoments(lang))
-                            .font(DSText.headline)
-                            .foregroundColor(.primary.opacity(0.72))
-
-                        let eventsToShow = Array(recentEvents.prefix(2))
-                        ForEach(eventsToShow) { event in
-                            RecentEventCard(event: event)
-                        }
-                    }
+                    recentSection
                 }
 
-                // 6. Completed - Lightweight section
                 if shouldShowCompleted {
                     sectionDivider
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text(L.sectionCompleted(lang))
-                                .font(DSText.headline)
-                                .foregroundColor(.primary)
-
-                            Spacer()
-
-                            if completedExperiments.count > 2 {
-                                Button(action: {
-                                    onShowCompletedMore()
-                                }) {
-                                    Text(L.seeMore(lang))
-                                        .font(DSText.subheadline)
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                        }
-
-                        ForEach(completedPreview) { experiment in
-                            ExperimentListCard(
-                                title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
-                                subtitle: experiment.completedAt.map {
-                                    "Completed \($0.formatted(date: .abbreviated, time: .omitted))"
-                                },
-                                titleWeight: .medium,
-                                surfaceStyle: .completed,
-                                contentPadding: DSSpacing.md,
-                                action: {
-                                    onSelectExperiment(experiment)
-                                }
-                            ) {
-                                ExperimentRowMenu(
-                                    kind: .completed,
-                                    onDuplicate: { onDuplicateExperiment(experiment) },
-                                    onDelete: { onDeleteExperiment(experiment) }
-                                )
-                            }
-                        }
-                    }
+                    completedSection
                 }
             }
             .padding()
+        }
+    }
+
+    // MARK: - Extracted action sections (Phase 5 reorder helpers)
+
+    @ViewBuilder
+    private var continueSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(L.continueText(lang))
+                    .font(DSText.headline)
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                if activeExperiments.count > 2 {
+                    Button(action: {
+                        onShowActiveMore()
+                    }) {
+                        Text(L.seeMore(lang))
+                            .font(DSText.subheadline)
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+
+            ForEach(continuePreview) { experiment in
+                ExperimentListCard(
+                    title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
+                    subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
+                    titleWeight: .semibold,
+                    surfaceStyle: .activePrimary,
+                    contentPadding: DSSpacing.md,
+                    action: {
+                        onSelectExperiment(experiment)
+                    }
+                ) {
+                    ExperimentRowMenu(
+                        kind: .active,
+                        onRename: { onRenameExperiment(experiment) },
+                        onDuplicate: { onDuplicateExperiment(experiment) },
+                        onDelete: { onDeleteExperiment(experiment) }
+                    )
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var recentSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L.recentMoments(lang))
+                .font(DSText.headline)
+                .foregroundColor(.primary.opacity(0.72))
+
+            let eventsToShow = Array(recentEvents.prefix(2))
+            ForEach(eventsToShow) { event in
+                RecentEventCard(event: event)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var completedSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(L.sectionCompleted(lang))
+                    .font(DSText.headline)
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                if completedExperiments.count > 2 {
+                    Button(action: {
+                        onShowCompletedMore()
+                    }) {
+                        Text(L.seeMore(lang))
+                            .font(DSText.subheadline)
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+
+            ForEach(completedPreview) { experiment in
+                ExperimentListCard(
+                    title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
+                    subtitle: experiment.completedAt.map {
+                        "Completed \($0.formatted(date: .abbreviated, time: .omitted))"
+                    },
+                    titleWeight: .medium,
+                    surfaceStyle: .completed,
+                    contentPadding: DSSpacing.md,
+                    action: {
+                        onSelectExperiment(experiment)
+                    }
+                ) {
+                    ExperimentRowMenu(
+                        kind: .completed,
+                        onDuplicate: { onDuplicateExperiment(experiment) },
+                        onDelete: { onDeleteExperiment(experiment) }
+                    )
+                }
+            }
         }
     }
 
