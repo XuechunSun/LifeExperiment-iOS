@@ -2157,4 +2157,28 @@ enum L {
         case .chinese: return "挑一条消息、一个文件，或一件10分钟内能搞定的小事。"
         }
     }
+
+    // First-log banner + toast (Phase 4 — shown on the guided experiment's
+    // detail until the first log is saved).
+
+    static func onboardingFirstLogBannerTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Your first log."
+        case .chinese: return "你的第一次记录。"
+        }
+    }
+
+    static func onboardingFirstLogBannerBody(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Pick a mood and write one sentence — that's enough."
+        case .chinese: return "选一个心情，写下一句话就够了。"
+        }
+    }
+
+    static func onboardingFirstLogToast(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "First entry saved."
+        case .chinese: return "第一次记录已保存。"
+        }
+    }
 }

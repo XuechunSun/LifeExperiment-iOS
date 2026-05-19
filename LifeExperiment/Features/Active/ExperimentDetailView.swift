@@ -10,6 +10,9 @@ struct ExperimentDetailView: View {
     @State private var draftNote: String = ""
     @State private var draftMood: Mood?
     @State private var showSavedToast = false
+    // Phase 4 (v1.1 onboarding): shown instead of `showSavedToast` for the
+    // first log on the guided onboarding experiment.
+    @State private var showFirstLogToast = false
     @State private var showCompleteConfirm = false
     @State private var showReopenConfirm = false
     @State private var showEmptyNoteAlert = false
@@ -92,6 +95,56 @@ struct ExperimentDetailView: View {
     private var hasTodayLog: Bool {
         let today = Calendar.current.startOfDay(for: Date())
         return localExperiment.logs.contains { Calendar.current.isDate($0.date, inSameDayAs: today) }
+    }
+
+    // MARK: - Onboarding first-log banner (Phase 4)
+
+    /// True when the user has just created their guided onboarding experiment
+    /// and has not yet saved a log for today on this same experiment. The
+    /// guidedExperimentId match makes this strictly per-experiment, so other
+    /// active experiments never show the banner. `!isCompleted` is a defensive
+    /// duplicate of the outer `todaySection` guard.
+    private var shouldShowOnboardingFirstLogBanner: Bool {
+        OnboardingState.stage == .experimentCreated
+            && OnboardingState.guidedExperimentId == localExperiment.id.uuidString
+            && !hasTodayLog
+            && !isCompleted
+    }
+
+    @ViewBuilder
+    private var onboardingFirstLogBanner: some View {
+        HStack(alignment: .top, spacing: DSSpacing.md) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 20, weight: .regular))
+                .foregroundColor(primaryLavenderButton)
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L.onboardingFirstLogBannerTitle(lang))
+                    .font(DSText.headline)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(L.onboardingFirstLogBannerBody(lang))
+                    .font(DSText.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .lightCardStyle(
+            cornerRadius: 14,
+            fillColor: primaryLavenderButton.opacity(0.10),
+            fillOpacity: 1.0,
+            borderOpacity: 0,
+            shadowOpacity: 0,
+            shadowRadius: 0,
+            shadowYOffset: 0,
+            contentPadding: DSSpacing.md
+        )
     }
 
     private var todaySuggestion: (title: String, subtitle: String, icon: String)? {
@@ -275,6 +328,10 @@ struct ExperimentDetailView: View {
     @ViewBuilder
     private var todaySection: some View {
         if !isCompleted {
+            if shouldShowOnboardingFirstLogBanner {
+                onboardingFirstLogBanner
+            }
+
             VStack(alignment: .leading, spacing: DSSpacing.md) {
                 if !insightLines.isEmpty {
                     ExperimentInsightSnapshotSection(lines: insightLines, lang: lang)
@@ -586,6 +643,16 @@ struct ExperimentDetailView: View {
                 .cornerRadius(20)
                 .shadow(radius: 4)
                 .padding(.top, 8)
+        } else if showFirstLogToast {
+            Text(L.onboardingFirstLogToast(lang))
+                .font(DSText.subheadline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.green)
+                .cornerRadius(20)
+                .shadow(radius: 4)
+                .padding(.top, 8)
         } else if showBlankReviewToast {
             Text(L.savedReviewBlankToast(lang))
                 .font(DSText.subheadline)
@@ -610,6 +677,18 @@ struct ExperimentDetailView: View {
     }
 
     func completeExperiment() {
+        // Phase 4.1: if the user completes the guided onboarding experiment
+        // without ever logging it, the banner is suppressed by `!isCompleted`
+        // but onboarding state would otherwise stay at `.experimentCreated`
+        // (orphan cleanup can't help — the experiment still exists). Clear
+        // it here using the same two-key guard as `saveTodayLog` so completing
+        // any non-guided experiment is unaffected.
+        if OnboardingState.stage == .experimentCreated
+            && OnboardingState.guidedExperimentId == localExperiment.id.uuidString {
+            OnboardingState.guidedExperimentId = ""
+            OnboardingState.stage = .completed
+        }
+
         let now = Date()
         localExperiment.status = .completed
         localExperiment.completedAt = now
@@ -666,6 +745,13 @@ struct ExperimentDetailView: View {
     }
 
     func saveTodayLog() {
+        // Snapshot the onboarding-guided-first-log condition BEFORE we mutate
+        // any state. We require both the stage AND the per-experiment id
+        // match, so saves on other experiments cannot complete onboarding.
+        let isOnboardingFirstLog =
+            OnboardingState.stage == .experimentCreated
+            && OnboardingState.guidedExperimentId == localExperiment.id.uuidString
+
         let today = Calendar.current.startOfDay(for: Date())
 
         if let index = localExperiment.logs.firstIndex(where: { Calendar.current.isDate($0.date, inSameDayAs: today) }) {
@@ -690,9 +776,23 @@ struct ExperimentDetailView: View {
 
         noteFocused = false
         photoMarkedForRemoval = false
-        showSavedToast = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            showSavedToast = false
+
+        if isOnboardingFirstLog {
+            // Complete onboarding. Clear the guided id first so any in-flight
+            // observer reading `OnboardingState.guidedExperimentId` does not
+            // briefly see a `.completed` stage paired with a stale id.
+            OnboardingState.guidedExperimentId = ""
+            OnboardingState.stage = .completed
+
+            showFirstLogToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                showFirstLogToast = false
+            }
+        } else {
+            showSavedToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                showSavedToast = false
+            }
         }
     }
 
