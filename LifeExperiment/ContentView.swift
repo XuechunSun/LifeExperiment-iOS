@@ -59,6 +59,24 @@ struct ContentView: View {
     @State private var createPrefill: ExperimentEditorPrefill?
     @State private var actionToastMessage: String?
     @State private var isHandlingActiveSheetCommit = false
+
+    // Phase 2 onboarding (v1.1). The cover is shown when `OnboardingState.stage`
+    // is `.notStarted` or `.introSeen` on first appear of the root TabView.
+    // `pendingOnboardingPrefill` carries the starter prefill across the cover's
+    // dismiss → Create sheet present hand-off so the two presentations sequence
+    // cleanly (we hand `createPrefill` only inside `onDismiss`).
+    @State private var isShowingOnboarding: Bool = false
+    @State private var pendingOnboardingPrefill: ExperimentEditorPrefill?
+    @State private var hasEvaluatedOnboardingForLaunch: Bool = false
+
+    // Phase 3 marker: distinguishes a Create sheet that was opened from the
+    // onboarding starter pick from every other create path (Create tab, Home
+    // suggestion prefill, rename, duplicate). Set in the cover's
+    // `onStarterChosen` callback, consumed exactly once in either
+    // `handleCreateCommit` (commit branch) or the item-driven sheet's
+    // `onDismiss` (cancel branch). Cleared on every consumption so it can
+    // never leak across unrelated subsequent creates.
+    @State private var isOnboardingCreateInProgress: Bool = false
     
     // Seed catalog
     @State private var seedCatalog: SeedCatalog?
@@ -222,6 +240,20 @@ struct ContentView: View {
     }
 
     private func handleCreateCommit(_ experiment: Experiment, dismissStandardCreateSheet: Bool) {
+        // Onboarding hand-off (v1.1 Phase 3): when the create sheet was opened
+        // from the onboarding starter pick, anchor the guided experiment id
+        // and advance the onboarding stage. We require BOTH the marker AND
+        // `stage == .introSeen` so any unrelated commit (Create tab, Home
+        // suggestion, rename, duplicate) is ignored. The marker is cleared
+        // unconditionally BEFORE we nil `createPrefill`, otherwise the sheet's
+        // own `onDismiss` would observe a stale `true` and reopen the cover
+        // after a successful save.
+        if isOnboardingCreateInProgress && OnboardingState.stage == .introSeen {
+            OnboardingState.guidedExperimentId = experiment.id.uuidString
+            OnboardingState.stage = .experimentCreated
+        }
+        isOnboardingCreateInProgress = false
+
         addExperiment(experiment)
         createPrefill = nil
 
@@ -519,7 +551,23 @@ struct ContentView: View {
             }
         }
         .sheet(item: $createPrefill, onDismiss: {
+            // Capture marker before any state changes so we can reliably tell
+            // whether this dismissal came from the onboarding-prefilled path.
+            // `handleCreateCommit` clears the marker AND advances stage to
+            // `.experimentCreated` on a successful save, so a committed save
+            // cannot match the reopen condition below.
+            let wasOnboardingCreate = isOnboardingCreateInProgress
             createPrefill = nil
+
+            if wasOnboardingCreate && OnboardingState.stage == .introSeen {
+                isOnboardingCreateInProgress = false
+                // Defer the cover re-presentation by one runloop tick so the
+                // dismissing sheet's hosting view has fully torn down before
+                // the fullScreenCover tries to claim the screen.
+                DispatchQueue.main.async {
+                    isShowingOnboarding = true
+                }
+            }
         }) { prefill in
             ExperimentEditorView(seedCatalog: seedCatalog, mode: .create, createPrefill: prefill) { experiment in
                 handleCreateCommit(experiment, dismissStandardCreateSheet: false)
@@ -545,11 +593,54 @@ struct ContentView: View {
                 showLowEnergyFlow = false
             }
         }
+        .fullScreenCover(isPresented: $isShowingOnboarding, onDismiss: {
+            // After the cover finishes dismissing, hand any pending starter
+            // prefill to the existing `.sheet(item: $createPrefill)` so the two
+            // presentations don't fight for the screen.
+            if let prefill = pendingOnboardingPrefill {
+                pendingOnboardingPrefill = nil
+                createPrefill = prefill
+            } else {
+                // No prefill in flight (Skip path or an unexpected dismiss).
+                // Make sure the onboarding-create marker is clean so any later
+                // Create commit cannot accidentally write onboarding state.
+                isOnboardingCreateInProgress = false
+            }
+        }) {
+            // Resume at starter pick for users who quit after intro 2.
+            let initialStep: OnboardingStep = (OnboardingState.stage == .introSeen)
+                ? .starterPick
+                : .intro1
+            OnboardingFlowView(
+                initialStep: initialStep,
+                onStarterChosen: { prefill in
+                    // Mark this specific Create open as the onboarding one.
+                    // The marker is consumed in `handleCreateCommit` (save) or
+                    // `.sheet(item: $createPrefill).onDismiss` (cancel).
+                    pendingOnboardingPrefill = prefill
+                    isOnboardingCreateInProgress = true
+                    isShowingOnboarding = false
+                },
+                onSkipConfirmed: {
+                    isShowingOnboarding = false
+                }
+            )
+        }
         .onAppear {
             OnboardingState.evaluateOnLaunch(loadExperiments: { getExperiments() })
             runStarterPersistenceChecks()
             if seedCatalog == nil {
                 seedCatalog = SeedCatalogLoader.load()
+            }
+            // First-run onboarding presentation: evaluate exactly once per
+            // cold launch so navigating around the app doesn't re-trigger the
+            // cover after the user has dismissed it in this session.
+            if !hasEvaluatedOnboardingForLaunch {
+                hasEvaluatedOnboardingForLaunch = true
+                let stage = OnboardingState.stage
+                if stage == .notStarted || stage == .introSeen {
+                    isShowingOnboarding = true
+                }
             }
         }
         .alert(L.experimentDeleteConfirm(lang), isPresented: Binding(

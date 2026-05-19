@@ -2000,4 +2000,161 @@ enum L {
         case .chinese: return "你来过了，这就算数"
         }
     }
+
+    // MARK: - Onboarding (v1.1 first-run flow)
+
+    // Intro 1 — what MiniLab is.
+
+    static func onboardingIntro1Title(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Try something small. Notice what changes."
+        case .chinese: return "试试一件小事，留意你的变化。"
+        }
+    }
+
+    static func onboardingIntro1Subtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english:
+            return "MiniLab is a quiet space for small everyday experiments — gentle actions you can try and see how they feel."
+        case .chinese:
+            return "MiniLab 是一个安静的小空间，用来尝试日常里的小实验——做一点小事，看看它带给你的感受。"
+        }
+    }
+
+    static func onboardingIntro1Reassurance(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "No streaks. No pressure. Move at your own pace."
+        case .chinese: return "没有连续打卡，没有压力，按你自己的节奏来就好。"
+        }
+    }
+
+    static func onboardingIntro1CTA(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Continue"
+        case .chinese: return "继续"
+        }
+    }
+
+    // Intro 2 — how it works.
+
+    static func onboardingIntro2Title(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "How it works"
+        case .chinese: return "它是怎么用的"
+        }
+    }
+
+    static func onboardingIntro2Bullet1(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Pick a small experiment you'd like to try."
+        case .chinese: return "挑一件你想试试的小事。"
+        }
+    }
+
+    static func onboardingIntro2Bullet2(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Log a quick note, mood, or photo when you feel like it."
+        case .chinese: return "想记的时候，写一句话、选一个心情，或拍一张照片。"
+        }
+    }
+
+    static func onboardingIntro2Bullet3(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Look back later and see what patterns show up."
+        case .chinese: return "过段时间回头看，慢慢发现一些属于你的规律。"
+        }
+    }
+
+    static func onboardingIntro2CTA(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Pick a starter"
+        case .chinese: return "挑一个开始"
+        }
+    }
+
+    // Starter pick — header + bottom CTA.
+
+    static func onboardingStarterPickTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Which one feels right today?"
+        case .chinese: return "今天，哪一个让你最想试试？"
+        }
+    }
+
+    static func onboardingStarterPickReassurance(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Pick one to start with. You can change everything in the next step."
+        case .chinese: return "先挑一个吧，下一步还能修改。"
+        }
+    }
+
+    static func onboardingChooseThisCTA(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Choose this"
+        case .chinese: return "就选这个"
+        }
+    }
+
+    // Skip confirmation.
+
+    static func onboardingSkipConfirmTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Skip the intro?"
+        case .chinese: return "跳过这段简介？"
+        }
+    }
+
+    static func onboardingSkipConfirmMessage(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "You can still explore MiniLab on your own. The intro won't reappear."
+        case .chinese: return "之后你可以自己探索 MiniLab，简介不会再次出现。"
+        }
+    }
+
+    // Starter titles (also persisted as `Experiment.title` when the user does
+    // not edit the prefill). Keep these in lockstep with
+    // `StarterExperiment.englishTitle` and the `englishToChinese` entries in
+    // `BuiltInTitleDisplay.swift`.
+
+    static func onboardingStarterPauseTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Take a 5-minute pause"
+        case .chinese: return "停5分钟，留意身体和能量"
+        }
+    }
+
+    static func onboardingStarterPauseSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Notice how your body and energy feel right now."
+        case .chinese: return "感受一下此刻身体和能量的状态。"
+        }
+    }
+
+    static func onboardingStarterNameTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Name what I'm feeling today"
+        case .chinese: return "说出今天的感受"
+        }
+    }
+
+    static func onboardingStarterNameSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Write one sentence about what's been on your mind."
+        case .chinese: return "写一句话，关于这段时间在你心里的事。"
+        }
+    }
+
+    static func onboardingStarterClearTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Clear one small task"
+        case .chinese: return "清掉一件小事"
+        }
+    }
+
+    static func onboardingStarterClearSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Pick one message, file, or errand you can finish in 10 minutes."
+        case .chinese: return "挑一条消息、一个文件，或一件10分钟内能搞定的小事。"
+        }
+    }
 }

@@ -21,6 +21,12 @@ enum BuiltInTitleDisplay {
     /// Keep keys in lockstep with `ExperimentSuggestions.json` and
     /// `PersonalizedSuggestionEngine.swift`.
     fileprivate static let englishToChinese: [String: String] = [
+        // Onboarding starters (v1.1 first-run flow) — keep keys in lockstep
+        // with `StarterExperiment.englishTitle`.
+        "Take a 5-minute pause": "停5分钟，留意身体和能量",
+        "Name what I'm feeling today": "说出今天的感受",
+        "Clear one small task": "清掉一件小事",
+
         // ExperimentSuggestions.json — Body & Energy
         "Take a 10-minute walk without your phone": "放下手机，散步10分钟",
         "Drink a glass of water slowly and notice how you feel": "慢慢喝一杯水，留意身体的感受",
