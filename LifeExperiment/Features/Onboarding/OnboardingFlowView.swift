@@ -25,7 +25,12 @@ struct OnboardingFlowView: View {
     @AppStorage("app_language") private var appLanguageRaw: String = ""
 
     @State private var step: OnboardingStep
-    @State private var selectedStarter: StarterExperiment?
+    // Phase 5.2: default-select the first starter so "Choose this" is enabled
+    // immediately when the picker appears. Users can still tap another card
+    // to change selection or tap Skip. If the user cancels Create and the
+    // cover re-presents at starter pick, a fresh view is created and this
+    // default applies again — matches the spec.
+    @State private var selectedStarter: StarterExperiment? = .pause
     @State private var showSkipConfirm: Bool = false
 
     /// Called once the user taps "Choose this" with a starter selected.
@@ -52,12 +57,7 @@ struct OnboardingFlowView: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VStack(spacing: 0) {
-                ScrollView {
-                    content
-                        .padding(.top, DSSpacing.xl + DSSpacing.md)
-                        .padding(.horizontal, DSSpacing.lg)
-                        .padding(.bottom, DSSpacing.lg)
-                }
+                contentArea
 
                 VStack(spacing: 0) {
                     Divider().opacity(0.08)
@@ -93,6 +93,40 @@ struct OnboardingFlowView: View {
     }
 
     // MARK: - Step content
+
+    /// Phase 5.2 layout polish: intro pages get a vertically balanced shell so
+    /// the headline sits in the upper-middle (~22% from the top of the
+    /// available area) instead of stuck to the top edge. We keep a ScrollView
+    /// wrapper so accessibility text sizes can still scroll if they overflow,
+    /// and we force the inner VStack to be at least viewport-tall so the
+    /// trailing Spacer can claim available slack. Starter pick keeps the
+    /// previous top-anchored ScrollView so the three cards stay visible
+    /// without scrolling on most devices.
+    @ViewBuilder
+    private var contentArea: some View {
+        switch step {
+        case .intro1, .intro2:
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Spacer()
+                            .frame(height: max(DSSpacing.xl * 2, geo.size.height * 0.22))
+                        content
+                            .padding(.horizontal, DSSpacing.lg)
+                        Spacer(minLength: DSSpacing.lg)
+                    }
+                    .frame(minHeight: geo.size.height, alignment: .topLeading)
+                }
+            }
+        case .starterPick:
+            ScrollView {
+                content
+                    .padding(.top, DSSpacing.xl + DSSpacing.md)
+                    .padding(.horizontal, DSSpacing.lg)
+                    .padding(.bottom, DSSpacing.lg)
+            }
+        }
+    }
 
     @ViewBuilder
     private var content: some View {

@@ -677,8 +677,22 @@ struct ExperimentEditorView: View {
 
                         dismiss()
                     }
-                    .disabled(isCreateActionDisabled)
+                    // Phase 5.2 polish: previously this was a plain toolbar
+                    // text button tinted lavender, which read as faded against
+                    // the disabled state. Switching to a bordered-prominent
+                    // pill makes the enabled primary action unmistakable
+                    // while keeping the existing lavender tone and the same
+                    // `isCreateActionDisabled` predicate (disabled state dims
+                    // the filled pill into a pale lavender automatically).
+                    // The same styling applies to Save/Rename/Duplicate
+                    // confirmation actions because they share this toolbar
+                    // item — all are primary confirmations, not destructive
+                    // or secondary actions.
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .fontWeight(.semibold)
                     .tint(primaryLavenderButton)
+                    .disabled(isCreateActionDisabled)
                 }
             }
             .onAppear {
