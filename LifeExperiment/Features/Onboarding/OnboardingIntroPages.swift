@@ -13,12 +13,20 @@ import SwiftUI
 struct OnboardingIntroPage1View: View {
     let lang: AppLanguage
 
+    // Phase 5.3 breathing polish:
+    //   - Outer VStack spacing  lg(20) → xl(24)  — more relaxed rhythm.
+    //   - Icon bottom padding    xs(8) → sm(12) — pushes title slightly further
+    //     from the sparkles glyph so the headline reads as the focal point.
+    //   - Reassurance top padding xs(8) → md(16) — adds a deliberate "settle"
+    //     before the reassurance line so it feels like its own beat rather
+    //     than another body paragraph.
+    // Token-only changes; no magic numbers, no copy edits, no alignment edits.
     var body: some View {
-        VStack(alignment: .leading, spacing: DSSpacing.lg) {
+        VStack(alignment: .leading, spacing: DSSpacing.xl) {
             Image(systemName: "sparkles")
                 .font(.system(size: 36, weight: .light))
                 .foregroundColor(primaryLavenderButton)
-                .padding(.bottom, DSSpacing.xs)
+                .padding(.bottom, DSSpacing.sm)
 
             Text(L.onboardingIntro1Title(lang))
                 .font(DSText.title)
@@ -37,7 +45,7 @@ struct OnboardingIntroPage1View: View {
                 .foregroundColor(.secondary.opacity(0.7))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, DSSpacing.xs)
+                .padding(.top, DSSpacing.md)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -61,15 +69,23 @@ struct OnboardingIntroPage2View: View {
         ]
     }
 
+    // Phase 5.3 breathing polish:
+    //   - Outer VStack spacing       lg(20) → xl(24) — title sits further
+    //     from the bullet list.
+    //   - Bullet-to-bullet spacing   md(16) → lg(20) — each row gets its
+    //     own breathing room without making the list feel sparse.
+    //   - Bullet list top padding    xs(8)  → sm(12) — gentle extra beat
+    //     between the title and the list.
+    // Token-only changes; no magic numbers, no copy edits, no alignment edits.
     var body: some View {
-        VStack(alignment: .leading, spacing: DSSpacing.lg) {
+        VStack(alignment: .leading, spacing: DSSpacing.xl) {
             Text(L.onboardingIntro2Title(lang))
                 .font(DSText.title)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: DSSpacing.md) {
+            VStack(alignment: .leading, spacing: DSSpacing.lg) {
                 ForEach(bullets) { bullet in
                     HStack(alignment: .top, spacing: DSSpacing.md) {
                         Image(systemName: bullet.icon)
@@ -85,7 +101,7 @@ struct OnboardingIntroPage2View: View {
                     }
                 }
             }
-            .padding(.top, DSSpacing.xs)
+            .padding(.top, DSSpacing.sm)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
