@@ -83,7 +83,11 @@ struct OnboardingFlowView: View {
         .background(Color(.systemBackground).ignoresSafeArea())
         .alert(L.onboardingSkipConfirmTitle(lang), isPresented: $showSkipConfirm) {
             Button(L.actionCancel(lang), role: .cancel) {}
-            Button(L.actionSkip(lang), role: .destructive) {
+            // Phase 7 P1: dropped `role: .destructive` — Skip is no longer
+            // destructive since users can revisit the intro any time from
+            // Profile → "How MiniLab works" (Phase 6). State transition is
+            // unchanged: confirming still completes onboarding and dismisses.
+            Button(L.actionSkip(lang)) {
                 OnboardingState.stage = .completed
                 onSkipConfirmed()
             }

@@ -286,7 +286,10 @@ struct HomeView: View {
             ForEach(continuePreview) { experiment in
                 ExperimentListCard(
                     title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
-                    subtitle: "Last updated \(experiment.updatedAt.formatted(date: .abbreviated, time: .omitted))",
+                    subtitle: L.homeContinueLastUpdated(
+                        lang,
+                        dateString: experiment.updatedAt.formatted(date: .abbreviated, time: .omitted)
+                    ),
                     titleWeight: .semibold,
                     surfaceStyle: .activePrimary,
                     contentPadding: DSSpacing.md,
@@ -343,8 +346,11 @@ struct HomeView: View {
             ForEach(completedPreview) { experiment in
                 ExperimentListCard(
                     title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
-                    subtitle: experiment.completedAt.map {
-                        "Completed \($0.formatted(date: .abbreviated, time: .omitted))"
+                    subtitle: experiment.completedAt.map { completedAt in
+                        L.homeCompletedOn(
+                            lang,
+                            dateString: completedAt.formatted(date: .abbreviated, time: .omitted)
+                        )
                     },
                     titleWeight: .medium,
                     surfaceStyle: .completed,

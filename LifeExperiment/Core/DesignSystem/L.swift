@@ -199,6 +199,26 @@ enum L {
         }
     }
 
+    // Phase 7 M1/M2: localized subtitles for Home Continue Recording and
+    // Completed cards. Replaces previous hardcoded English string
+    // interpolation in `HomeView`. The `dateString` argument is the already-
+    // locale-formatted date (e.g. `Date.formatted(date: .abbreviated, ...)`),
+    // so only the leading clause needs translation.
+
+    static func homeContinueLastUpdated(_ lang: AppLanguage, dateString: String) -> String {
+        switch lang {
+        case .english: return "Last updated \(dateString)"
+        case .chinese: return "上次更新于 \(dateString)"
+        }
+    }
+
+    static func homeCompletedOn(_ lang: AppLanguage, dateString: String) -> String {
+        switch lang {
+        case .english: return "Completed \(dateString)"
+        case .chinese: return "完成于 \(dateString)"
+        }
+    }
+
     static func exploreTakeItEasyToday(_ lang: AppLanguage) -> String {
         switch lang {
         case .english: return "or take it easy today"
