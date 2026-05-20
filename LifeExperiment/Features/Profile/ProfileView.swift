@@ -18,6 +18,10 @@ struct ProfileView: View {
     @State private var showResetAllDataConfirm = false
     @State private var showDeveloperToolsBanner = false
     @State private var developerToolsBannerText = ""
+    // Phase 6: drives the "How MiniLab works" read-only guide sheet. The
+    // guide reuses the onboarding intro leaf views but DOES NOT write to
+    // `OnboardingState` — see `MiniLabGuideView.swift` for the invariants.
+    @State private var showMiniLabGuide = false
 
     private var preferences = AppPreferences()
 
@@ -199,6 +203,34 @@ struct ProfileView: View {
 
                         Divider()
 
+                        Button {
+                            showMiniLabGuide = true
+                        } label: {
+                            HStack(alignment: .top, spacing: DSSpacing.md) {
+                                VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+                                    Text(L.profileHowMiniLabWorksTitle(lang))
+                                        .font(DSText.subheadline)
+                                        .fontWeight(.medium)
+
+                                    Text(L.profileHowMiniLabWorksSubtitle(lang))
+                                        .lifeCaption()
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(DSText.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 2)
+                            }
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+
+                        Divider()
+
                         NavigationLink(value: Route.completedMore) {
                             HStack(alignment: .top, spacing: DSSpacing.md) {
                                 VStack(alignment: .leading, spacing: DSSpacing.xxs) {
@@ -345,6 +377,11 @@ struct ProfileView: View {
             }
         } message: {
             Text(L.profileResetMessage(lang))
+        }
+        .sheet(isPresented: $showMiniLabGuide) {
+            MiniLabGuideView(onDismiss: {
+                showMiniLabGuide = false
+            })
         }
     }
 }

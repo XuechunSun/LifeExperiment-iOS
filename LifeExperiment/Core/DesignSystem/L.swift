@@ -477,6 +477,22 @@ enum L {
         }
     }
 
+    // Phase 6: read-only product guide row in the Your Experience card.
+
+    static func profileHowMiniLabWorksTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "How MiniLab works"
+        case .chinese: return "MiniLab 是怎么用的"
+        }
+    }
+
+    static func profileHowMiniLabWorksSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "A quick reminder of the flow"
+        case .chinese: return "简单回顾一下使用方式"
+        }
+    }
+
     static func profileDataAndSystemSection(_ lang: AppLanguage) -> String {
         switch lang {
         case .english: return "Data & System"
@@ -2007,24 +2023,24 @@ enum L {
 
     static func onboardingIntro1Title(_ lang: AppLanguage) -> String {
         switch lang {
-        case .english: return "Try something small. Notice what changes."
-        case .chinese: return "试试一件小事，留意你的变化。"
+        case .english: return "MiniLab helps you understand yourself through everyday experiments."
+        case .chinese: return "MiniLab 帮你通过日常里的小实验，更了解自己。"
         }
     }
 
     static func onboardingIntro1Subtitle(_ lang: AppLanguage) -> String {
         switch lang {
         case .english:
-            return "MiniLab is a quiet space for small everyday experiments — gentle actions you can try and see how they feel."
+            return "A life experiment is one small action you try, or one question you explore in real life — then notice what changes in your mood, energy, habits, or direction."
         case .chinese:
-            return "MiniLab 是一个安静的小空间，用来尝试日常里的小实验——做一点小事，看看它带给你的感受。"
+            return "生活实验，就是在真实生活里试一个小行动，或探索一个问题——再看看心情、能量、习惯或方向有什么变化。"
         }
     }
 
     static func onboardingIntro1Reassurance(_ lang: AppLanguage) -> String {
         switch lang {
-        case .english: return "No streaks. No pressure. Move at your own pace."
-        case .chinese: return "没有连续打卡，没有压力，按你自己的节奏来就好。"
+        case .english: return "No streaks. No pressure. Just a gentler way to grow."
+        case .chinese: return "没有打卡压力，也不用追求完美。只是用更温柔的方式成长。"
         }
     }
 
@@ -2096,18 +2112,23 @@ enum L {
     }
 
     // Skip confirmation.
+    //
+    // Phase 6.1: body points users to Profile → "How MiniLab works" for
+    // re-entry, since the read-only guide makes the intro permanently
+    // revisitable. Behavior of Skip itself is unchanged (still completes
+    // onboarding state on confirm).
 
     static func onboardingSkipConfirmTitle(_ lang: AppLanguage) -> String {
         switch lang {
         case .english: return "Skip the intro?"
-        case .chinese: return "跳过这段简介？"
+        case .chinese: return "跳过介绍？"
         }
     }
 
     static func onboardingSkipConfirmMessage(_ lang: AppLanguage) -> String {
         switch lang {
-        case .english: return "You can still explore MiniLab on your own. The intro won't reappear."
-        case .chinese: return "之后你可以自己探索 MiniLab，简介不会再次出现。"
+        case .english: return "Feel free to explore MiniLab on your own. You can always revisit this guide from Profile."
+        case .chinese: return "你可以先自由探索 MiniLab。之后也可以随时在「我的」里回看这份介绍。"
         }
     }
 
@@ -2179,6 +2200,15 @@ enum L {
         switch lang {
         case .english: return "First entry saved."
         case .chinese: return "第一次记录已保存。"
+        }
+    }
+
+    // Phase 6: shared CTA label for the final page of any read-only guide.
+
+    static func guideGotIt(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Got it"
+        case .chinese: return "明白了"
         }
     }
 }
