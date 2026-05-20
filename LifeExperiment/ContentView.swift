@@ -69,6 +69,13 @@ struct ContentView: View {
     @State private var pendingOnboardingPrefill: ExperimentEditorPrefill?
     @State private var hasEvaluatedOnboardingForLaunch: Bool = false
 
+    // Phase 8.1 Part A: drives the one-time read-only guide shown to v1.0
+    // users we silently migrated to v1.1. Mutually exclusive with the
+    // first-run onboarding cover by construction — see the `onAppear` branch
+    // below. Dismissing the sheet flips this to `false` and clears the
+    // persisted `OnboardingState.migratedUserGuidePending` flag.
+    @State private var isShowingMigratedUserGuide: Bool = false
+
     // Phase 3 marker: distinguishes a Create sheet that was opened from the
     // onboarding starter pick from every other create path (Create tab, Home
     // suggestion prefill, rename, duplicate). Set in the cover's
@@ -626,6 +633,18 @@ struct ContentView: View {
                 }
             )
         }
+        // Phase 8.1 Part A: one-time read-only guide for migrated v1.0 users.
+        // The flag is cleared on `.onDismiss` regardless of whether the user
+        // tapped "Got it" or swiped down, so the sheet cannot re-appear after
+        // a single presentation. `MiniLabGuideView` is verified read-only —
+        // it never writes `OnboardingState.stage` or `guidedExperimentId`.
+        .sheet(isPresented: $isShowingMigratedUserGuide, onDismiss: {
+            OnboardingState.migratedUserGuidePending = false
+        }) {
+            MiniLabGuideView(onDismiss: {
+                isShowingMigratedUserGuide = false
+            })
+        }
         .onAppear {
             OnboardingState.evaluateOnLaunch(loadExperiments: { getExperiments() })
             runStarterPersistenceChecks()
@@ -635,11 +654,22 @@ struct ContentView: View {
             // First-run onboarding presentation: evaluate exactly once per
             // cold launch so navigating around the app doesn't re-trigger the
             // cover after the user has dismissed it in this session.
+            //
+            // Phase 8.1 Part A: the migrated-user guide branch is strictly
+            // mutually exclusive with the onboarding cover. `evaluateOnLaunch`
+            // only ever sets `migratedUserGuidePending = true` from the
+            // `.notStarted + existing-user-signals` branch, which it also
+            // advances to `.completed` in the same step — so the cover-
+            // triggering predicates below (`.notStarted` / `.introSeen`) and
+            // the guide-triggering predicate (`.completed` AND pending) cannot
+            // both be true for the same launch.
             if !hasEvaluatedOnboardingForLaunch {
                 hasEvaluatedOnboardingForLaunch = true
                 let stage = OnboardingState.stage
                 if stage == .notStarted || stage == .introSeen {
                     isShowingOnboarding = true
+                } else if OnboardingState.migratedUserGuidePending {
+                    isShowingMigratedUserGuide = true
                 }
             }
         }

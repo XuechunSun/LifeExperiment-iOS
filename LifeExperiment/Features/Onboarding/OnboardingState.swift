@@ -43,6 +43,13 @@ enum OnboardingState {
 
     static let stageKey = "onboarding.stage"
     static let guidedExperimentIdKey = "onboarding.guidedExperimentId"
+    // Phase 8.1 Part A: queue for the one-time read-only v1.1 guide shown to
+    // users we silently migrated from v1.0 (i.e. `stage == .notStarted` AND
+    // existing-user signals detected on launch). True ⇒ "show the guide once
+    // on next root onAppear." The host clears it to false when the sheet is
+    // dismissed. Independent from `stage` so the read-only guide never has to
+    // mutate onboarding state.
+    static let migratedUserGuidePendingKey = "onboarding.migratedUserGuidePending"
 
     // MARK: - Accessors
 
@@ -68,15 +75,28 @@ enum OnboardingState {
         }
     }
 
+    /// True when `evaluateOnLaunch` has classified this user as a migrated v1.0
+    /// user AND the read-only v1.1 guide has not yet been shown / dismissed.
+    /// Default `false` ⇒ fresh installs never show the migrated-user guide.
+    /// Only the host (ContentView) flips this to `false` after the sheet is
+    /// dismissed. Only `evaluateOnLaunch` ever sets this to `true`.
+    static var migratedUserGuidePending: Bool {
+        get { UserDefaults.standard.bool(forKey: migratedUserGuidePendingKey) }
+        set { UserDefaults.standard.set(newValue, forKey: migratedUserGuidePendingKey) }
+    }
+
     // MARK: - Launch evaluation
 
     /// One-shot launch evaluation. Idempotent — safe to call every time the
     /// root view appears.
     ///
     /// Behavior:
-    ///   1. If `stage == .notStarted` AND any existing-user signal is present,
-    ///      silently mark stage `.completed` so v1.0 upgraders are never forced
-    ///      into onboarding.
+    ///   1. If `stage == .notStarted` AND a *data-bearing* migrated-user
+    ///      signal is present, silently mark stage `.completed` so v1.0
+    ///      upgraders are never forced into onboarding, and queue the
+    ///      one-time read-only guide. Preference-only signals (language,
+    ///      photo-logging toggle, dev-tools unlock) do NOT qualify — see
+    ///      `hasMigratedUsageSignal` below.
     ///   2. If `stage == .experimentCreated` but the referenced experiment no
     ///      longer exists (e.g. user deleted it before logging), reset stage to
     ///      `.completed` and clear `guidedExperimentId` so the first-log
@@ -85,8 +105,16 @@ enum OnboardingState {
     static func evaluateOnLaunch(loadExperiments: () -> [Experiment]) {
         switch stage {
         case .notStarted:
-            if hasAnyExistingUserSignal(loadExperiments: loadExperiments) {
+            if hasMigratedUsageSignal(loadExperiments: loadExperiments) {
                 stage = .completed
+                // Phase 8.1 Part A: this is the only code path that classifies
+                // a user as migrated. We queue the read-only guide here and
+                // nowhere else, so fresh installs (no usage data) can never
+                // accidentally trigger it — including users who only switched
+                // language before completing onboarding (Phase 8.1.1 fix).
+                // The flag is fire-and-forget — the host (ContentView) clears
+                // it when the sheet is dismissed.
+                migratedUserGuidePending = true
             }
         case .experimentCreated:
             let id = guidedExperimentId
@@ -100,26 +128,37 @@ enum OnboardingState {
         }
     }
 
-    // MARK: - Existing-user signal detection
+    // MARK: - Migrated-user signal detection
 
-    /// Returns `true` when any sign of prior app usage is detected. Generous on
-    /// purpose: we'd rather skip onboarding for an edge-case existing user than
-    /// show it twice.
+    /// Returns `true` only when this user has *data-bearing* evidence of prior
+    /// app usage — i.e. something a v1.0 user would have created intentionally,
+    /// not a side effect of toggling a preference.
     ///
-    /// The eight signals match the Phase 0 verification:
+    /// Phase 8.1.1 tightening
+    /// ----------------------
+    /// Earlier Phase 0/8.1 logic also treated preference-only keys (`app_language`,
+    /// `profile_developer_tools_unlocked`, `pref.imageLoggingEnabled`) as
+    /// existing-user signals. That misclassified fresh v1.1 users who simply
+    /// switched language before completing onboarding — they would be silently
+    /// promoted to `.completed` AND see the migrated-user guide on relaunch.
+    /// We now require an actual usage artifact. A v1.0 user with zero usage
+    /// data who only flipped a preference will fall through and see first-run
+    /// onboarding — an acceptable, contained regression.
+    ///
+    /// Strong signals (any one is sufficient):
     ///   1. `experimentsData` decodes to at least one experiment
     ///   2. `lowEnergyLogsData` decodes to a non-empty array
     ///   3. `historyData` decodes to a non-empty array (legacy day-counter)
     ///   4. `customSubcategoriesByCategoryData` decodes to a non-empty dict
     ///   5. `customImpactByCategorySubcategoryData` decodes to a non-empty dict
-    ///   6. `app_language` is written to a non-empty string
-    ///   7. `profile_developer_tools_unlocked == true`
-    ///   8. `pref.imageLoggingEnabled` key has been written (any value)
-    private static func hasAnyExistingUserSignal(
+    ///
+    /// Intentionally NOT signals anymore:
+    ///   • `app_language`                       (preference-only)
+    ///   • `profile_developer_tools_unlocked`   (preference-only)
+    ///   • `pref.imageLoggingEnabled`           (preference-only)
+    private static func hasMigratedUsageSignal(
         loadExperiments: () -> [Experiment]
     ) -> Bool {
-        let defaults = UserDefaults.standard
-
         if !loadExperiments().isEmpty {
             return true
         }
@@ -137,18 +176,6 @@ enum OnboardingState {
         }
 
         if hasNonEmptyEncodedDictionary(forKey: "customImpactByCategorySubcategoryData", as: [String: ExperimentImpact].self) {
-            return true
-        }
-
-        if let language = defaults.string(forKey: "app_language"), !language.isEmpty {
-            return true
-        }
-
-        if defaults.bool(forKey: "profile_developer_tools_unlocked") {
-            return true
-        }
-
-        if defaults.object(forKey: "pref.imageLoggingEnabled") != nil {
             return true
         }
 

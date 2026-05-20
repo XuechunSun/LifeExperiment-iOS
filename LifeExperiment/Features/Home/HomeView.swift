@@ -220,6 +220,15 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     if shouldShowContinueRecording {
                         continueSection
+
+                        // Phase 8.1 Part B: a light divider gives Continue
+                        // Recording breathing room from the next action
+                        // section (Worth Noticing or Try Something New). The
+                        // divider only renders when Continue itself is
+                        // visible — when Continue is absent the cluster
+                        // collapses naturally, preserving the prior tight
+                        // rhythm. No section ordering or callbacks change.
+                        continueClusterSeparator
                     }
 
                     if let personalizedSuggestion,
@@ -372,6 +381,15 @@ struct HomeView: View {
     private var sectionDivider: some View {
         Divider()
             .overlay(Color.primary.opacity(0.05))
+    }
+
+    // Phase 8.1 Part B: lighter than `sectionDivider` (4% vs 5% alpha) and
+    // padded above/below so Continue Recording reads as its own beat without
+    // breaking the existing 12pt cluster rhythm when other sections follow.
+    private var continueClusterSeparator: some View {
+        Divider()
+            .overlay(Color.primary.opacity(0.04))
+            .padding(.vertical, 4)
     }
 
     // MARK: - Recent Event Card Component

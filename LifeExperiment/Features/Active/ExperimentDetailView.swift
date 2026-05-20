@@ -111,23 +111,31 @@ struct ExperimentDetailView: View {
             && !isCompleted
     }
 
+    // Phase 8.1 Part C: typography softened to read as a gentle guide card
+    // alongside the SuggestionCard below — title dropped from headline /
+    // semibold-by-default to subheadline / medium with `.primary.opacity(0.92)`
+    // (mirrors `SuggestionCard.homeSuggestion` titleColor), body dropped from
+    // subheadline to caption, icon glyph scaled to match the SuggestionCard
+    // icon font. Copy, visibility predicate, and lavender 10% surface are
+    // unchanged. No CTA introduced; save/completion logic untouched.
     @ViewBuilder
     private var onboardingFirstLogBanner: some View {
         HStack(alignment: .top, spacing: DSSpacing.md) {
             Image(systemName: "sparkles")
-                .font(.system(size: 20, weight: .regular))
+                .font(DSText.subheadline)
                 .foregroundColor(primaryLavenderButton)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(L.onboardingFirstLogBannerTitle(lang))
-                    .font(DSText.headline)
-                    .foregroundColor(.primary)
+                    .font(DSText.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary.opacity(0.92))
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(L.onboardingFirstLogBannerBody(lang))
-                    .font(DSText.subheadline)
+                    .font(DSText.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
