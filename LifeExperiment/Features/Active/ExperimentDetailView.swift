@@ -97,6 +97,18 @@ struct ExperimentDetailView: View {
         return localExperiment.logs.contains { Calendar.current.isDate($0.date, inSameDayAs: today) }
     }
 
+    private var entryNumber: Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let sortedLogs = localExperiment.logs.sorted { $0.date < $1.date }
+        if let idx = sortedLogs.firstIndex(where: {
+            calendar.isDate($0.date, inSameDayAs: today)
+        }) {
+            return idx + 1
+        }
+        return sortedLogs.count + 1
+    }
+
     // MARK: - Onboarding first-log banner (Phase 4)
 
     /// True when the user has just created their guided onboarding experiment
@@ -250,7 +262,10 @@ struct ExperimentDetailView: View {
 
     private var detailContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            // Phase V1.1 polish: page-level section rhythm bumped from a
+            // hardcoded 20pt to `DSSpacing.xl` (24) so header → today →
+            // review → history each read as their own beat.
+            VStack(alignment: .leading, spacing: DSSpacing.xl) {
                 headerSection
                 todaySection
                 reviewSection
@@ -265,7 +280,10 @@ struct ExperimentDetailView: View {
 
     @ViewBuilder
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: DSSpacing.sm) {
+        // Phase V1.4 polish: gentle breathing-room bump between title /
+        // tag chips / created-on caption (and the completed cluster when
+        // applicable). Token-only change — header structure is unchanged.
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
             Text(BuiltInTitleDisplay.localizedTitle(stored: localExperiment.title, lang: lang))
                 .font(DSText.title2)
                 .fontWeight(.semibold)
@@ -325,8 +343,8 @@ struct ExperimentDetailView: View {
             cornerRadius: 16,
             fillColor: Color(.systemBackground),
             fillOpacity: 1.0,
-            borderOpacity: 0.04,
-            shadowOpacity: 0.03,
+            borderOpacity: 0.02,
+            shadowOpacity: 0.02,
             shadowRadius: 8,
             shadowYOffset: 2,
             contentPadding: preferences.uiStyle.cardPadding
@@ -365,10 +383,24 @@ struct ExperimentDetailView: View {
                     //     .lifeSecondaryText()
                 //}
 
-                VStack(alignment: .leading, spacing: DSSpacing.md) {
-                    VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                // Phase V1.2 polish: inner today-card stack stepped up from
+                // `DSSpacing.md` (16) to `DSSpacing.lg` (20) so the mood,
+                // notes, and save groups read as three distinct beats.
+                VStack(alignment: .leading, spacing: DSSpacing.lg) {
+                    Text(lang == .english ? "Entry \(entryNumber)" : "第 \(entryNumber) 次记录")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(primaryLavenderButton)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(primaryLavenderButton.opacity(0.10))
+                        .clipShape(Capsule())
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    VStack(alignment: .center, spacing: DSSpacing.sm) {
                         Text(L.howDoYouFeelToday(lang))
                             .font(DSText.headline)
+                            .frame(maxWidth: .infinity, alignment: .center)
                         MoodSelectorView(selectedMood: $draftMood)
                     }
 
@@ -380,14 +412,20 @@ struct ExperimentDetailView: View {
                             Spacer()
 
                             if canShowImages {
+                                // Phase V2.4 polish: brand-aligned trailing
+                                // action — underline removed, accent moved
+                                // from system blue to `primaryLavenderButton`.
+                                // The camera SF Symbol, font scale, picker
+                                // selection binding, `isSavingPhoto` disable
+                                // guard, and accessibility label are all
+                                // untouched.
                                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                                     HStack(spacing: 6) {
                                         Image(systemName: "camera")
                                         Text(L.addPhoto(lang))
-                                            .underline()
                                     }
                                     .font(DSText.subheadline)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(primaryLavenderButton)
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
@@ -398,10 +436,17 @@ struct ExperimentDetailView: View {
                         .frame(minHeight: 24)
 
                         TextEditor(text: $draftNote)
-                            .frame(minHeight: 80, maxHeight: 96)
-                            .padding(6)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(preferences.uiStyle.cardCornerRadius)
+                            .scrollContentBackground(.hidden)
+                            .frame(minHeight: 88, maxHeight: 120)
+                            .padding(DSSpacing.sm)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(primaryLavenderButton.opacity(0.06))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.primary.opacity(0.07), lineWidth: 1)
+                                    )
+                            )
                             .focused($noteFocused)
 
                         if canShowImages,
@@ -442,42 +487,65 @@ struct ExperimentDetailView: View {
                         }
                     }
 
-                    HStack {
-                        // Button("Complete Experiment") {
-                        //     showCompleteConfirm = true
-                        // }
-                        // .buttonStyle(.bordered)
-                        // .tint(.secondary)
-
-                        Spacer()
-
-                        Button(L.save(lang)) {
-                            if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                showEmptyNoteAlert = true
-                            } else if draftMood == nil {
-                                showMoodRequiredAlert = true
-                            } else {
-                                saveTodayLog()
-                            }
+                    // Phase V2.1 polish: Save is now the page's clear
+                    // primary action — full-width lavender pill that mirrors
+                    // the visual recipe of `OnboardingFlowView.primaryButton`
+                    // (50pt min height, semibold headline, 12pt corner).
+                    // The action closure is byte-identical to the prior
+                    // bordered-prominent button: empty-note alert → mood-
+                    // required alert → `saveTodayLog()`. We deliberately do
+                    // NOT add a `.disabled` binding here — the existing two
+                    // validation alerts continue to gate the save path.
+                    Button {
+                        if draftNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            showEmptyNoteAlert = true
+                        } else if draftMood == nil {
+                            showMoodRequiredAlert = true
+                        } else {
+                            saveTodayLog()
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(primaryLavenderButton)
+                    } label: {
+                        Text(L.save(lang))
+                            .font(DSText.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .background(primaryLavenderButton)
+                            .cornerRadius(12)
                     }
+                    .buttonStyle(.plain)
 
+                    // Phase V2.5 polish: Complete Experiment sits under Save
+                    // as a calm secondary action — no underline (looks dated
+                    // in iOS), no uppercase / tracking (avoids heavy ZH
+                    // typography), centered with light caption styling. The
+                    // confirm-alert path (`showCompleteConfirm = true`) is
+                    // unchanged.
                     Button {
                         showCompleteConfirm = true
                     } label: {
                         Text(L.completeExperiment(lang))
-                            .underline()
+                            .font(DSText.caption)
+                            .foregroundColor(.secondary.opacity(0.78))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, DSSpacing.xxs)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .foregroundColor(.secondary)
+                    .padding(.top, DSSpacing.xxs)
                 }
             }
+            // Phase V1.3 polish: today card reads as the primary module.
+            //   - fillOpacity 0.98 → 1.0  : solid surface (no translucent
+            //     blend with the page background) so the card feels
+            //     intentional rather than layered.
+            //   - cornerRadius 16  → 18   : slightly softer silhouette so
+            //     the today card visually leads against the header (16)
+            //     and review (16) cards underneath.
             .lightCardStyle(
-                cornerRadius: 16,
+                cornerRadius: 18,
                 fillColor: Color(.systemBackground),
-                fillOpacity: 0.98,
+                fillOpacity: 1.0,
                 borderOpacity: 0.04,
                 shadowOpacity: 0.02,
                 shadowRadius: 6,
@@ -518,7 +586,7 @@ struct ExperimentDetailView: View {
                             }
                         }
                     } else {
-                        VStack(alignment: .leading, spacing: DSSpacing.md) {
+                        VStack(alignment: .leading, spacing: DSSpacing.lg) {
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(L.completedReflectionWhatDidITry(lang))
@@ -529,10 +597,17 @@ struct ExperimentDetailView: View {
                                         .italic()
                                 }
                                 TextEditor(text: $draftWhatDidITry)
-                                    .frame(minHeight: 80)
-                                    .padding(8)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8)
+                                    .scrollContentBackground(.hidden)
+                                    .frame(minHeight: 88)
+                                    .padding(DSSpacing.sm)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(primaryLavenderButton.opacity(0.06))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.primary.opacity(0.07), lineWidth: 1)
+                                            )
+                                    )
                             }
 
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
@@ -548,10 +623,17 @@ struct ExperimentDetailView: View {
                                 }
 
                                 TextEditor(text: $draftWhatHappened)
-                                    .frame(minHeight: 80)
-                                    .padding(8)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8)
+                                    .scrollContentBackground(.hidden)
+                                    .frame(minHeight: 88)
+                                    .padding(DSSpacing.sm)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(primaryLavenderButton.opacity(0.06))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.primary.opacity(0.07), lineWidth: 1)
+                                            )
+                                    )
                             }
 
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
@@ -567,27 +649,39 @@ struct ExperimentDetailView: View {
                                 }
 
                                 TextEditor(text: $draftWhatWillIDoDifferently)
-                                    .frame(minHeight: 80)
-                                    .padding(8)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8)
+                                    .scrollContentBackground(.hidden)
+                                    .frame(minHeight: 88)
+                                    .padding(DSSpacing.sm)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(primaryLavenderButton.opacity(0.06))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.primary.opacity(0.07), lineWidth: 1)
+                                            )
+                                    )
                             }
 
-                            HStack {
-                                Spacer()
-
-                                Button(L.saveReview(lang)) { saveReview() }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(primaryLavenderButton)
+                            Button {
+                                saveReview()
+                            } label: {
+                                Text(L.saveReview(lang))
+                                    .font(DSText.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity, minHeight: 50)
+                                    .background(primaryLavenderButton)
+                                    .cornerRadius(12)
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lightCardStyle(
-                    cornerRadius: 16,
+                    cornerRadius: 18,
                     fillColor: Color(.systemBackground),
-                    fillOpacity: 0.98,
+                    fillOpacity: 1.0,
                     borderOpacity: 0.04,
                     shadowOpacity: 0.02,
                     shadowRadius: 6,
@@ -606,6 +700,7 @@ struct ExperimentDetailView: View {
             Text(L.history(lang))
                 .font(DSText.section)
                 .foregroundColor(.primary)
+                .padding(.bottom, DSSpacing.xxs)
 
             if sortedLogs.isEmpty {
                 Text(L.historyNoLogsYet(lang))
@@ -627,6 +722,7 @@ struct ExperimentDetailView: View {
                 }
             }
         }
+        .padding(.top, DSSpacing.xs)
     }
 
     private func detailTag(_ text: String) -> some View {
@@ -945,23 +1041,45 @@ private struct HistoryLogRow: View {
         return trimmed.contains("\n") || trimmed.count > 80
     }
 
+    private func relativeDateLabel(for date: Date, lang: AppLanguage) -> String {
+        let calendar = Calendar.current
+        let daysAgo = max(
+            0,
+            calendar.dateComponents(
+                [.day],
+                from: calendar.startOfDay(for: date),
+                to: calendar.startOfDay(for: Date())
+            ).day ?? 0
+        )
+
+        switch daysAgo {
+        case 0:
+            return lang == .english ? "Today" : "今天"
+        case 1:
+            return lang == .english ? "Yesterday" : "昨天"
+        default:
+            return lang == .english ? "\(daysAgo) days ago" : "\(daysAgo) 天前"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(log.date, style: .date)
-                    .font(DSText.subheadline)
-                    .foregroundColor(.secondary)
-
-                Text(log.mood?.emoji ?? " ")
-                    .frame(width: 24, alignment: .leading)
-
-                if log.photoLocalPath != nil {
-                    Image(systemName: "photo")
-                        .font(DSText.caption)
-                        .foregroundColor(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                if let emoji = log.mood?.emoji {
+                    Text(emoji)
+                        .font(.title3)
                 }
 
+                Text(relativeDateLabel(for: log.date, lang: lang))
+                    .font(DSText.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+
                 Spacer()
+
+                Text(log.date, style: .date)
+                    .font(DSText.caption)
+                    .foregroundColor(.secondary)
             }
 
             if !log.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -1034,14 +1152,14 @@ private struct HistoryLogRow: View {
             }
         }
         .lightCardStyle(
-            cornerRadius: 12,
+            cornerRadius: 14,
             fillColor: Color(.secondarySystemBackground),
             fillOpacity: 1.0,
-            borderOpacity: 0.025,
+            borderOpacity: 0.035,
             shadowOpacity: 0.015,
             shadowRadius: 4,
             shadowYOffset: 1,
-            contentPadding: 12
+            contentPadding: DSSpacing.md
         )
         .sheet(isPresented: $showFullLog) {
             FullLogSheet(log: log, lang: lang)

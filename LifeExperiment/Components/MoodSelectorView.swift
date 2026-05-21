@@ -1,35 +1,60 @@
 import SwiftUI
 
-struct MoodSelectorView: View {
-    @Binding var selectedMood: Mood?
+private let moodSelectorLavender = Color(red: 0.69, green: 0.68, blue: 0.93)
 
-    var body: some View {
-        HStack(spacing: 12) {
-            ForEach(Mood.allCases) { mood in
-                Button(action: {
-                    // Haptic feedback on mood selection
-                    Haptics.selection()
-
-                    if selectedMood == mood {
-                        selectedMood = nil
-                    } else {
-                        selectedMood = mood
-                    }
-                }) {
-                    Text(mood.emoji)
-                        .font(.title)
-                        .frame(width: 50, height: 50)
-                        .background(
-                            Circle()
-                                .fill(selectedMood == mood ? Color.blue.opacity(0.2) : Color.clear)
-                        )
-                        .overlay(
-                            Circle()
-                                .stroke(selectedMood == mood ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
-                        )
-                }
-            }
+private extension Mood {
+    func shortLabel(_ lang: AppLanguage) -> String {
+        switch self {
+        case .veryBad:  return lang == .english ? "Low"    : "低落"
+        case .bad:      return lang == .english ? "Uneasy" : "不安"
+        case .neutral:  return lang == .english ? "Okay"   : "一般"
+        case .good:     return lang == .english ? "Good"   : "还好"
+        case .veryGood: return lang == .english ? "Bright" : "开心"
         }
     }
 }
 
+struct MoodSelectorView: View {
+    @Binding var selectedMood: Mood?
+    @AppStorage("app_language") private var appLanguageRaw: String = ""
+    private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Mood.allCases) { mood in
+                let isSelected = selectedMood == mood
+                Button {
+                    Haptics.selection()
+                    if isSelected {
+                        selectedMood = nil
+                    } else {
+                        selectedMood = mood
+                    }
+                } label: {
+                    VStack(spacing: 5) {
+                        Text(mood.emoji)
+                            .font(.title2)
+                            .frame(width: 44, height: 44)
+                            .background(
+                                Circle()
+                                    .fill(isSelected ? moodSelectorLavender.opacity(0.16) : Color.clear)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        isSelected ? moodSelectorLavender.opacity(0.45) : Color.gray.opacity(0.3),
+                                        lineWidth: 2
+                                    )
+                            )
+
+                        Text(mood.shortLabel(lang))
+                            .font(.caption2)
+                            .foregroundColor(isSelected ? .primary : .secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+}
