@@ -109,6 +109,20 @@ struct ExperimentDetailView: View {
         return sortedLogs.count + 1
     }
 
+    private var headerDateCaption: String {
+        let createdDateString = localExperiment.createdAt.formatted(date: .abbreviated, time: .omitted)
+        guard isCompleted, let completedAt = localExperiment.completedAt else {
+            return L.detailCreatedOn(lang, dateString: createdDateString)
+        }
+        let completedDateString = completedAt.formatted(date: .abbreviated, time: .omitted)
+        switch lang {
+        case .english:
+            return "Created \(createdDateString), completed \(completedDateString)"
+        case .chinese:
+            return "创建于 \(createdDateString)，完成于 \(completedDateString)"
+        }
+    }
+
     // MARK: - Onboarding first-log banner (Phase 4)
 
     /// True when the user has just created their guided onboarding experiment
@@ -302,12 +316,7 @@ struct ExperimentDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(
-                    L.detailCreatedOn(
-                        lang,
-                        dateString: localExperiment.createdAt.formatted(date: .abbreviated, time: .omitted)
-                    )
-                )
+                Text(headerDateCaption)
                     .font(DSText.caption)
                     .foregroundColor(.secondary)
 
@@ -324,17 +333,6 @@ struct ExperimentDetailView: View {
                         .font(DSText.caption)
                         .foregroundColor(.secondary)
                         .italic()
-
-                    if let completedAt = localExperiment.completedAt {
-                        Text(
-                            L.detailCompletedOn(
-                                lang,
-                                dateString: completedAt.formatted(date: .abbreviated, time: .omitted)
-                            )
-                        )
-                            .font(DSText.caption)
-                            .foregroundColor(.secondary)
-                    }
                 }
             }
         }
@@ -563,24 +561,37 @@ struct ExperimentDetailView: View {
                     .font(DSText.section)
                     .foregroundColor(.primary)
 
+                if localExperiment.review?.locked != true {
+                    Text(lang == .english
+                         ? "Optional — write only what feels useful."
+                         : "可选填写，写下对你有帮助的部分就好。")
+                        .font(DSText.caption)
+                        .foregroundColor(.secondary)
+                        .italic()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+
                 VStack(alignment: .leading, spacing: DSSpacing.md) {
                     if let review = localExperiment.review, review.locked {
                         VStack(alignment: .leading, spacing: DSSpacing.md) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(L.completedReflectionWhatDidITry(lang))
                                     .font(DSText.headline)
+                                    .frame(maxWidth: .infinity, alignment: .center)
                                 Text(review.whatDidITry)
                                     .foregroundColor(.secondary)
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(L.completedReflectionWhatHappened(lang))
                                     .font(DSText.headline)
+                                    .frame(maxWidth: .infinity, alignment: .center)
                                 Text(review.whatHappened)
                                     .foregroundColor(.secondary)
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(L.completedReflectionWhatNextTime(lang))
                                     .font(DSText.headline)
+                                    .frame(maxWidth: .infinity, alignment: .center)
                                 Text(review.whatWillIDoDifferently)
                                     .foregroundColor(.secondary)
                             }
@@ -588,14 +599,9 @@ struct ExperimentDetailView: View {
                     } else {
                         VStack(alignment: .leading, spacing: DSSpacing.lg) {
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(L.completedReflectionWhatDidITry(lang))
-                                        .font(DSText.headline)
-                                    Text(L.optionalField(lang))
-                                        .font(DSText.caption)
-                                        .foregroundColor(.secondary)
-                                        .italic()
-                                }
+                                Text(L.completedReflectionWhatDidITry(lang))
+                                    .font(DSText.headline)
+                                    .frame(maxWidth: .infinity, alignment: .center)
                                 TextEditor(text: $draftWhatDidITry)
                                     .scrollContentBackground(.hidden)
                                     .frame(minHeight: 88)
@@ -611,16 +617,9 @@ struct ExperimentDetailView: View {
                             }
 
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(L.completedReflectionWhatHappened(lang))
-                                        .font(DSText.headline)
-
-                                    Text(L.optionalField(lang))
-                                        .font(DSText.caption)
-                                        .foregroundColor(.secondary)
-                                        .italic()
-                                }
+                                Text(L.completedReflectionWhatHappened(lang))
+                                    .font(DSText.headline)
+                                    .frame(maxWidth: .infinity, alignment: .center)
 
                                 TextEditor(text: $draftWhatHappened)
                                     .scrollContentBackground(.hidden)
@@ -637,16 +636,9 @@ struct ExperimentDetailView: View {
                             }
 
                             VStack(alignment: .leading, spacing: DSSpacing.sm) {
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(L.completedReflectionWhatNextTime(lang))
-                                        .font(DSText.headline)
-
-                                    Text(L.optionalField(lang))
-                                        .font(DSText.caption)
-                                        .foregroundColor(.secondary)
-                                        .italic()
-                                }
+                                Text(L.completedReflectionWhatNextTime(lang))
+                                    .font(DSText.headline)
+                                    .frame(maxWidth: .infinity, alignment: .center)
 
                                 TextEditor(text: $draftWhatWillIDoDifferently)
                                     .scrollContentBackground(.hidden)
