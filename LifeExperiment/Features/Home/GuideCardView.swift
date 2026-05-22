@@ -4,18 +4,31 @@ struct GuideCardView: View {
     let copy: GuideCopy
 
     var body: some View {
-        HighlightCard {
-            VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                Text(copy.headline)
-                    .font(DSFont.accent(size: 24, relativeTo: .title3))
-                    .foregroundColor(.white)
+        VStack(alignment: .leading, spacing: DSSpacing.md) {
+            Text(copy.headline)
+                .font(DSFont.accent(size: 24, relativeTo: .title3))
+                .foregroundColor(.white)
 
-                Text(copy.subheadline)
-                    .font(DSText.secondary)
-                    .foregroundColor(.white.opacity(0.88))
-            }
-            .frame(maxWidth: .infinity, minHeight: 110, alignment: .leading)
+            Text(copy.subheadline)
+                .font(DSText.secondary)
+                .foregroundColor(.white.opacity(0.88))
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
+        .padding(24)
+        .background(
+            LinearGradient(
+                colors: [
+                    highlightCardStart,
+                    highlightCardEnd,
+                    primaryLavenderButton.opacity(0.92)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: primaryLavenderButton.opacity(0.16), radius: 18, x: 0, y: 6)
     }
 }
 
@@ -47,7 +60,7 @@ struct GuideSuggestionsSection: View {
                             .font(DSText.subheadline)
                             .italic()
                             .underline()
-                            .foregroundColor(.primary.opacity(0.6))
+                            .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
                     .contentShape(Rectangle())
@@ -59,11 +72,10 @@ struct GuideSuggestionsSection: View {
                     Button {
                         onStartSuggestion(suggestion)
                     } label: {
-                        SuggestionCard(
+                        HomeExploreSuggestionRow(
                             title: BuiltInTitleDisplay.localizedTitle(stored: suggestion.title, lang: lang),
                             subtitle: suggestion.impactDisplayText(lang: lang),
-                            icon: suggestionEmoji(for: suggestion),
-                            style: .homeSuggestion
+                            icon: suggestionEmoji(for: suggestion)
                         )
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
@@ -76,7 +88,7 @@ struct GuideSuggestionsSection: View {
                 onExploreMore()
             }
             .font(DSText.subheadline)
-            .foregroundColor(.blue)
+            .foregroundColor(primaryLavenderButton)
             .buttonStyle(.plain)
             .padding(.top, DSSpacing.xxs)
         }
@@ -96,5 +108,64 @@ struct GuideSuggestionsSection: View {
             return "💫"
         }
         return "✨"
+    }
+}
+
+private struct HomeExploreSuggestionRow: View {
+    let title: String
+    let subtitle: String?
+    let icon: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(icon)
+                .font(DSText.subheadline)
+                .foregroundColor(.primary.opacity(0.88))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(DSText.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary.opacity(0.92))
+                    .lineSpacing(2)
+
+                if let subtitle {
+                    Text(subtitle)
+                        .font(DSText.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .allowsTightening(true)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(DSText.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary.opacity(0.55))
+                .padding(.top, 2)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 15)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    LinearGradient(
+                        colors: [
+                            Color.purple.opacity(0.045),
+                            Color.blue.opacity(0.03)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.primary.opacity(0.04), lineWidth: 1)
+        )
     }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 enum ExperimentListCardSurfaceStyle {
     case activePrimary
     case activeSecondary
+    case continueReturn
     case completed
     case browse
 
@@ -10,7 +11,11 @@ enum ExperimentListCardSurfaceStyle {
         switch self {
         case .browse:
             return 14
-        case .activePrimary, .activeSecondary, .completed:
+        case .continueReturn:
+            return 16
+        case .activePrimary, .activeSecondary:
+            return 14
+        case .completed:
             return 12
         }
     }
@@ -19,8 +24,12 @@ enum ExperimentListCardSurfaceStyle {
         switch self {
         case .activePrimary:
             return Color(.systemBackground)
-        case .activeSecondary, .completed:
+        case .continueReturn:
+            return Color(.secondarySystemBackground)
+        case .activeSecondary:
             return Color(.systemGray6)
+        case .completed:
+            return Color(.secondarySystemBackground)
         case .browse:
             return Color(.secondarySystemBackground)
         }
@@ -30,32 +39,40 @@ enum ExperimentListCardSurfaceStyle {
         switch self {
         case .activePrimary, .browse:
             return 1.0
-        case .activeSecondary, .completed:
+        case .continueReturn:
+            return 1.0
+        case .activeSecondary:
             return 0.7
+        case .completed:
+            return 1.0
         }
     }
 
     var borderOpacity: Double {
         switch self {
         case .activePrimary:
+            return 0.03
+        case .continueReturn:
             return 0.05
         case .activeSecondary:
             return 0.03
         case .browse:
             return 0.04
         case .completed:
-            return 0.0
+            return 0.02
         }
     }
 
     var shadowOpacity: Double {
         switch self {
         case .activePrimary:
-            return 0.07
+            return 0.04
+        case .continueReturn:
+            return 0.04
         case .activeSecondary:
             return 0.04
         case .completed:
-            return 0.05
+            return 0.015
         case .browse:
             return 0.03
         }
@@ -63,10 +80,10 @@ enum ExperimentListCardSurfaceStyle {
 
     var shadowRadius: CGFloat {
         switch self {
-        case .browse:
+        case .browse, .completed:
             return 6
-        case .completed:
-            return 8
+        case .continueReturn:
+            return 10
         case .activePrimary, .activeSecondary:
             return 10
         }
@@ -74,10 +91,21 @@ enum ExperimentListCardSurfaceStyle {
 
     var shadowYOffset: CGFloat {
         switch self {
-        case .browse:
+        case .browse, .completed:
             return 2
-        case .activePrimary, .activeSecondary, .completed:
+        case .continueReturn:
+            return 3
+        case .activePrimary, .activeSecondary:
             return 4
+        }
+    }
+
+    var titleSubtitleSpacing: CGFloat {
+        switch self {
+        case .continueReturn:
+            return DSSpacing.xs
+        default:
+            return DSSpacing.xxs
         }
     }
 }
@@ -151,7 +179,7 @@ struct ExperimentListCard<TrailingAccessory: View>: View {
 
     private var cardContent: some View {
         HStack(spacing: DSSpacing.sm) {
-            VStack(alignment: .leading, spacing: DSSpacing.xxs) {
+            VStack(alignment: .leading, spacing: surfaceStyle.titleSubtitleSpacing) {
                 Text(title)
                     .font(DSText.rowTitle)
                     .fontWeight(titleWeight)
@@ -161,7 +189,8 @@ struct ExperimentListCard<TrailingAccessory: View>: View {
 
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .lifeCaption()
+                        .font(DSText.caption)
+                        .foregroundColor(.secondary)
                 }
             }
 

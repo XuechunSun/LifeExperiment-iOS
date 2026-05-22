@@ -309,7 +309,7 @@ struct CalendarDayCell: View {
                 if activeCount > 0 {
                     Image(systemName: "pencil.circle")
                         .font(DSText.caption2)
-                        .foregroundColor(.blue)
+                        .foregroundColor(primaryLavenderButton)
                 }
                 if completedCount > 0 {
                     Image(systemName: "checkmark.seal")
@@ -319,7 +319,7 @@ struct CalendarDayCell: View {
                 if hasLowEnergyLog {
                     Image(systemName: "leaf.fill")
                         .font(DSText.caption2)
-                        .foregroundColor(.green.opacity(0.7))
+                        .foregroundColor(Color.teal.opacity(0.6))
                 }
             }
             .frame(height: 12)
@@ -330,13 +330,13 @@ struct CalendarDayCell: View {
                     let displayCount = min(totalIntensity, 5)
                     ForEach(0..<displayCount, id: \.self) { _ in
                         Circle()
-                            .fill(Color.orange)
+                            .fill(primaryLavenderButton.opacity(0.38))
                             .frame(width: 4, height: 4)
                     }
                     if totalIntensity > 5 {
                         Image(systemName: "plus")
                             .font(.system(size: 6))
-                            .foregroundColor(.orange)
+                            .foregroundColor(primaryLavenderButton.opacity(0.45))
                     }
                 }
             }
@@ -344,12 +344,15 @@ struct CalendarDayCell: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .background(isToday ? Color.indigo.opacity(0.08) : Color(.systemGray6))
+        .background(isToday ? primaryLavenderButton.opacity(0.10) : Color(.systemBackground))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(isToday ? Color.indigo.opacity(0.7) : Color.clear, lineWidth: 1.8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(
+                    isToday ? primaryLavenderButton.opacity(0.55) : Color.primary.opacity(0.04),
+                    lineWidth: isToday ? 1.5 : 1
+                )
         )
-        .cornerRadius(8)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

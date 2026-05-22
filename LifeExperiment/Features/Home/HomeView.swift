@@ -205,30 +205,18 @@ struct HomeView: View {
     // predicates — no per-state branching needed.
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 32) {
                 CalendarFootprintView(experiments: experiments, lowEnergyLogs: lowEnergyLogs, onUpdate: onUpdate, onSelectDay: onSelectDay)
-
-                sectionDivider
 
                 // Purple Guide CTA — always directly under Calendar so the
                 // brand-orientation atmosphere stays in place regardless of
                 // user state.
                 GuideCardView(copy: guideCopy)
 
-                sectionDivider
-
                 VStack(alignment: .leading, spacing: 12) {
                     if shouldShowContinueRecording {
                         continueSection
-
-                        // Phase 8.1 Part B: a light divider gives Continue
-                        // Recording breathing room from the next action
-                        // section (Worth Noticing or Try Something New). The
-                        // divider only renders when Continue itself is
-                        // visible — when Continue is absent the cluster
-                        // collapses naturally, preserving the prior tight
-                        // rhythm. No section ordering or callbacks change.
-                        continueClusterSeparator
+                            .padding(.bottom, DSSpacing.md)
                     }
 
                     if let personalizedSuggestion,
@@ -256,16 +244,16 @@ struct HomeView: View {
                 }
 
                 if !recentEvents.isEmpty {
-                    sectionDivider
                     recentSection
                 }
 
                 if shouldShowCompleted {
-                    sectionDivider
                     completedSection
                 }
             }
-            .padding()
+            .padding(.horizontal, DSSpacing.md)
+            .padding(.top, DSSpacing.sm)
+            .padding(.bottom, 24)
         }
     }
 
@@ -273,7 +261,7 @@ struct HomeView: View {
 
     @ViewBuilder
     private var continueSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text(L.continueText(lang))
                     .font(DSText.headline)
@@ -287,7 +275,7 @@ struct HomeView: View {
                     }) {
                         Text(L.seeMore(lang))
                             .font(DSText.subheadline)
-                            .foregroundColor(.blue)
+                            .foregroundColor(primaryLavenderButton)
                     }
                 }
             }
@@ -300,8 +288,8 @@ struct HomeView: View {
                         dateString: experiment.updatedAt.formatted(date: .abbreviated, time: .omitted)
                     ),
                     titleWeight: .semibold,
-                    surfaceStyle: .activePrimary,
-                    contentPadding: DSSpacing.md,
+                    surfaceStyle: .continueReturn,
+                    contentPadding: DSSpacing.lg,
                     action: {
                         onSelectExperiment(experiment)
                     }
@@ -321,8 +309,8 @@ struct HomeView: View {
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(L.recentMoments(lang))
-                .font(DSText.headline)
-                .foregroundColor(.primary.opacity(0.72))
+                .font(DSText.subheadline)
+                .foregroundColor(.primary.opacity(0.65))
 
             let eventsToShow = Array(recentEvents.prefix(2))
             ForEach(eventsToShow) { event in
@@ -336,8 +324,8 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(L.sectionCompleted(lang))
-                    .font(DSText.headline)
-                    .foregroundColor(.primary)
+                    .font(DSText.subheadline)
+                    .foregroundColor(.primary.opacity(0.65))
 
                 Spacer()
 
@@ -347,7 +335,7 @@ struct HomeView: View {
                     }) {
                         Text(L.seeMore(lang))
                             .font(DSText.subheadline)
-                            .foregroundColor(.blue)
+                            .foregroundColor(primaryLavenderButton)
                     }
                 }
             }
@@ -363,7 +351,7 @@ struct HomeView: View {
                     },
                     titleWeight: .medium,
                     surfaceStyle: .completed,
-                    contentPadding: DSSpacing.md,
+                    contentPadding: DSSpacing.sm,
                     action: {
                         onSelectExperiment(experiment)
                     }
@@ -378,20 +366,6 @@ struct HomeView: View {
         }
     }
 
-    private var sectionDivider: some View {
-        Divider()
-            .overlay(Color.primary.opacity(0.05))
-    }
-
-    // Phase 8.1 Part B: lighter than `sectionDivider` (4% vs 5% alpha) and
-    // padded above/below so Continue Recording reads as its own beat without
-    // breaking the existing 12pt cluster rhythm when other sections follow.
-    private var continueClusterSeparator: some View {
-        Divider()
-            .overlay(Color.primary.opacity(0.04))
-            .padding(.vertical, 4)
-    }
-
     // MARK: - Recent Event Card Component
 
     struct RecentEventCard: View {
@@ -401,36 +375,40 @@ struct HomeView: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: event.iconSystemName)
                     .font(DSText.subheadline)
-                    .foregroundColor(.orange.opacity(0.8))
+                    .foregroundColor(Color.orange.opacity(0.65))
                     .padding(.top, 1)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(event.title)
                         .font(DSText.subheadline)
                         .fontWeight(.medium)
-                        .foregroundColor(.primary)
+                        .foregroundColor(.primary.opacity(0.88))
 
                     if let subtitle = event.subtitle {
                         Text(subtitle)
                             .font(DSText.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.secondary.opacity(0.9))
                     }
                 }
 
                 Spacer(minLength: 0)
             }
-            .padding(14)
+            .padding(DSSpacing.sm)
             .background(
                 LinearGradient(
                     colors: [
-                        Color.orange.opacity(0.05),
-                        Color.pink.opacity(0.035)
+                        Color.orange.opacity(0.03),
+                        Color.pink.opacity(0.018)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.primary.opacity(0.035), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 

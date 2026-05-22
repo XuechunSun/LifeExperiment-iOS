@@ -47,7 +47,6 @@ struct HomePersonalizedSuggestionSection: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, DSSpacing.xs)
     }
 }
 
