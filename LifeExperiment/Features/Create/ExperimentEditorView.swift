@@ -43,6 +43,8 @@ struct ExperimentEditorView: View {
     @State private var isProgrammaticTitleChange: Bool = false
     @FocusState private var focusedField: ExperimentEditorFocusField?
     @State private var displayedPrompts: [String] = []
+    @State private var shuffledPool: [String] = []
+    @State private var promptPageStart: Int = 0
 
     // Dimension state
     @State private var selectedImpact: ExperimentImpact?
@@ -949,7 +951,17 @@ struct ExperimentEditorView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                    } 
+                    }
+                }
+
+                if promptPool.count > 3 {
+                    Button(action: advancePromptPage) {
+                        Text(L.createMoreIdeas(lang))
+                            .font(DSText.caption)
+                            .foregroundColor(primaryLavenderButton)
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
         }
@@ -959,11 +971,24 @@ struct ExperimentEditorView: View {
         let pool = promptPool
         guard !pool.isEmpty else {
             displayedPrompts = []
+            shuffledPool = []
+            promptPageStart = 0
             return
         }
+        shuffledPool = pool.shuffled()
+        promptPageStart = 0
+        displayedPrompts = Array(shuffledPool.prefix(min(3, shuffledPool.count)))
+    }
 
-        let selectionCount = min(4, pool.count)
-        displayedPrompts = Array(pool.shuffled().prefix(selectionCount))
+    private func advancePromptPage() {
+        let nextStart = promptPageStart + 3
+        if nextStart >= shuffledPool.count {
+            shuffledPool = promptPool.shuffled()
+            promptPageStart = 0
+        } else {
+            promptPageStart = nextStart
+        }
+        displayedPrompts = Array(shuffledPool[promptPageStart..<min(promptPageStart + 3, shuffledPool.count)])
     }
 
     private func applyPrompt(_ prompt: String, scrollProxy: ScrollViewProxy) {

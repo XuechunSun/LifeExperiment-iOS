@@ -94,6 +94,14 @@ enum BuiltInTitleDisplay {
         // capitalized) — i.e. the title that gets persisted on tap. Values are the
         // Chinese display form shown both on the card and in the title field.
 
+        // life_reset / self_reflection (self-care additions)
+        // note: "Say no to one thing that drains you" already mapped above (ExperimentSuggestions)
+        "One place where you say yes too quickly": "留意一个你太快答应别人的地方",
+        "Ask whether one obligation is truly yours": "问问自己：这个责任真的是我的吗",
+        "Keep one opinion to yourself without shrinking": "保留一个自己的观点，但不因此缩小自己",
+        "What feels like peace instead of approval": "留意什么带来平静，而不是别人的认可",
+        "Whether a social plan feels nourishing or draining": "留意一个社交安排是滋养你还是消耗你",
+
         // life_reset / self_reflection
         "3 things you no longer want to keep doing": "写下3件你不想再继续做的事",
         "Track moments that give you energy for 7 days": "连续7天记录让你有能量的时刻",
@@ -105,6 +113,12 @@ enum BuiltInTitleDisplay {
         "Describe the kind of day that helps you feel more steady": "描述什么样的一天会让你更安定",
         "About one choice that has been quietly pulling at you": "写下一个一直在牵动你的选择",
         "Note one habit that no longer feels like a fit": "记下一个不再适合你的习惯",
+
+        // life_reset / career_reorientation (self-care additions)
+        "End work with one clear stopping point today": "今天给工作设一个明确的停下点",
+        "Protect one lunch break from work messages": "保护一次午休，不处理工作消息",
+        "Name one work request that is not actually yours to carry": "说出一个其实不该由你承担的工作请求",
+        "Give yourself permission not to be instantly available": "允许自己不用随时在线",
 
         // life_reset / career_reorientation
         "List 3 projects that made you feel proud": "列出3个让你引以为傲的项目",
@@ -118,6 +132,12 @@ enum BuiltInTitleDisplay {
         "What you want your next chapter to feel like": "想想你希望下一段人生有怎样的感觉",
         "Note one career experiment you could try this month": "记下这个月可以试试的一个职业小实验",
 
+        // life_reset / daily_structure (self-care additions)
+        "Put one important thing before scrolling": "刷手机前先做一件重要的小事",
+        "Choose one task that can be done imperfectly": "选一件可以不完美完成的事",
+        "End the day by clearing one tiny surface": "睡前清理一个很小的平面",
+        "Put away one object that adds visual noise": "收起一件增加视觉噪音的东西",
+
         // life_reset / daily_structure
         "Design your ideal low-stress day schedule": "设计一份理想的低压力日程",
         "A consistent wake-up time for 7 days": "连续7天保持固定的起床时间",
@@ -129,6 +149,12 @@ enum BuiltInTitleDisplay {
         "Ending the day with a simple reset ritual": "用一个简单的仪式来结束一天",
         "Block out one hour for what matters most today": "给今天最重要的事留出一小时",
         "Sketch a version of your day with a little more space": "勾画一份留白更多的一日版本",
+
+        // life_list / new_experiences (self-care additions)
+        "Light a candle or lamp and notice the mood shift": "点一盏灯或蜡烛，感受氛围的变化",
+        "Buy yourself a small flower": "给自己买一小束花",
+        "Choose one new thing that feels fun, not impressive": "选一件感觉有趣、而不是显得厉害的新事",
+        "Share one honest but low-pressure update with someone safe": "和一个安全的人分享一句真实近况",
 
         // life_list / new_experiences
         "One activity you've never done before": "尝试一件你从没做过的事",
@@ -142,6 +168,12 @@ enum BuiltInTitleDisplay {
         "Spend an hour doing something with no obvious outcome": "花一小时做一件没有明确目的的事",
         "One place or activity you want to remember to try": "记下一个想以后尝试的地方或活动",
 
+        // life_list / creative_expression (self-care additions)
+        "Take a photo of one ordinary moment you want to keep": "拍下一张你想保留的普通瞬间",
+        "Listen to one song fully without doing anything else": "完整听一首歌，不做别的事",
+        "Describe today with one color": "用一种颜色描述今天",
+        "Make a playlist for the mood you want to support": "为你想支持的心情做一个歌单",
+
         // life_list / creative_expression
         "One idea every day for 7 days": "连续7天每天写下一个想法",
         "Create something small without perfection": "做一件不追求完美的小作品",
@@ -153,6 +185,12 @@ enum BuiltInTitleDisplay {
         "Save one image, color, or phrase that matches today": "保存一张能代表今天的图片、颜色或句子",
         "Make a tiny piece just for yourself": "做一件只给自己的小作品",
         "What kind of expression feels easiest today": "留意今天哪种表达方式最自然",
+
+        // life_list / personal_milestones (self-care additions)
+        "Make one corner of your room feel softer": "让房间的一个角落变得更柔和",
+        "Ask for one small kind of support": "提出一个很小的支持需求",
+        "A letter to the version of you who kept going": "给那个一直撑过来的自己写封信",
+        "Celebrate one private win in a tiny way": "用很小的方式庆祝一个私人的胜利",
 
         // life_list / personal_milestones
         "Do one important thing you've been avoiding": "去做一件你一直在回避的重要事",
@@ -202,6 +240,9 @@ enum BuiltInTitleDisplay {
         "Track one moment each day when you choose differently": "每天记录一个你做出不同选择的瞬间",
         "Why this reset matters to you right now": "写下为什么这次调整现在对你重要",
 
+        // well_being / movement (self-care additions)
+        "Choose one comfortable thing to wear today": "今天穿一件让身体觉得舒服的衣服",
+
         // well_being / movement
         "Walk 20 minutes a day": "每天散步20分钟",
         "3 different workouts this week": "这周尝试3种不同的运动",
@@ -213,6 +254,10 @@ enum BuiltInTitleDisplay {
         "Move in a way that feels grounding instead of intense": "用让自己安定而不是激烈的方式活动",
         "What kind of movement leaves you clearer": "留意哪种运动让你更清醒",
         "Make a short list of movement you don't mind repeating": "列一份你不介意重复做的运动",
+
+        // well_being / sleep_rest (self-care additions)
+        "One moment when your body asks for rest": "留意今天身体想休息的一个信号",
+        "Make your bed or blanket feel a little softer tonight": "今晚让床或毯子变得更舒服一点",
 
         // well_being / sleep_rest
         "No screens 60 minutes before bed": "睡前60分钟不看屏幕",
@@ -226,6 +271,10 @@ enum BuiltInTitleDisplay {
         "Pick one change that might help tonight feel softer": "挑一个可能让今晚更柔软的小调整",
         "How a little more rest changes the next day": "留意多一点休息如何改变第二天",
 
+        // well_being / nutrition_awareness (self-care additions)
+        "Eat one meal without rushing yourself": "不催促自己地吃一顿饭",
+        "Cook one simple meal just for yourself": "为自己做一顿简单的饭",
+
         // well_being / nutrition_awareness
         "Drink enough water daily": "每天喝够水",
         "Note how food affects your mood for 7 days": "连续7天记录食物对心情的影响",
@@ -237,6 +286,12 @@ enum BuiltInTitleDisplay {
         "Pay attention to how your energy changes after lunch": "留意午饭后能量如何变化",
         "Choose one meal this week to slow down and notice": "挑这一周里的一顿饭，慢下来用心吃",
         "Reflect on what eating well means for your real life": "想想「吃得好」在你真实生活里意味着什么",
+
+        // emotional_care / emotional_awareness (self-care additions)
+        "Check in with yourself once before replying to others": "回复别人前，先和自己确认一次感受",
+        "One trigger without turning it into a story": "留意一个触发点，但先不把它写成故事",
+        "One sentence that begins with: 'I needed'": "写一句以「我其实需要……」开头的话",
+        "What would feel supportive right now": "问问自己：现在什么会让我感到被支持？",
 
         // emotional_care / emotional_awareness
         "Describe your mood in one sentence daily": "每天用一句话描述心情",
@@ -250,6 +305,12 @@ enum BuiltInTitleDisplay {
         "Reflect on what your mood may be responding to lately": "想想最近的心情可能在回应什么",
         "End the day by naming one emotional pattern you noticed": "在一天结束时写下一个你注意到的情绪模式",
 
+        // emotional_care / self_compassion (self-care additions)
+        "Replace one harsh thought with a kinder sentence": "把一个苛刻的想法换成一句更温柔的话",
+        "Give yourself permission to be slower today": "今天允许自己慢一点",
+        "Pause before judging yourself and ask what happened": "在评价自己前停一下，问问发生了什么",
+        "Choose comfort once without calling it wasteful": "选择一次舒适，不把它叫作浪费",
+
         // emotional_care / self_compassion
         "One thing you did well today": "写下今天你做得好的一件事",
         "Say one non-judgmental sentence to yourself": "对自己说一句不带评判的话",
@@ -261,6 +322,12 @@ enum BuiltInTitleDisplay {
         "Offer yourself the same tone you'd give a friend": "用对朋友的语气对自己说话",
         "Name one pressure you can loosen today": "写下今天可以放松一点的一个压力",
         "One way you were trying, even quietly": "写下一种你即使悄悄也在努力的方式",
+
+        // emotional_care / mental_reset (self-care additions)
+        "Leave one non-urgent message for later": "把一条不紧急的消息留到晚一点再回",
+        "Take one quiet break without making it productive": "休息一次，不把它变成提高效率的任务",
+        "Choose one thing you do not need to solve today": "选一件今天不需要解决的事",
+        "Do one breathing pause before opening another app": "打开下一个 app 前，先做一次呼吸停顿",
 
         // emotional_care / mental_reset
         "Do a 10-minute breathing practice": "做一次10分钟的呼吸练习",

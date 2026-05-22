@@ -302,6 +302,7 @@ struct ExperimentDetailView: View {
                 .font(DSText.title2)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if localExperiment.category != nil || localExperiment.subcategory != nil {

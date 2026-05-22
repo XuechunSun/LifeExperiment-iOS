@@ -710,43 +710,135 @@ struct ContentView: View {
         let activeExperiments = getExperiments().filter { $0.status == .active }
             .sorted { $0.updatedAt > $1.updatedAt }
         
+        let recentCompleted = getExperiments()
+            .filter { $0.status == .completed }
+            .sorted { ($0.completedAt ?? $0.updatedAt) > ($1.completedAt ?? $1.updatedAt) }
+
         return Group {
             if activeExperiments.isEmpty {
-                // Empty state
-                VStack(spacing: 20) {
-                    Spacer()
-                    
-                    Image(systemName: "tray")
-                        .font(.system(size: 60))
-                        .foregroundColor(.secondary)
-                    
-                    Text(L.noActiveExperiments(lang))
-                        .font(DSText.title2)
-                        .fontWeight(.semibold)
-                    
-                    Text(L.noActiveExperimentsSubtitle(lang))
-                        .font(DSText.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                    
-                    Button(action: {
-                        selectedTab = .create
-                    }) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text(L.createExperimentButton(lang))
-                                .fontWeight(.medium)
+                if recentCompleted.isEmpty {
+                    // First-time empty state — no experiments at all
+                    VStack(spacing: 20) {
+                        Spacer()
+
+                        Image(systemName: "tray")
+                            .font(.system(size: 60))
+                            .foregroundColor(.secondary)
+
+                        Text(L.noActiveExperiments(lang))
+                            .font(DSText.title2)
+                            .fontWeight(.semibold)
+
+                        Text(L.noActiveExperimentsSubtitle(lang))
+                            .font(DSText.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+
+                        Button(action: {
+                            selectedTab = .create
+                        }) {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text(L.createExperimentButton(lang))
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(primaryLavenderButton)
+                            .cornerRadius(10)
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(primaryLavenderButton)
-                        .cornerRadius(10)
+                        .padding(.top, 8)
+
+                        Spacer()
                     }
-                    .padding(.top, 8)
-                    
-                    Spacer()
+                } else {
+                    // Returning-user empty state — has completed experiments but none active
+                    ScrollView {
+                        VStack(spacing: 28) {
+                            // Header
+                            VStack(spacing: DSSpacing.sm) {
+                                Image(systemName: "checkmark.circle")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(primaryLavenderButton.opacity(0.7))
+
+                                Text(L.noActiveExperimentsNow(lang))
+                                    .font(DSText.title2)
+                                    .fontWeight(.semibold)
+                                    .multilineTextAlignment(.center)
+
+                                Text(L.noActiveExperimentsNowSubtitle(lang))
+                                    .font(DSText.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 32)
+                            }
+                            .padding(.top, 32)
+
+                            // Create CTA
+                            Button(action: {
+                                selectedTab = .create
+                            }) {
+                                HStack {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text(L.createExperimentButton(lang))
+                                        .fontWeight(.medium)
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(primaryLavenderButton)
+                                .cornerRadius(10)
+                            }
+
+                            // Completed review section
+                            VStack(alignment: .leading, spacing: DSSpacing.sm) {
+                                Text(L.activeEmptyCompletedSectionTitle(lang))
+                                    .font(DSText.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary.opacity(0.65))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                VStack(spacing: DSSpacing.sm) {
+                                    ForEach(Array(recentCompleted.prefix(2))) { experiment in
+                                        ExperimentListCard(
+                                            title: BuiltInTitleDisplay.localizedTitle(stored: experiment.title, lang: lang),
+                                            subtitle: experiment.completedAt.map { date in
+                                                L.completedOnDate(lang, dateString: date.formatted(date: .abbreviated, time: .omitted))
+                                            },
+                                            titleWeight: .medium,
+                                            surfaceStyle: .completed,
+                                            contentPadding: DSSpacing.md,
+                                            action: {
+                                                activePath.append(.experiment(experiment.id))
+                                            }
+                                        ) {
+                                            EmptyView()
+                                        }
+                                    }
+                                }
+
+                                Button(action: {
+                                    activePath.append(.completedMore)
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Text(L.activeEmptyViewAllCompleted(lang))
+                                            .font(DSText.subheadline)
+                                            .fontWeight(.medium)
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                    }
+                                    .foregroundColor(primaryLavenderButton)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .padding(.top, DSSpacing.xxs)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, DSSpacing.md)
+                            .padding(.bottom, 24)
+                        }
+                    }
                 }
             } else {
                 AllActiveListView(

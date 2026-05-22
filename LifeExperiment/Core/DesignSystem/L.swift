@@ -644,6 +644,34 @@ enum L {
         }
     }
 
+    static func noActiveExperimentsNow(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "No active experiments right now"
+        case .chinese: return "现在没有进行中的实验"
+        }
+    }
+
+    static func noActiveExperimentsNowSubtitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Start something new, or look back at what you've completed."
+        case .chinese: return "你可以开始一个新的小实验，也可以回顾之前完成的内容。"
+        }
+    }
+
+    static func activeEmptyCompletedSectionTitle(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Look back at completed experiments"
+        case .chinese: return "回顾已完成的实验"
+        }
+    }
+
+    static func activeEmptyViewAllCompleted(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "View all completed"
+        case .chinese: return "查看全部已完成"
+        }
+    }
+
     static func createExperimentButton(_ lang: AppLanguage) -> String {
         switch lang {
         case .english: return "Create Experiment"
@@ -1174,6 +1202,13 @@ enum L {
         switch lang {
         case .english: return "A few gentle starting points if you'd like help naming this experiment."
         case .chinese: return "想不到标题的话，看看下面这些起点。"
+        }
+    }
+
+    static func createMoreIdeas(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "More ideas"
+        case .chinese: return "换一批"
         }
     }
 

@@ -28,13 +28,11 @@ func normalizedTitle(from prompt: String) -> String {
         }
     }
 
-    guard let first = title.first else { return "" }
-    
-
-    while let first = title.first, [":", "-", "–", "—"].contains(String(first)) {
+    while let leadingChar = title.first, [":", "-", "–", "—"].contains(String(leadingChar)) {
         title.removeFirst()
         title = title.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
+
+    guard let first = title.first else { return "" }
     return first.uppercased() + title.dropFirst()
 }
