@@ -4,7 +4,7 @@ struct GuideCardView: View {
     let copy: GuideCopy
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DSSpacing.md) {
+        VStack(alignment: .leading, spacing: DSSpacing.sm) {
             Text(copy.headline)
                 .font(DSFont.accent(size: 24, relativeTo: .title3))
                 .foregroundColor(.white)
@@ -14,8 +14,9 @@ struct GuideCardView: View {
                 .foregroundColor(.white.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
-        .padding(24)
+        .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
+        .padding(.horizontal, 22)
+        .padding(.vertical, 14)
         .background(
             LinearGradient(
                 colors: [
