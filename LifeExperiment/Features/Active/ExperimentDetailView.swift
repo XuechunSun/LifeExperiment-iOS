@@ -25,6 +25,7 @@ struct ExperimentDetailView: View {
     @State private var isSavingPhoto = false
     @State private var photoErrorMessage: String?
     @State private var showPhotoErrorAlert = false
+    @State private var didJustSaveEntry = false
     @FocusState private var noteFocused: Bool
 
     // Review draft fields
@@ -447,6 +448,16 @@ struct ExperimentDetailView: View {
                                     )
                             )
                             .focused($noteFocused)
+                            .overlay(alignment: .topLeading) {
+                                if draftNote.isEmpty && didJustSaveEntry && !noteFocused {
+                                    Text(L.detailLogSavedPlaceholder(lang))
+                                        .font(DSText.secondary)
+                                        .foregroundColor(.secondary.opacity(0.55))
+                                        .padding(.horizontal, DSSpacing.md)
+                                        .padding(.top, DSSpacing.md)
+                                        .allowsHitTesting(false)
+                                }
+                            }
 
                         if canShowImages,
                            let path = draftPhotoLocalPath,
@@ -873,6 +884,10 @@ struct ExperimentDetailView: View {
 
         noteFocused = false
         photoMarkedForRemoval = false
+        draftNote = ""
+        draftPhotoLocalPath = nil
+        draftMood = nil
+        didJustSaveEntry = true
 
         if isOnboardingFirstLog {
             // Complete onboarding. Clear the guided id first so any in-flight

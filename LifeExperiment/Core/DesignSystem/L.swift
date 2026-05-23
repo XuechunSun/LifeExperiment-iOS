@@ -1802,6 +1802,13 @@ enum L {
         }
     }
 
+    static func detailLogSavedPlaceholder(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Today's log is saved. Add another note if something else comes up."
+        case .chinese: return "今天的记录已保存。如果还有想补充的，可以再写一条。"
+        }
+    }
+
     static func todaySuggestionKeepSimple(_ lang: AppLanguage) -> String {
         switch lang {
         case .english: return "Keep today simple"
