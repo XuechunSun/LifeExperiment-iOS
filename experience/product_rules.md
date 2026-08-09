@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines high-level product decisions, feature specifications, and user experience patterns for LifeExperiment. These rules ensure consistency across the app and prevent conflicting implementations.
+This document defines high-level product decisions, feature specifications, and user experience patterns for MiniLab (formerly LifeExperiment). These rules ensure consistency across the app and prevent conflicting implementations.
 
 ---
 
@@ -124,7 +124,7 @@ Home adapts based on user's experiment status:
 **Additional Sections** (all states):
 - **Completed Preview**: Max 2 completed experiments (most recent)
 - "More" button → Completed list view
-- **Calendar Footprint**: (Future - currently hidden)
+- **Calendar Footprint**: (hidden behind flag, future feature)
 
 ---
 
@@ -167,7 +167,7 @@ Two subsections, vertically stacked:
 
 ### 3. Calendar Footprint (Future)
 
-Currently hidden behind flag (`showCalendarFootprint = false`). Can be restored later.
+Hidden behind flag (`showCalendarFootprint = false`). Not shipped in v1.1. Can be enabled in a future release.
 
 ---
 
@@ -417,4 +417,4 @@ Before releasing features, verify:
 
 ---
 
-*Last updated: 2026-02-11*
+*Last updated: 2026-08-09*

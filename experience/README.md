@@ -1,6 +1,9 @@
-# AI Development Framework
+# AI Development Framework — MiniLab
 
-Welcome to the LifeExperiment development documentation. This framework helps maintain product consistency, prevent bugs, and guide AI-assisted development.
+Welcome to the MiniLab (formerly LifeExperiment) development documentation. This framework helps maintain product consistency, prevent bugs, and guide AI-assisted development.
+
+**App**: MiniLab · `com.xuechunsun.minilab` · iOS 17.0+ · iPhone only  
+**Status**: v1.1 live on App Store (build 3). Local: build 4 in progress.
 
 ## Purpose
 
@@ -51,6 +54,7 @@ Include relevant doc sections in context when:
 | Understand tab navigation | [Product Rules](./product_rules.md) → Navigation |
 | Debug unstable sorting | [Debugging Principles](./debugging_principles.md) + [UI Guidelines](./ui_guidelines.md) → Stable Sorting |
 | Manage experiment list actions | [Product Rules](./product_rules.md) → Experiment Actions |
+| Check what's shipped vs pending | [Shipping Plan](./shipping_plan.md) |
 
 ## Contributing
 
@@ -62,4 +66,4 @@ When you encounter a bug or make a product decision:
 
 ---
 
-*Framework established: 2026-02-11*
+*Framework established: 2026-02-11 · Last updated: 2026-08-09*
