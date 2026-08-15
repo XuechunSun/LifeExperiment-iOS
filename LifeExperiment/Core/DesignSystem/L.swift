@@ -52,6 +52,55 @@ enum L {
         }
     }
 
+    static func todaySection(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Today"
+        case .chinese: return "今天"
+        }
+    }
+
+    static func heroKeepGoing(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Keep going"
+        case .chinese: return "继续记录"
+        }
+    }
+
+    static func heroReadMore(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Read More..."
+        case .chinese: return "查看更多…"
+        }
+    }
+
+    static func heroLastUpdatedLabel(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Last updated"
+        case .chinese: return "上次更新"
+        }
+    }
+
+    /// Relative day phrase shown under the hero card's "Last updated" label.
+    static func heroRelativeDays(_ lang: AppLanguage, days: Int) -> String {
+        switch lang {
+        case .english:
+            if days <= 0 { return "today" }
+            if days == 1 { return "yesterday" }
+            return "\(days) days ago"
+        case .chinese:
+            if days <= 0 { return "今天" }
+            if days == 1 { return "昨天" }
+            return "\(days) 天前"
+        }
+    }
+
+    static func heroNoNoteYet(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "No notes yet. Add your first one whenever you're ready."
+        case .chinese: return "还没有记录。想写的时候，随时写下第一条。"
+        }
+    }
+
     static func worthNoticing(_ lang: AppLanguage) -> String {
         switch lang {
         case .english: return "Something worth noticing"
@@ -575,6 +624,13 @@ enum L {
         switch lang {
         case .english: return "Reset All Data"
         case .chinese: return "清除全部数据"
+        }
+    }
+
+    static func profileDebugLoadSampleData(_ lang: AppLanguage) -> String {
+        switch lang {
+        case .english: return "Load Sample Data"
+        case .chinese: return "载入示例数据"
         }
     }
 

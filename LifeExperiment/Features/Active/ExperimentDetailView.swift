@@ -4,7 +4,14 @@ import UIKit
 
 struct ExperimentDetailView: View {
     let isNewUser: Bool
+    /// When true, the page opens already scrolled to History instead of the top.
+    let scrollsToHistoryOnAppear: Bool
     let onUpdate: (Experiment) -> Void
+
+    /// Scroll anchor for `historySection`.
+    private static let historyAnchorID = "detail.history"
+
+    @State private var didScrollToHistory = false
 
     @State private var localExperiment: Experiment
     @State private var draftNote: String = ""
@@ -36,8 +43,14 @@ struct ExperimentDetailView: View {
     @AppStorage("app_language") private var appLanguageRaw: String = ""
     private var lang: AppLanguage { L.currentLanguage(from: appLanguageRaw) }
 
-    init(experiment: Experiment, isNewUser: Bool = false, onUpdate: @escaping (Experiment) -> Void) {
+    init(
+        experiment: Experiment,
+        isNewUser: Bool = false,
+        scrollsToHistoryOnAppear: Bool = false,
+        onUpdate: @escaping (Experiment) -> Void
+    ) {
         self.isNewUser = isNewUser
+        self.scrollsToHistoryOnAppear = scrollsToHistoryOnAppear
         self.onUpdate = onUpdate
         _localExperiment = State(initialValue: experiment)
 
@@ -276,21 +289,34 @@ struct ExperimentDetailView: View {
     }
 
     private var detailContent: some View {
-        ScrollView {
-            // Phase V1.1 polish: page-level section rhythm bumped from a
-            // hardcoded 20pt to `DSSpacing.xl` (24) so header → today →
-            // review → history each read as their own beat.
-            VStack(alignment: .leading, spacing: DSSpacing.xl) {
-                headerSection
-                todaySection
-                reviewSection
-                historySection
+        ScrollViewReader { proxy in
+            ScrollView {
+                // Phase V1.1 polish: page-level section rhythm bumped from a
+                // hardcoded 20pt to `DSSpacing.xl` (24) so header → today →
+                // review → history each read as their own beat.
+                VStack(alignment: .leading, spacing: DSSpacing.xl) {
+                    headerSection
+                    todaySection
+                    reviewSection
+                    historySection
+                        .id(Self.historyAnchorID)
+                }
+                .padding(.horizontal, pageHorizontalPadding)
+                .padding(.vertical, 16)
             }
-            .padding(.horizontal, pageHorizontalPadding)
-            .padding(.vertical, 16)
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture { hideKeyboard() }
+            .onAppear {
+                guard scrollsToHistoryOnAppear, !didScrollToHistory else { return }
+                didScrollToHistory = true
+                // Deferred a frame so the scroll happens after the content has
+                // been laid out; scrolling during the first layout pass is a
+                // no-op on a freshly pushed view.
+                DispatchQueue.main.async {
+                    proxy.scrollTo(Self.historyAnchorID, anchor: .top)
+                }
+            }
         }
-        .scrollDismissesKeyboard(.interactively)
-        .onTapGesture { hideKeyboard() }
     }
 
     @ViewBuilder
@@ -929,45 +955,6 @@ struct ExperimentDetailView: View {
         photoErrorMessage = nil
         photoMarkedForRemoval = false
         draftPhotoLocalPath = relativePath
-    }
-}
-
-private enum LocalPhotoStore {
-    private static let folderName = "LogPhotos"
-
-    private static func photosDirectoryURL() -> URL? {
-        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        let directory = documentsURL.appendingPathComponent(folderName, isDirectory: true)
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return directory
-    }
-
-    static func saveImageData(_ data: Data) -> String? {
-        guard let image = UIImage(data: data),
-              let jpegData = image.jpegData(compressionQuality: 0.85),
-              let directory = photosDirectoryURL() else {
-            return nil
-        }
-
-        let fileName = "logphoto_\(UUID().uuidString).jpg"
-        let fileURL = directory.appendingPathComponent(fileName)
-        do {
-            try jpegData.write(to: fileURL, options: .atomic)
-            return "\(folderName)/\(fileName)"
-        } catch {
-            return nil
-        }
-    }
-
-    static func loadImage(fromRelativePath relativePath: String) -> UIImage? {
-        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        let fileURL = documentsURL.appendingPathComponent(relativePath)
-        guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return UIImage(data: data)
     }
 }
 

@@ -4,6 +4,9 @@ import Foundation
 
 enum Route: Hashable {
     case experiment(UUID)
+    /// Same destination as `experiment`, but opens scrolled to the History
+    /// section. Used by Home's hero card "Read more" affordance.
+    case experimentHistory(UUID)
     case activeMore
     case completedMore
     case summary

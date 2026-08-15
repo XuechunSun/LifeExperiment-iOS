@@ -11,6 +11,8 @@ struct ProfileView: View {
     let loadExperiments: () -> [Experiment]
     var lowEnergyLogs: [LowEnergyLog] = []
     let onResetAllData: () -> Void
+    /// DEBUG-only: replaces stored experiments with `DebugSampleData` fixtures.
+    let onLoadSampleData: () -> Void
 
     @AppStorage("app_language") private var appLanguageRaw: String = ""
     /// Persisted unlock for Debug tools (also cleared when defaults domain is wiped on reset).
@@ -30,11 +32,13 @@ struct ProfileView: View {
     init(
         loadExperiments: @escaping () -> [Experiment],
         lowEnergyLogs: [LowEnergyLog] = [],
-        onResetAllData: @escaping () -> Void = {}
+        onResetAllData: @escaping () -> Void = {},
+        onLoadSampleData: @escaping () -> Void = {}
     ) {
         self.loadExperiments = loadExperiments
         self.lowEnergyLogs = lowEnergyLogs
         self.onResetAllData = onResetAllData
+        self.onLoadSampleData = onLoadSampleData
     }
 
     private var experiments: [Experiment] {
@@ -302,6 +306,19 @@ struct ProfileView: View {
                             .font(DSText.headline)
 
                         VStack(alignment: .leading, spacing: 0) {
+                            #if DEBUG
+                            Button {
+                                onLoadSampleData()
+                            } label: {
+                                Text(L.profileDebugLoadSampleData(lang))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.vertical, 12)
+
+                            Divider()
+                            #endif
+
                             Button(role: .destructive) {
                                 showResetAllDataConfirm = true
                             } label: {

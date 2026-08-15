@@ -10,6 +10,8 @@ struct HomeView: View {
     let onStartLowEnergy: () -> Void
     let onTrySuggestion: (ExperimentSuggestion) -> Void
     let onSelectExperiment: (Experiment) -> Void
+    /// Opens an experiment scrolled to its History section.
+    let onSelectExperimentHistory: (Experiment) -> Void
     let onUpdate: (Experiment) -> Void
     let onShowActiveMore: () -> Void
     let onShowCompletedMore: () -> Void
@@ -157,6 +159,12 @@ struct HomeView: View {
         Array(continueCandidates.prefix(2))
     }
 
+    // The Today hero card mirrors the top-ranked Continue candidate, so both
+    // sections always agree on which experiment is "next up".
+    private var heroExperiment: Experiment? {
+        continueCandidates.first
+    }
+
     // Show Continue section in State A & B (not C)
     private var shouldShowContinueRecording: Bool {
         currentState != .noActiveExperiments && !continuePreview.isEmpty
@@ -190,15 +198,16 @@ struct HomeView: View {
     // MARK: - UI
 
     // Final Home section ordering (v1.1 Phase 5):
-    //   1. CalendarFootprintView                 — always
-    //   2. GuideCardView (Purple Guide CTA)      — always, atmosphere / orientation
-    //   3. Continue Recording                    — when shouldShowContinueRecording
-    //   4. Worth Noticing (Personalized)         — when personalizedSuggestion exists
-    //   5. Try Something New (GuideSuggestions)  — always
-    //   6. Recent Moments                        — when recentEvents is non-empty
-    //   7. Completed                             — when shouldShowCompleted
+    //   1. Today hero card                       — when heroExperiment exists
+    //   2. CalendarFootprintView                 — always
+    //   3. GuideCardView (Purple Guide CTA)      — always, atmosphere / orientation
+    //   4. Continue Recording                    — when shouldShowContinueRecording
+    //   5. Worth Noticing (Personalized)         — when personalizedSuggestion exists
+    //   6. Try Something New (GuideSuggestions)  — always
+    //   7. Recent Moments                        — when recentEvents is non-empty
+    //   8. Completed                             — when shouldShowCompleted
     //
-    // Steps 3–5 share a tight 12pt action cluster (matching the old inner
+    // Steps 4–6 share a tight 12pt action cluster (matching the old inner
     // Guide cluster rhythm). The three states (no-active / active no-update /
     // updated-today) drop out of this single ordering automatically via the
     // existing `shouldShowContinueRecording` and `personalizedSuggestion`
@@ -206,6 +215,10 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
+                if let heroExperiment {
+                    todaySection(experiment: heroExperiment)
+                }
+
                 CalendarFootprintView(experiments: experiments, lowEnergyLogs: lowEnergyLogs, onUpdate: onUpdate, onSelectDay: onSelectDay)
 
                 // Purple Guide CTA — always directly under Calendar so the
@@ -258,6 +271,22 @@ struct HomeView: View {
     }
 
     // MARK: - Extracted action sections (Phase 5 reorder helpers)
+
+    @ViewBuilder
+    private func todaySection(experiment: Experiment) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L.todaySection(lang))
+                .font(DSText.section)
+                .foregroundColor(.primary)
+
+            TodayHeroCard(
+                experiment: experiment,
+                lang: lang,
+                onOpen: { onSelectExperiment(experiment) },
+                onReadMore: { onSelectExperimentHistory(experiment) }
+            )
+        }
+    }
 
     @ViewBuilder
     private var continueSection: some View {

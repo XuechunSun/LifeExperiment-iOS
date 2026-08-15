@@ -226,6 +226,29 @@ struct ContentView: View {
         rootRefreshID = UUID()
     }
     
+    #if DEBUG
+    /// Replaces stored experiments with the manual-testing fixtures and drops
+    /// the user back on a clean Home so the hero card is immediately visible.
+    private func loadDebugSampleData() {
+        setExperiments(DebugSampleData.makeExperiments())
+
+        // Fixtures stand in for an established user, so skip both first-run
+        // onboarding and the migrated-user guide.
+        OnboardingState.stage = .completed
+        OnboardingState.guidedExperimentId = ""
+        OnboardingState.migratedUserGuidePending = false
+        isShowingOnboarding = false
+        isShowingMigratedUserGuide = false
+
+        selectedTab = .home
+        homePath = []
+        activePath = []
+        summaryPath = []
+        profilePath = []
+        rootRefreshID = UUID()
+    }
+    #endif
+
     func updateExperiment(_ updated: Experiment) {
         var experiments = getExperiments()
         if let index = experiments.firstIndex(where: { $0.id == updated.id }) {
@@ -449,6 +472,9 @@ struct ContentView: View {
                     onSelectExperiment: { experiment in
                         homePath.append(.experiment(experiment.id))
                     },
+                    onSelectExperimentHistory: { experiment in
+                        homePath.append(.experimentHistory(experiment.id))
+                    },
                     onUpdate: updateExperiment,
                     onShowActiveMore: {
                         homePath.append(.activeMore)
@@ -523,7 +549,12 @@ struct ContentView: View {
                 ProfileView(
                     loadExperiments: getExperiments,
                     lowEnergyLogs: getLowEnergyLogs(),
-                    onResetAllData: resetAllLocalData
+                    onResetAllData: resetAllLocalData,
+                    onLoadSampleData: {
+                        #if DEBUG
+                        loadDebugSampleData()
+                        #endif
+                    }
                 )
                     .navigationDestination(for: Route.self) { route in
                         routeDestination(route: route, path: $profilePath)
@@ -880,26 +911,35 @@ struct ContentView: View {
     }
     
     // MARK: - Route Destination (Reusable navigation handler)
-    
+
+    @ViewBuilder
+    private func experimentDetailDestination(id: UUID, scrollsToHistory: Bool) -> some View {
+        let experiments = getExperiments()
+        if let experiment = experiments.first(where: { $0.id == id }) {
+            ExperimentDetailView(
+                experiment: experiment,
+                isNewUser: ExperimentDetailView.shouldShowFirstLogGuidance(for: experiments),
+                scrollsToHistoryOnAppear: scrollsToHistory,
+                onUpdate: updateExperiment
+            )
+            // Stable per experiment: id must NOT include updatedAt, or each save remounts the view
+            // and clears @State (e.g. the post-save success toast).
+            .id(experiment.id.uuidString)
+        } else {
+            Text(L.experimentNotFound(lang))
+                .foregroundColor(.secondary)
+        }
+    }
+
     @ViewBuilder
     private func routeDestination(route: Route, path: Binding<[Route]>) -> some View {
         switch route {
         case .experiment(let id):
-            let experiments = getExperiments()
-            if let experiment = experiments.first(where: { $0.id == id }) {
-                ExperimentDetailView(
-                    experiment: experiment,
-                    isNewUser: ExperimentDetailView.shouldShowFirstLogGuidance(for: experiments),
-                    onUpdate: updateExperiment
-                )
-                // Stable per experiment: id must NOT include updatedAt, or each save remounts the view
-                // and clears @State (e.g. the post-save success toast).
-                .id(experiment.id.uuidString)
-            } else {
-                Text(L.experimentNotFound(lang))
-                    .foregroundColor(.secondary)
-            }
-            
+            experimentDetailDestination(id: id, scrollsToHistory: false)
+
+        case .experimentHistory(let id):
+            experimentDetailDestination(id: id, scrollsToHistory: true)
+
         case .activeMore:
             let activeExperiments = getExperiments().filter { $0.status == .active }
                 .sorted { $0.updatedAt > $1.updatedAt }
